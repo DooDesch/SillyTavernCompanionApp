@@ -10,3 +10,14 @@ coverage/
 *.tsbuildinfo
 .env*.local
 web-build/
+
+# Graphify knowledge graph (https://github.com/rhanka/graphify)
+# Commit only the portable, repo-relative artifacts; ignore all local lifecycle
+# state (branch.json/worktree.json/needs_update/cache/, manifest.json, etc. —
+# these may contain absolute paths and must never be committed).
+.graphify/*
+!.graphify/graph.json
+!.graphify/GRAPH_REPORT.md
+!.graphify/graph.html
+!.graphify/flows.json
+!.graphify/wiki/
