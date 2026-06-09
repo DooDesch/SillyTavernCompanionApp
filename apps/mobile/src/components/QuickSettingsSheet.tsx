@@ -3,6 +3,7 @@ import { Switch, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { EngineConfig, StClient } from '@st/core';
 import { syncOai, syncRoot, syncTextgen } from '@/lib/sync';
+import { usePrefs } from '@/stores/prefsStore';
 import { Sheet, AppText, Button } from './ui';
 import { colors, fonts } from '@/theme/tokens';
 
@@ -50,6 +51,8 @@ export function QuickSettingsSheet({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const smoothStreaming = usePrefs((s) => s.smoothStreaming);
+  const setSmoothStreaming = usePrefs((s) => s.setSmoothStreaming);
   const isCc = engine?.mode === 'cc';
   const tg = (engine?.textgen ?? {}) as Record<string, unknown>;
   const oai = engine?.oai;
@@ -119,6 +122,19 @@ export function QuickSettingsSheet({
             thumbColor={colors.onAccent}
           />
         </View>
+        {/* Device-local render preference: applies immediately, never synced to the desktop. */}
+        <View className="mb-1 flex-row items-center justify-between">
+          <AppText variant="bodyLg">{t('quickSettings.smoothStreaming')}</AppText>
+          <Switch
+            value={smoothStreaming}
+            onValueChange={setSmoothStreaming}
+            trackColor={{ true: colors.accent, false: colors.surface3 }}
+            thumbColor={colors.onAccent}
+          />
+        </View>
+        <AppText variant="caption" color="subtle">
+          {t('quickSettings.smoothStreamingHint')}
+        </AppText>
         <AppText variant="caption" color="subtle" style={{ marginTop: 4 }}>
           {t('quickSettings.savedNotice')}
         </AppText>

@@ -123,6 +123,10 @@
     "save": "Speichern",
     "saving": "Speichert…"
   },
+  "errors": {
+    "generationFailed": "Generierung fehlgeschlagen: HTTP {{status}}",
+    "streamNoBody": "Streaming-Antwort ohne Body"
+  },
   "lore": {
     "active": "aktiv",
     "constant": "stets",
@@ -156,6 +160,8 @@
     "contextSize": "Kontextgröße (Tokens)",
     "responseLength": "Antwortlänge (Tokens)",
     "savedNotice": "Wird auf SillyTavern (PC) gespeichert.",
+    "smoothStreaming": "Sanftes Streaming",
+    "smoothStreamingHint": "Text beim Generieren Wort für Wort einblenden (nur in der App).",
     "streaming": "Streaming",
     "temperature": "Temperatur",
     "title": "Generierung"

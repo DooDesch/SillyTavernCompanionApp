@@ -78,3 +78,5 @@ export { parseTextgenData } from './streaming/textgen';
 export type { TextgenDelta } from './streaming/textgen';
 export { iterateSseStream } from './streaming/stream';
 export type { GenerateStreamRequest, StreamToken, StreamTransport } from './streaming/stream';
+export { SmoothPacer, smoothDelayMs, SMOOTH_SPEED_DEFAULT } from './streaming/smooth';
+export type { PacerTick, SmoothPacerOptions } from './streaming/smooth';

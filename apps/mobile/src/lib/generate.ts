@@ -15,6 +15,7 @@ import {
   type WorldInfoSettings,
 } from '@st/core';
 import { openSseStream } from './streamTransport';
+import { streamDebug } from './streamDebug';
 import { makeTokenCounter } from './tokenizer';
 
 /** Build the prompt-budget token counter for the active backend (faithful to the desktop tokenizer). */
@@ -126,6 +127,7 @@ export async function* streamGeneration(
       text += delta.text;
       if (delta.thinking) reasoning += delta.thinking;
     }
+    streamDebug.mark('sse', text.length);
     yield { text, reasoning };
   }
   return { text, reasoning };

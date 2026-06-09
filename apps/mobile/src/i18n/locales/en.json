@@ -123,6 +123,10 @@
     "save": "Save",
     "saving": "Saving…"
   },
+  "errors": {
+    "generationFailed": "Generation failed: HTTP {{status}}",
+    "streamNoBody": "Streaming response had no body"
+  },
   "lore": {
     "active": "active",
     "constant": "always",
@@ -156,6 +160,8 @@
     "contextSize": "Context size (tokens)",
     "responseLength": "Response length (tokens)",
     "savedNotice": "Saved to SillyTavern (PC).",
+    "smoothStreaming": "Smooth streaming",
+    "smoothStreamingHint": "Reveal text word by word while generating (app only).",
     "streaming": "Streaming",
     "temperature": "Temperature",
     "title": "Generation"

@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Keyboard, Pressable, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,11 +30,15 @@ import { useBackendStatus } from '@/hooks/useBackendStatus';
 import { useLorebook } from '@/hooks/useLorebook';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
 import { useProfiles } from '@/stores/profilesStore';
+import { usePrefs } from '@/stores/prefsStore';
 import { streamGeneration } from '@/lib/generate';
+import { streamingSession } from '@/lib/streamingSession';
+import { streamDebug } from '@/lib/streamDebug';
 import { syncPersonaToPc } from '@/lib/sync';
 import { ensureIds, makeAssistantMessage, makeUserMessage, nowSendDate } from '@/lib/messages';
 import { clearChatDraft, readChatDraft, writeChatDraft } from '@/lib/persist';
 import { RichText } from '@/components/RichText';
+import { StreamingBubbleContent, ReasoningBlock } from '@/components/StreamingText';
 import { Avatar } from '@/components/Avatar';
 import { PickerSheet, type PickerOption } from '@/components/PickerSheet';
 import { AuthorsNoteSheet, type AuthorsNoteValue } from '@/components/AuthorsNoteSheet';
@@ -68,6 +71,8 @@ export default function ChatScreen() {
   const client = useConnection((s) => s.client);
   const queryClient = useQueryClient();
   const syncToPc = useProfiles((s) => s.syncToPc);
+  const smoothStreaming = usePrefs((s) => s.smoothStreaming);
+  const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
   const kbVisible = useKeyboardState((s) => s.isVisible);
   const bottomInset = useBottomInset(16);
@@ -196,6 +201,8 @@ export default function ChatScreen() {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   }, []);
 
+  const openMenu = useCallback((index: number) => setMenuIndex(index), []);
+
   const persist = useCallback(
     async (msgs: StChatMessage[], force = false) => {
       if (!client || !header) return;
@@ -228,6 +235,13 @@ export default function ChatScreen() {
       const isContinue = mode === 'continue';
       const prefix = isContinue ? currentSwipeText(contextMsgs[assistantIndex]!) : '';
       setStreaming(true);
+      // Streamed text renders through `streamingSession` (only the live bubble re-renders per
+      // token); the messages array stays untouched until finalize. Seeding with the continue
+      // prefix shows the existing reply instantly and animates only the new text.
+      streamingSession.start({
+        smooth: smoothStreaming && !reducedMotion,
+        ...(prefix ? { initialText: prefix } : {}),
+      });
       abortedByUserRef.current = false;
       const ac = new AbortController();
       abortRef.current = ac;
@@ -253,28 +267,20 @@ export default function ChatScreen() {
           if (acc.text.trim()) gotText = true;
           finalText = isContinue ? prefix + acc.text : acc.text;
           finalReasoning = acc.reasoning;
-          const mes = finalText;
-          const reasoning = acc.reasoning;
-          setMessages((prev) => {
-            const next = [...prev];
-            const cur = next[assistantIndex];
-            if (cur) {
-              next[assistantIndex] = {
-                ...cur,
-                mes,
-                ...(reasoning ? { extra: { ...cur.extra, reasoning } } : {}),
-              };
-            }
-            return next;
-          });
+          streamingSession.update(finalText, acc.reasoning);
         }
       } catch {
         // aborted / network error - handled below via gotText/abortedByUser
       } finally {
         abortRef.current = null;
-        setStreaming(false);
         // ST 1:1: an empty (non-aborted) result is "No message generated" - never keep/save junk.
         const failed = !gotText && !abortedByUserRef.current;
+        // Drain the visual pacer (bounded) so the animated tail isn't cut; on abort/failure
+        // reveal everything instantly. Finalize always uses the raw network text (`finalText`).
+        if (failed || abortedByUserRef.current) streamingSession.flushNow();
+        else await streamingSession.end();
+        streamDebug.dump('gen');
+        setStreaming(false);
         let finalMsgs: StChatMessage[] = [];
         setMessages((prev) => {
           const next = [...prev];
@@ -291,6 +297,7 @@ export default function ChatScreen() {
           finalMsgs = next;
           return next;
         });
+        streamingSession.reset();
         void persist(finalMsgs);
         scrollToEnd();
         if (failed) {
@@ -301,7 +308,7 @@ export default function ChatScreen() {
         }
       }
     },
-    [client, engine, character, persist, scrollToEnd, buildEffectiveLorebook, authorsNote, header, t],
+    [client, engine, character, persist, scrollToEnd, buildEffectiveLorebook, authorsNote, header, smoothStreaming, reducedMotion, t],
   );
 
   const send = useCallback(async () => {
@@ -669,13 +676,17 @@ export default function ChatScreen() {
         keyExtractor={(m, i) => m._cid ?? String(i)}
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 12 }}
-        onContentSizeChange={scrollToEnd}
+        // Pin to the bottom while the streaming bubble grows, but stop following when the
+        // user scrolls up to read (ST-web-like). Replaces scroll-to-end on content size
+        // change, which fought the user and fired per streamed token.
+        maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
         renderItem={({ item, index }) => (
           <Bubble
             message={item}
             charAvatar={avatarUrl}
             plain={streaming && index === messages.length - 1}
-            onLongPress={() => setMenuIndex(index)}
+            index={index}
+            onLongPress={openMenu}
           />
         )}
       />
@@ -959,38 +970,40 @@ const Bubble = memo(function Bubble({
   message,
   charAvatar,
   plain,
+  index,
   onLongPress,
 }: {
   message: StChatMessage;
   charAvatar?: string;
+  /** True for the actively-streaming bubble: content comes from `streamingSession`, not `message`. */
   plain?: boolean;
-  onLongPress?: () => void;
+  index: number;
+  onLongPress?: (index: number) => void;
 }) {
   const { t } = useTranslation();
   const text = currentSwipeText(message);
   const isUser = message.is_user;
   const isHidden = message.is_system === true;
   const reasoning = message.extra?.reasoning;
-  const showDots = !!plain && text.trim().length === 0;
   const time = shortTime(message.gen_finished || message.send_date);
 
   const image = message.extra?.image;
   const bubble = (
     <Pressable
-      onLongPress={onLongPress}
+      onLongPress={() => onLongPress?.(index)}
       delayLongPress={350}
       className={`rounded-3xl px-4 py-2.5 ${isUser ? 'bg-user-bubble' : 'bg-char-bubble'} ${isHidden ? 'opacity-50' : ''}`}
     >
       {image ? (
         <Image source={{ uri: image }} style={{ width: 200, height: 200, borderRadius: 14, marginBottom: text ? 8 : 0 }} resizeMode="cover" />
       ) : null}
-      {!isUser && reasoning ? <ReasoningBlock text={reasoning} /> : null}
-      {showDots ? (
-        <TypingDots thinking={!!reasoning} />
-      ) : plain ? (
-        <AppText variant="body">{text || ' '}</AppText>
+      {plain ? (
+        <StreamingBubbleContent />
       ) : (
-        <RichText text={text || ' '} />
+        <>
+          {!isUser && reasoning ? <ReasoningBlock text={reasoning} /> : null}
+          <RichText text={text || ' '} />
+        </>
       )}
     </Pressable>
   );
@@ -1027,60 +1040,3 @@ const Bubble = memo(function Bubble({
   );
 });
 
-const DOT = { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textSubtle } as const;
-
-function dotOpacity(v: number, i: number): number {
-  'worklet';
-  const phase = (((v - i) % 3) + 3) % 3;
-  return phase < 1.5 ? 0.3 + 0.7 * (phase / 1.5) : 0.3 + 0.7 * ((3 - phase) / 1.5);
-}
-
-function TypingDots({ thinking }: { thinking?: boolean }) {
-  const { t } = useTranslation();
-  const reduced = useReducedMotion();
-  const v = useSharedValue(0);
-  useEffect(() => {
-    if (reduced) return;
-    v.value = withRepeat(withTiming(3, { duration: 1100 }), -1, false);
-  }, [reduced, v]);
-  const d0 = useAnimatedStyle(() => ({ opacity: dotOpacity(v.value, 0) }));
-  const d1 = useAnimatedStyle(() => ({ opacity: dotOpacity(v.value, 1) }));
-  const d2 = useAnimatedStyle(() => ({ opacity: dotOpacity(v.value, 2) }));
-  return (
-    <View className="flex-row items-center gap-1.5 py-1">
-      {thinking ? (
-        <AppText variant="body" color="muted" style={{ marginRight: 2 }}>
-          {t('chat.thinking')}
-        </AppText>
-      ) : null}
-      <Animated.View style={[d0, DOT]} />
-      <Animated.View style={[d1, DOT]} />
-      <Animated.View style={[d2, DOT]} />
-    </View>
-  );
-}
-
-function ReasoningBlock({ text }: { text: string }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  return (
-    <View className="mb-2">
-      <Pressable onPress={() => setOpen((o) => !o)} className="flex-row items-center gap-1 active:opacity-60">
-        <Icon name={open ? 'chevronDown' : 'chevronRight'} size={13} color={colors.textSubtle} />
-        <AppText variant="caption" color="subtle">
-          {t('chat.reasoning')}
-        </AppText>
-      </Pressable>
-      {open ? (
-        <AppText
-          selectable
-          variant="caption"
-          color="muted"
-          style={{ marginTop: 4, borderLeftWidth: 2, borderLeftColor: colors.borderStrong, paddingLeft: 8, fontStyle: 'italic' }}
-        >
-          {text}
-        </AppText>
-      ) : null}
-    </View>
-  );
-}

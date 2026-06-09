@@ -1,5 +1,6 @@
 import { fetch as expoFetch } from 'expo/fetch';
 import { iterateSseStream, type GenerateStreamRequest, type SseEvent } from '@st/core';
+import i18n from '@/i18n';
 
 /**
  * Open an SSE POST stream over `expo/fetch` and yield raw SSE events. The caller parses each event
@@ -14,10 +15,10 @@ export async function* openSseStream(req: GenerateStreamRequest): AsyncGenerator
     signal: req.signal,
   });
   if (!res.ok) {
-    throw new Error(`Generierung fehlgeschlagen: HTTP ${res.status}`);
+    throw new Error(i18n.t('errors.generationFailed', { status: res.status }));
   }
   if (!res.body) {
-    throw new Error('Streaming-Antwort ohne Body');
+    throw new Error(i18n.t('errors.streamNoBody'));
   }
   for await (const evt of iterateSseStream(res.body as ReadableStream<Uint8Array>)) {
     yield evt;
