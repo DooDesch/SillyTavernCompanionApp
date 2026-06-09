@@ -43,9 +43,11 @@ module.exports = function withReleaseSigning(config) {
     if (!releaseAnchor.test(contents)) {
       throw new Error('withReleaseSigning: release signingConfig line not found — Expo template changed');
     }
+    // Outer parens are required: `signingConfig (expr) ? a : b` would be parsed by Groovy as
+    // the method call `signingConfig(expr)` followed by a ternary on its return value.
     contents = contents.replace(
       releaseAnchor,
-      "$1signingConfig (System.getenv('STC_UPLOAD_STORE_FILE') ?: findProperty('STC_UPLOAD_STORE_FILE')) ? signingConfigs.release : signingConfigs.debug",
+      "$1signingConfig ((System.getenv('STC_UPLOAD_STORE_FILE') ?: findProperty('STC_UPLOAD_STORE_FILE')) ? signingConfigs.release : signingConfigs.debug)",
     );
 
     cfg.modResults.contents = contents;
