@@ -51,7 +51,7 @@ export function enumerateSubnet24(ip: string, options: { excludeSelf?: boolean }
 }
 
 /**
- * True when both IPv4 addresses sit in the same /24 — i.e. the subnet the scanner actually sweeps.
+ * True when both IPv4 addresses sit in the same /24 - i.e. the subnet the scanner actually sweeps.
  * Used to discard a stored discovery hint after the device has moved to another network, so a
  * guaranteed-dead off-subnet host is never probed as a "fast path". Returns false on bad input.
  */

@@ -21,9 +21,15 @@ export type ChatCompletionSource =
   | 'moonshot'
   | string;
 
+/** A multimodal content part (vision). ST forwards these and converts per provider server-side. */
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
 export interface ChatCompletionMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  /** Plain text, or an array of content parts for multimodal (text + image_url). */
+  content: string | ContentPart[];
   name?: string;
 }
 

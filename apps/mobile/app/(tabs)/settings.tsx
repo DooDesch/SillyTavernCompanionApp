@@ -1,9 +1,15 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useConnection } from '@/stores/connectionStore';
+import { useProfiles } from '@/stores/profilesStore';
+import { useServers } from '@/stores/serversStore';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
+import { useEngineConfig } from '@/hooks/useEngineConfig';
+import { useBackendStatus } from '@/hooks/useBackendStatus';
 import { discoverKobold } from '@/lib/discovery';
+import { syncPersonaToPc, syncSelectedProfileToPc } from '@/lib/sync';
 import { PickerSheet, type PickerOption } from '@/components/PickerSheet';
 
 function Row({
@@ -41,6 +47,25 @@ function Row({
 export default function SettingsScreen() {
   const instance = useConnection((s) => s.instance);
   const disconnect = useConnection((s) => s.disconnect);
+  const client = useConnection((s) => s.client);
+  const connect = useConnection((s) => s.connect);
+  const syncToPc = useProfiles((s) => s.syncToPc);
+  const setSyncToPc = useProfiles((s) => s.setSyncToPc);
+  const servers = useServers((s) => s.servers);
+  const getCreds = useServers((s) => s.getCreds);
+  const removeServer = useServers((s) => s.remove);
+  const queryClient = useQueryClient();
+
+  const reconnectTo = async (id: string) => {
+    const srv = servers.find((s) => s.id === id);
+    if (!srv) return;
+    const creds = srv.hasAuth ? await getCreds(srv.id) : undefined;
+    connect(
+      { baseUrl: srv.baseUrl, ip: srv.ip, port: srv.port, version: instance?.version ?? '', source: 'manual' },
+      creds,
+    );
+    void queryClient.invalidateQueries();
+  };
   const {
     profiles,
     activeId,
@@ -51,8 +76,27 @@ export default function SettingsScreen() {
     koboldOverride,
     setKoboldOverride,
   } = useConnectionProfiles();
+  const { engine } = useEngineConfig('');
+  const backend = useBackendStatus(engine);
   const [scanning, setScanning] = useState(false);
   const [sheet, setSheet] = useState<'profile' | 'persona' | null>(null);
+
+  const onPickProfile = (id: string) => {
+    setActiveProfile(id);
+    if (syncToPc && client) {
+      void syncSelectedProfileToPc(client, id).then((ok) => {
+        if (ok) void queryClient.invalidateQueries({ queryKey: ['settings'] });
+      });
+    }
+  };
+  const onPickPersona = (avatar: string) => {
+    setActivePersona(avatar);
+    if (syncToPc && client) {
+      void syncPersonaToPc(client, avatar).then((ok) => {
+        if (ok) void queryClient.invalidateQueries({ queryKey: ['settings'] });
+      });
+    }
+  };
 
   const activeProfile = profiles.find((p) => p.id === activeId);
   const activePersona = personas.find((p) => p.avatar === activePersonaAvatar);
@@ -105,6 +149,40 @@ export default function SettingsScreen() {
         <Text className="text-center text-base font-semibold text-red-400">Trennen</Text>
       </Pressable>
 
+      {servers.length > 0 && (
+        <>
+          <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">Gespeicherte Server</Text>
+          {servers.map((srv) => {
+            const active = srv.baseUrl === instance?.baseUrl;
+            return (
+              <View
+                key={srv.id}
+                className="mb-2 flex-row items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3"
+              >
+                <Pressable className="flex-1 active:opacity-60" onPress={() => void reconnectTo(srv.id)}>
+                  <Text className="text-base font-semibold text-white" numberOfLines={1}>
+                    {srv.label}
+                    {srv.hasAuth ? '  🔒' : ''}
+                  </Text>
+                  <Text className="mt-0.5 text-xs text-muted">{active ? 'Verbunden' : 'Tippen zum Verbinden'}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    Alert.alert('Entfernen', `„${srv.label}" entfernen?`, [
+                      { text: 'Abbrechen', style: 'cancel' },
+                      { text: 'Entfernen', style: 'destructive', onPress: () => void removeServer(srv.id) },
+                    ])
+                  }
+                  className="h-8 w-8 items-center justify-center active:opacity-60"
+                >
+                  <Text className="text-lg text-muted">✕</Text>
+                </Pressable>
+              </View>
+            );
+          })}
+        </>
+      )}
+
       <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">Aktive Konfiguration</Text>
       <Row
         label="Verbindungsprofil (Backend)"
@@ -121,10 +199,39 @@ export default function SettingsScreen() {
         value={activePersona?.name ?? (personas.length ? 'Auswählen…' : 'Keine Personas')}
         onPress={personas.length ? () => setSheet('persona') : undefined}
       />
+      <View className="mt-1 flex-row items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3">
+        <View className="flex-1 pr-3">
+          <Text className="text-base font-semibold text-white">Mit PC synchronisieren</Text>
+          <Text className="mt-0.5 text-xs text-muted">
+            Persona-/Profil-/Sampler-Änderungen am Handy zurück an SillyTavern schreiben.
+          </Text>
+        </View>
+        <Switch
+          value={syncToPc}
+          onValueChange={setSyncToPc}
+          trackColor={{ true: '#7c5cff', false: '#3a3a44' }}
+          thumbColor="#ffffff"
+        />
+      </View>
 
-      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">KoboldCpp-Backend</Text>
+      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">KI-Backend</Text>
       <View className="rounded-2xl border border-border bg-surface px-4 py-3">
-        <Text className="text-base text-white" numberOfLines={1}>
+        <View className="flex-row items-center gap-2">
+          <View
+            className={`h-2.5 w-2.5 rounded-full ${
+              backend.isLoading ? 'bg-muted' : backend.data?.connected ? 'bg-green-500' : 'bg-red-500'
+            }`}
+          />
+          <Text className="flex-1 text-base font-semibold text-white" numberOfLines={1}>
+            {backend.isLoading
+              ? 'Prüfe…'
+              : backend.data?.connected
+                ? backend.data.model || 'Verbunden'
+                : 'Nicht verbunden'}
+          </Text>
+        </View>
+        <Text className="mt-1 text-xs text-muted" numberOfLines={1}>
+          {engine?.mode === 'cc' ? 'Chat-Completion' : 'Text-Completion'} ·{' '}
           {koboldOverride ?? 'Standard (über SillyTavern)'}
         </Text>
       </View>
@@ -160,7 +267,7 @@ export default function SettingsScreen() {
         title="Verbindungsprofil wählen"
         options={profileOptions}
         activeId={activeId}
-        onSelect={(id) => setActiveProfile(id)}
+        onSelect={onPickProfile}
         onClose={() => setSheet(null)}
       />
       <PickerSheet
@@ -168,7 +275,7 @@ export default function SettingsScreen() {
         title="Persona wählen"
         options={personaOptions}
         activeId={activePersonaAvatar}
-        onSelect={(id) => setActivePersona(id)}
+        onSelect={onPickPersona}
         onClose={() => setSheet(null)}
       />
     </ScrollView>

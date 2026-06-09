@@ -2,7 +2,7 @@
  * Manual cookie tracking.
  *
  * SillyTavern binds the CSRF token to the `cookie-session` cookie, so the session cookie returned by
- * `GET /csrf-token` MUST be replayed on subsequent POSTs — even though this setup has no user
+ * `GET /csrf-token` MUST be replayed on subsequent POSTs - even though this setup has no user
  * accounts. React Native's native cookie jar is inconsistent across platforms and hides httpOnly
  * cookies from JS, so we parse and replay cookies ourselves for deterministic behaviour.
  */

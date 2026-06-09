@@ -3,7 +3,7 @@
  *
  * ST uses Handlebars (`Handlebars.compile`, which relies on `new Function` and is unavailable in
  * Hermes). The story_string templates only use `{{#if var}}…{{else}}…{{/if}}`, `{{var}}` and the
- * `{{trim}}` helper, so this implements exactly that subset — no eval, Hermes-safe.
+ * `{{trim}}` helper, so this implements exactly that subset - no eval, Hermes-safe.
  */
 
 export type StoryStringData = Record<string, string>;

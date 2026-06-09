@@ -1,6 +1,6 @@
 import type { WorldInfoEntry, WorldInfoSettings } from './types';
 
-/** Port of SillyTavern's `parseRegexFromString` — recognises `/pattern/flags` keys. */
+/** Port of SillyTavern's `parseRegexFromString` - recognises `/pattern/flags` keys. */
 export function parseRegexFromString(input: string): RegExp | null {
   const match = /^\/([\w\W]+?)\/([gimsuy]*)$/.exec(input);
   if (!match) return null;

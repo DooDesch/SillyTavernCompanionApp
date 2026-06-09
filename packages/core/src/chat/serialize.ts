@@ -13,9 +13,16 @@ export function chatFromArray(rows: readonly unknown[]): StChat {
   return { header, messages };
 }
 
+/** Drop transient app-local fields (e.g. `_cid`) that must not reach the ST wire/disk format. */
+function stripTransient(m: StChatMessage): StChatMessage {
+  if (m._cid === undefined) return m;
+  const { _cid: _drop, ...rest } = m;
+  return rest as StChatMessage;
+}
+
 /** Convert a header + messages split back into the array body for `POST /api/chats/save`. */
 export function chatToArray(chat: StChat): unknown[] {
-  return [chat.header, ...chat.messages];
+  return [chat.header, ...chat.messages.map(stripTransient)];
 }
 
 /** Parse an on-disk JSONL chat file into a header + messages split. */

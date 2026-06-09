@@ -1,21 +1,21 @@
 # SillyTavern Companion (Expo)
 
 Eine native Smartphone-App (Android/iOS), die eine im lokalen WLAN laufende **SillyTavern**-Instanz
-automatisch findet, sich verbindet und RP-Chats fortsetzt / neu startet — mit faithful portierter
+automatisch findet, sich verbindet und RP-Chats fortsetzt / neu startet - mit faithful portierter
 Prompt-Engine, sodass Generierungen denselben Prompt erzeugen wie der Desktop.
 
 > Architektur-/Phasenplan: `C:\Users\denni\.claude\plans\f-r-sillytavern-gibt-es-valiant-salamander.md`
 
 ## Was funktioniert (v1)
 
-- **Zero-Install Discovery** — Subnetz-Scan (`/version`-Fingerprint) + manuelle IP. Kein Server-Plugin nötig.
-- **Verbinden** — CSRF-Handshake + Cookie-Tracking; nutzt deine bestehende `config.yaml` (listen/whitelist).
-- **Browsen** — Charakterliste, pro Charakter die gespeicherten Chats, neuen Chat starten (mit Greeting).
-- **Chatten** — Chat-Verlauf rendern, Nachricht senden, **token-by-token Streaming** vom KoboldCpp-Backend
+- **Zero-Install Discovery** - Subnetz-Scan (`/version`-Fingerprint) + manuelle IP. Kein Server-Plugin nötig.
+- **Verbinden** - CSRF-Handshake + Cookie-Tracking; nutzt deine bestehende `config.yaml` (listen/whitelist).
+- **Browsen** - Charakterliste, pro Charakter die gespeicherten Chats, neuen Chat starten (mit Greeting).
+- **Chatten** - Chat-Verlauf rendern, Nachricht senden, **token-by-token Streaming** vom KoboldCpp-Backend
   (über ST als Proxy), Antwort **zurück auf den PC speichern** (`/api/chats/save`).
-- **RP-Komfort** — Swipes (Alternativen durchblättern ‹ › + neue generieren), Regenerieren, Stop,
+- **RP-Komfort** - Swipes (Alternativen durchblättern ‹ › + neue generieren), Regenerieren, Stop,
   Konflikt-Erkennung wenn der PC denselben Chat ändert (Überschreiben/Abbrechen).
-- **Faithful Prompt-Engine** — Macros, Character-Card-Felder, Context-Story-String (Hermes-sicherer
+- **Faithful Prompt-Engine** - Macros, Character-Card-Felder, Context-Story-String (Hermes-sicherer
   Handlebars-Subset), Instruct-Mode (Gemma/ChatML/…), Token-Budget, Sampler-Body. **Golden-Master-Test**
   bestätigt byte-exakte Übereinstimmung mit SillyTavern für deine Gemma-4-Config.
 
@@ -51,7 +51,7 @@ Server-URL in `server_urls.koboldcpp`). ST + KoboldCpp müssen laufen, Handy im 
 ## Auf dem Gerät testen
 
 Build-Toolchain ist auf diesem PC vorhanden (Android SDK, JDK 21). Das **Release-APK ist eigenständig**
-(JS gebündelt, Debug-Keystore-signiert) — einmal installiert, brauchst du keinen PC/Metro mehr.
+(JS gebündelt, Debug-Keystore-signiert) - einmal installiert, brauchst du keinen PC/Metro mehr.
 
 ```powershell
 # Engine-Tests (ohne Gerät)

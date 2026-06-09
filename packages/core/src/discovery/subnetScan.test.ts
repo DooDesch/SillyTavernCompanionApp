@@ -70,7 +70,7 @@ describe('scanSubnet', () => {
     const calls: string[] = [];
     const fetchImpl = async (url: string, _init?: FetchInitLike): Promise<FetchResponseLike> => {
       calls.push(url);
-      throw new Error('dead'); // nothing alive — we only care about probe order
+      throw new Error('dead'); // nothing alive - we only care about probe order
     };
     const hosts = ['192.168.178.1', '192.168.178.2', '192.168.178.99'];
     // concurrency 1 makes the order deterministic.

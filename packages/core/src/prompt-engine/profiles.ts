@@ -77,7 +77,7 @@ const byName = <T extends { name?: string }>(arr: T[] | undefined, name?: string
 
 /**
  * Apply a connection profile to an engine config by resolving its named templates/preset from the
- * `/api/settings/get` response arrays. Purely client-side — does not modify the server settings.
+ * `/api/settings/get` response arrays. Purely client-side - does not modify the server settings.
  */
 export function applyProfileToConfig(
   config: EngineConfig,

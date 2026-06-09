@@ -29,13 +29,109 @@ export async function isReachable(client: StClient): Promise<boolean> {
   }
 }
 
-/** Full user settings blob (`/api/settings/get`) — includes power_user, instruct, context, presets. */
+/** Full user settings blob (`/api/settings/get`) - includes power_user, instruct, context, presets. */
 export async function getSettings(client: StClient): Promise<Record<string, unknown>> {
   const res = await client.post<Record<string, unknown>>('/api/settings/get', {});
   return res.data ?? {};
 }
 
-/** Load a named lorebook (`/api/worldinfo/get`) — returns the world file `{ entries: {...} }`. */
+/**
+ * Persist a change back to the desktop. **`/api/settings/save` OVERWRITES the whole settings file**
+ * with the POST body (no merge), so we read the current settings, apply `mutate` to only the target
+ * keys, and write the full object back. Returns the saved settings object, or null on failure.
+ */
+export async function saveSettings(
+  client: StClient,
+  mutate: (settings: Record<string, unknown>) => void,
+): Promise<Record<string, unknown> | null> {
+  const res = await client.post<{ settings?: unknown }>('/api/settings/get', {});
+  const raw = res.data?.settings;
+  let settings: Record<string, unknown>;
+  if (typeof raw === 'string') {
+    try {
+      settings = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  } else if (raw && typeof raw === 'object') {
+    settings = raw as Record<string, unknown>;
+  } else {
+    return null;
+  }
+  mutate(settings);
+  const save = await client.post('/api/settings/save', settings);
+  return save.ok ? settings : null;
+}
+
+const withJsonl = (name: string): string => (/\.jsonl$/i.test(name) ? name : `${name}.jsonl`);
+
+/** Rename a saved chat file (`/api/chats/rename`). Names may be passed with or without `.jsonl`. */
+export async function renameChat(
+  client: StClient,
+  params: { avatarUrl: string; originalFile: string; renamedFile: string },
+): Promise<boolean> {
+  const res = await client.post('/api/chats/rename', {
+    avatar_url: params.avatarUrl,
+    original_file: withJsonl(params.originalFile),
+    renamed_file: withJsonl(params.renamedFile),
+    is_group: false,
+  });
+  return res.ok;
+}
+
+/** Delete a saved chat file (`/api/chats/delete`). */
+export async function deleteChat(
+  client: StClient,
+  params: { avatarUrl: string; chatFile: string },
+): Promise<boolean> {
+  const res = await client.post('/api/chats/delete', {
+    avatar_url: params.avatarUrl,
+    chatfile: withJsonl(params.chatFile),
+  });
+  return res.ok;
+}
+
+export interface BackendStatus {
+  /** True when the AI backend (KoboldCpp / cloud provider) answered and is usable. */
+  connected: boolean;
+  /** The loaded model id, when the backend reports one. */
+  model?: string;
+}
+
+/**
+ * Check whether the text-completion backend (KoboldCpp etc.) is reachable, via ST's status endpoint
+ * (which fetches the backend's model list). Mirrors ST's `getStatusTextgen` - 200+`result` = online,
+ * 400 = no connection. Never throws.
+ */
+export async function getTextCompletionStatus(
+  client: StClient,
+  params: { apiServer: string; apiType: string },
+): Promise<BackendStatus> {
+  try {
+    const res = await client.post<{ result?: string }>('/api/backends/text-completions/status', {
+      api_server: params.apiServer,
+      api_type: params.apiType,
+    });
+    if (res.ok && res.data?.result && res.data.result !== 'no_connection') {
+      return { connected: true, model: res.data.result };
+    }
+    return { connected: false };
+  } catch {
+    return { connected: false };
+  }
+}
+
+/** Check whether the chat-completion (cloud) backend is usable - validates the server-side API key. */
+export async function getChatCompletionStatus(client: StClient, source: string): Promise<BackendStatus> {
+  try {
+    const res = await client.post('/api/backends/chat-completions/status', { chat_completion_source: source });
+    return { connected: res.ok };
+  } catch {
+    return { connected: false };
+  }
+}
+
+/** Load a named lorebook (`/api/worldinfo/get`) - returns the world file `{ entries: {...} }`. */
 export async function getWorldInfo(client: StClient, name: string): Promise<unknown> {
   const res = await client.post<unknown>('/api/worldinfo/get', { name });
   return res.data;
@@ -52,7 +148,7 @@ export async function getCharacter(client: StClient, avatarUrl: string): Promise
 }
 
 export interface ChatFileInfo {
-  /** File name without extension — used as the chat id for /api/chats/get. */
+  /** File name without extension - used as the chat id for /api/chats/get. */
   file_id?: string;
   /** File name with the .jsonl extension. */
   file_name: string;

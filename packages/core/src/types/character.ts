@@ -47,7 +47,7 @@ export interface StCharacter {
   scenario: string;
   first_mes: string;
   mes_example: string;
-  /** Avatar filename, e.g. "Seraphina.png" — also the id used by `/api/characters/get`. */
+  /** Avatar filename, e.g. "Seraphina.png" - also the id used by `/api/characters/get`. */
   avatar: string;
   /** Current/most-recent chat file name for this character (no .jsonl extension). */
   chat?: string;

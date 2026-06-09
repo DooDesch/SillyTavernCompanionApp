@@ -5,7 +5,7 @@ import { secrets } from './storage';
  * its host so future scans probe it FIRST, before sweeping the whole /24 (instant reconnect on the
  * common case where the server hasn't moved).
  *
- * Persisted via expo-secure-store (the only store that survives cold starts here — `storage` is
+ * Persisted via expo-secure-store (the only store that survives cold starts here - `storage` is
  * in-memory). Keys use dots, not ":", because secure-store rejects ":" in keys.
  */
 
@@ -18,7 +18,7 @@ export interface HostHint {
 const KEY_ST = 'discovery.lastSt';
 const KEY_KOBOLD = 'discovery.lastKobold';
 
-/** Value format is "ip:port" (the colon is fine in a value — only keys are restricted). */
+/** Value format is "ip:port" (the colon is fine in a value - only keys are restricted). */
 function parseHint(raw: string | null | undefined): HostHint | null {
   if (!raw) return null;
   const idx = raw.lastIndexOf(':');

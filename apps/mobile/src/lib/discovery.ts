@@ -28,7 +28,7 @@ const uniq = <T,>(xs: T[]): T[] => [...new Set(xs)];
 async function localIpv4(): Promise<string> {
   const ip = await Network.getIpAddressAsync();
   if (!ip || ip === '0.0.0.0') {
-    throw new Error('Keine lokale IP-Adresse — bist du mit dem WLAN verbunden?');
+    throw new Error('Keine lokale IP-Adresse - bist du mit dem WLAN verbunden?');
   }
   return ip;
 }
@@ -51,7 +51,7 @@ function usableHint(hint: HostHint | null, selfIp: string): HostHint | null {
  *
  * If a previous run found/connected to an instance on this subnet, its host is probed FIRST (passed
  * as `priorityHosts`), so it surfaces within one RTT at the top of the list while the rest of the /24
- * keeps scanning. The full sweep stays on the default ports — the hint never widens it.
+ * keeps scanning. The full sweep stays on the default ports - the hint never widens it.
  *
  * Assumes a /24 (the common home-router case) since expo-network does not expose the netmask.
  * QR-pairing and manual IP entry cover the cases where the scan can't reach the host (AP isolation,
@@ -91,7 +91,7 @@ export interface KoboldDiscoverOptions {
  * Scan the LAN for a KoboldCpp backend on its default port (5001/5000).
  *
  * Fast path: if a previous detect found one on this subnet (or a manual override URL is given), probe
- * those known hosts FIRST — on their exact last-seen port AND the defaults. If one still answers,
+ * those known hosts FIRST - on their exact last-seen port AND the defaults. If one still answers,
  * return immediately and skip the full sweep, turning the common "box hasn't moved" case from an ~8 s
  * /24 scan into one RTT.
  */
@@ -102,7 +102,7 @@ export async function discoverKobold(options: KoboldDiscoverOptions = {}): Promi
   const hints: HostHint[] = [];
   const stored = usableHint(await getKoboldHint(), ip);
   if (stored) hints.push(stored);
-  // A manual override is an explicit, possibly-routed target — probe it even if off the local /24,
+  // A manual override is an explicit, possibly-routed target - probe it even if off the local /24,
   // but never probe the device itself.
   const preferred = parseHostPort(options.preferUrl);
   if (preferred && preferred.ip !== ip && !hints.some((h) => h.ip === preferred.ip && h.port === preferred.port)) {
@@ -113,7 +113,7 @@ export async function discoverKobold(options: KoboldDiscoverOptions = {}): Promi
   const signal = options.signal;
   const hintIps = uniq(hints.map((h) => h.ip));
 
-  // Phase 1 — probe the known host(s) first, on their exact port(s) plus the defaults. A hit
+  // Phase 1 - probe the known host(s) first, on their exact port(s) plus the defaults. A hit
   // short-circuits the whole sweep.
   if (hints.length > 0) {
     const quick = await scanForKobold({
@@ -133,7 +133,7 @@ export async function discoverKobold(options: KoboldDiscoverOptions = {}): Promi
 
   if (signal?.aborted) return [];
 
-  // Phase 2 — full /24 sweep on the default ports (the hint hosts were just proven unreachable, so
+  // Phase 2 - full /24 sweep on the default ports (the hint hosts were just proven unreachable, so
   // they're dropped from the range to avoid re-probing them).
   const hintSet = new Set(hintIps);
   const hosts = enumerateSubnet24(ip, { excludeSelf: false }).filter((h) => !hintSet.has(h));

@@ -1,7 +1,7 @@
 export * from './types';
 export { matchKeys, parseRegexFromString } from './matchKeys';
-export { checkWorldInfo } from './activate';
-export type { CheckWorldInfoParams } from './activate';
+export { checkWorldInfo, emptyTimedState } from './activate';
+export type { CheckWorldInfoParams, TimedWorldInfoState } from './activate';
 export {
   worldFileToEntries,
   characterBookToEntries,

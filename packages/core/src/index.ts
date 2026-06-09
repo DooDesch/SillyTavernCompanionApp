@@ -1,4 +1,4 @@
-// Public surface of @st/core — the platform-independent SillyTavern engine.
+// Public surface of @st/core - the platform-independent SillyTavern engine.
 // No React Native imports live here; everything is testable under Node.
 
 // Domain types
@@ -26,14 +26,19 @@ export {
   getVersion,
   isReachable,
   getSettings,
+  saveSettings,
+  getTextCompletionStatus,
+  getChatCompletionStatus,
   getAllCharacters,
   getCharacter,
   getCharacterChats,
   getChat,
   saveChat,
+  renameChat,
+  deleteChat,
   getWorldInfo,
 } from './connection/endpoints';
-export type { ChatFileInfo, SaveChatResult } from './connection/endpoints';
+export type { ChatFileInfo, SaveChatResult, BackendStatus } from './connection/endpoints';
 
 // Discovery
 export type { DiscoveredInstance, DiscoveryProvider, DiscoverySource } from './discovery/types';

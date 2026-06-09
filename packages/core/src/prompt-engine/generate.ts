@@ -9,8 +9,9 @@ import {
 } from './buildPrompt';
 import { getCharacterCardFields, type ChatFieldOverrides } from './characterFields';
 import { createTextgenBody, type TextgenSettings } from './textgenBody';
-import { checkWorldInfo } from './worldinfo/activate';
+import { checkWorldInfo, type TimedWorldInfoState } from './worldinfo/activate';
 import type { WorldInfoEntry, WorldInfoSettings } from './worldinfo/types';
+import { EXTENSION_ROLE, roleFromString, type DepthInjection } from './depthInject';
 import {
   buildChatCompletionMessages,
   createChatCompletionBody,
@@ -31,6 +32,7 @@ export function historyFromMessages(messages: readonly StChatMessage[], charName
       mes: currentSwipeText(m),
       isUser: m.is_user,
       isNarrator: m.extra?.['type'] === 'narrator',
+      ...(m.extra?.image ? { image: m.extra.image } : {}),
     });
   }
   return out;
@@ -56,9 +58,13 @@ export interface TextgenGenerateParams {
   stream: boolean;
   chatMetadata?: ChatFieldOverrides;
   /** Active lorebook entries + settings; when present, World Info is scanned and injected. */
-  lorebook?: { entries: WorldInfoEntry[]; settings: WorldInfoSettings };
+  lorebook?: { entries: WorldInfoEntry[]; settings: WorldInfoSettings; timedState?: TimedWorldInfoState };
   /** Override the backend URL (api_server), e.g. from the active connection profile. */
   apiServerOverride?: string;
+  /** Author's Note injected in-chat at a depth. */
+  authorsNote?: DepthInjection;
+  /** Generate the user's next turn instead of the character's. */
+  isImpersonate?: boolean;
   type?: 'normal' | 'continue' | 'regenerate' | 'swipe';
 }
 
@@ -79,7 +85,7 @@ export async function buildTextgenGenerateRequest(
     return typeof r === 'number' ? r : Math.ceil(t.length / 3.5);
   };
 
-  let worldInfo: { before: string; after: string } | undefined;
+  let worldInfo: { before: string; after: string; depth?: DepthInjection[] } | undefined;
   if (params.lorebook && params.lorebook.entries.length > 0) {
     const wi = checkWorldInfo({
       entries: params.lorebook.entries,
@@ -88,8 +94,11 @@ export async function buildTextgenGenerateRequest(
       maxContext: params.maxContext,
       identity: params.identity,
       countTokens: syncCount,
+      personaDescription: params.power.persona_description ?? '',
+      characterDescription: params.character.description ?? '',
+      ...(params.lorebook.timedState ? { timedState: params.lorebook.timedState } : {}),
     });
-    worldInfo = { before: wi.before, after: wi.after };
+    worldInfo = { before: wi.before, after: wi.after, depth: wi.depth };
   }
 
   const built: BuildPromptResult = await buildTextCompletionPrompt({
@@ -101,6 +110,8 @@ export async function buildTextgenGenerateRequest(
     countTokens: params.countTokens,
     ...(params.chatMetadata ? { chatMetadata: params.chatMetadata } : {}),
     ...(worldInfo ? { worldInfo } : {}),
+    ...(params.authorsNote ? { authorsNote: params.authorsNote } : {}),
+    ...(params.isImpersonate ? { isImpersonate: params.isImpersonate } : {}),
     type: params.type === 'regenerate' || params.type === 'swipe' ? 'normal' : params.type,
   });
 
@@ -134,7 +145,9 @@ export interface ChatCompletionGenerateParams {
   countTokens: TokenCounter;
   stream: boolean;
   chatMetadata?: ChatFieldOverrides;
-  lorebook?: { entries: WorldInfoEntry[]; settings: WorldInfoSettings };
+  lorebook?: { entries: WorldInfoEntry[]; settings: WorldInfoSettings; timedState?: TimedWorldInfoState };
+  /** Author's Note injected in-chat at a depth. */
+  authorsNote?: DepthInjection;
   type?: 'normal' | 'continue' | 'regenerate' | 'swipe';
 }
 
@@ -159,6 +172,7 @@ export async function buildChatCompletionGenerateRequest(
 
   let worldInfoBefore: string | undefined;
   let worldInfoAfter: string | undefined;
+  const depthInjections: DepthInjection[] = [];
   if (params.lorebook && params.lorebook.entries.length > 0) {
     const wi = checkWorldInfo({
       entries: params.lorebook.entries,
@@ -167,10 +181,36 @@ export async function buildChatCompletionGenerateRequest(
       maxContext,
       identity: params.identity,
       countTokens: syncCount,
+      personaDescription: fields.persona,
+      characterDescription: fields.description,
+      ...(params.lorebook.timedState ? { timedState: params.lorebook.timedState } : {}),
     });
     worldInfoBefore = wi.before;
     worldInfoAfter = wi.after;
+    depthInjections.push(...wi.depth);
   }
+  if (fields.charDepthPrompt) {
+    const dp = params.character.data?.extensions?.depth_prompt;
+    depthInjections.push({
+      depth: typeof dp?.depth === 'number' ? dp.depth : 4,
+      role: roleFromString(dp?.role),
+      content: fields.charDepthPrompt,
+    });
+  }
+  if (
+    fields.persona &&
+    (params.power.persona_description_position ?? 0) === 2 // PERSONA_AT_DEPTH
+  ) {
+    depthInjections.push({
+      depth:
+        typeof params.power.persona_description_depth === 'number'
+          ? params.power.persona_description_depth
+          : 2,
+      role: params.power.persona_description_role ?? EXTENSION_ROLE.SYSTEM,
+      content: fields.persona,
+    });
+  }
+  if (params.authorsNote?.content) depthInjections.push(params.authorsNote);
 
   const messages = await buildChatCompletionMessages({
     oai: params.oai,
@@ -182,6 +222,7 @@ export async function buildChatCompletionGenerateRequest(
     countTokens: params.countTokens,
     ...(worldInfoBefore ? { worldInfoBefore } : {}),
     ...(worldInfoAfter ? { worldInfoAfter } : {}),
+    ...(depthInjections.length ? { depthInjections } : {}),
   });
 
   const body = createChatCompletionBody(params.oai, messages, {

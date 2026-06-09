@@ -1,7 +1,7 @@
 import type { StCharacter } from '../types/character';
 import type { Identity, PowerUserSubset } from './types';
 import { PROMPT_POSITION } from './types';
-import { getCharacterCardFields, type ChatFieldOverrides } from './characterFields';
+import { getCharacterCardFields, type CharacterCardFields, type ChatFieldOverrides } from './characterFields';
 import { baseChatReplace } from './characterFields';
 import { substituteParams } from './substituteParams';
 import { collapseNewlines } from './substituteParams';
@@ -15,12 +15,16 @@ import {
   type InstructContext,
 } from './instruct';
 import { getStoppingStrings } from './stoppingStrings';
+import { getExampleBlocks } from './examples';
+import { EXTENSION_ROLE, injectAtDepth, roleFromString, type DepthInjection } from './depthInject';
 
 export interface HistoryMessage {
   name: string;
   mes: string;
   isUser: boolean;
   isNarrator?: boolean;
+  /** Attached image (data URL) - only used by the chat-completion (vision) path. */
+  image?: string;
 }
 
 export type TokenCounter = (text: string) => number | Promise<number>;
@@ -33,12 +37,19 @@ export interface BuildPromptInput {
   history: HistoryMessage[];
   /** Max prompt size in tokens (ST `this_max_context`). */
   maxContext: number;
-  /** Token counter — delegate to ST `/api/tokenizers/*` in the app, or an estimate. */
+  /** Token counter - delegate to ST `/api/tokenizers/*` in the app, or an estimate. */
   countTokens: TokenCounter;
   /** Per-chat overrides from the loaded chat's `chat_metadata` (system_prompt/scenario/mes_example). */
   chatMetadata?: ChatFieldOverrides;
-  /** Activated World Info, injected as {{wiBefore}}/{{wiAfter}} in the story string. */
-  worldInfo?: { before: string; after: string };
+  /**
+   * Activated World Info: `before`/`after` go into the story string ({{wiBefore}}/{{wiAfter}});
+   * `depth` entries are injected into the chat at their depth (ST `position: atDepth`).
+   */
+  worldInfo?: { before: string; after: string; depth?: DepthInjection[] };
+  /** Author's Note injected in-chat at a depth (ST AN `position: in-chat`). */
+  authorsNote?: DepthInjection;
+  /** Generate as the user's next turn (instruct uses the input sequence; no example budget change). */
+  isImpersonate?: boolean;
   type?: 'normal' | 'continue' | 'regenerate' | 'swipe' | 'quiet';
 }
 
@@ -50,6 +61,49 @@ export interface BuildPromptResult {
 }
 
 const PERSONA_IN_PROMPT = 0;
+/** persona_description_positions: AT_DEPTH (inject persona into the chat at a depth). */
+const PERSONA_AT_DEPTH = 2;
+
+/** Collect all in-chat @depth injections: WI atDepth, character depth_prompt, persona@depth, AN. */
+function gatherDepthInjections(
+  input: BuildPromptInput,
+  fields: CharacterCardFields,
+  character: StCharacter,
+): DepthInjection[] {
+  const injections: DepthInjection[] = [];
+
+  if (input.worldInfo?.depth) injections.push(...input.worldInfo.depth);
+
+  if (fields.charDepthPrompt) {
+    const dp = character.data?.extensions?.depth_prompt;
+    injections.push({
+      depth: typeof dp?.depth === 'number' ? dp.depth : 4,
+      role: roleFromString(dp?.role),
+      content: fields.charDepthPrompt,
+    });
+  }
+
+  const power = input.power;
+  if (
+    fields.persona &&
+    (power.persona_description_position ?? PERSONA_IN_PROMPT) === PERSONA_AT_DEPTH
+  ) {
+    injections.push({
+      depth: typeof power.persona_description_depth === 'number' ? power.persona_description_depth : 2,
+      role: power.persona_description_role ?? EXTENSION_ROLE.SYSTEM,
+      content: fields.persona,
+    });
+  }
+
+  if (input.authorsNote?.content) injections.push(input.authorsNote);
+
+  // Post-history instructions (character jailbreak / post_history_instructions) go after the chat.
+  if (fields.jailbreak) {
+    injections.push({ depth: 0, role: EXTENSION_ROLE.SYSTEM, content: fields.jailbreak });
+  }
+
+  return injections;
+}
 
 /** Faithful port of SillyTavern's text-completion `Generate()` prompt assembly (single character). */
 export async function buildTextCompletionPrompt(input: BuildPromptInput): Promise<BuildPromptResult> {
@@ -118,13 +172,25 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
   });
 
   // Trailing prompt line that elicits the AI response.
+  const isImpersonate = input.isImpersonate === true;
   const finalLine =
     isInstruct && type !== 'continue'
-      ? formatInstructModePrompt(ctx, { name: identity.char, isImpersonate: false, promptBias: '' })
+      ? formatInstructModePrompt(ctx, {
+          name: isImpersonate ? identity.user : identity.char,
+          isImpersonate,
+          promptBias: '',
+        })
       : '';
 
-  // Budget: fill newest → oldest until the context is full.
-  const baseTokens = await countTokens(`${combinedStoryString}${finalLine}`.replace(/\r/g, ''));
+  // Example dialogues (mes_example): parsed + (instruct-)formatted into block strings.
+  const exampleBlocks =
+    power.strip_examples || power.instruct.skip_examples === true
+      ? []
+      : getExampleBlocks(fields.mesExamples, isInstruct, ctx);
+  const pinnedExamples = power.pin_examples && exampleBlocks.length ? exampleBlocks.join('') : '';
+
+  // Budget: fill newest → oldest until the context is full (pinned examples reserve budget up front).
+  const baseTokens = await countTokens(`${combinedStoryString}${pinnedExamples}${finalLine}`.replace(/\r/g, ''));
   let tokenCount = baseTokens;
   const included: string[] = [];
   for (let i = formatted.length - 1; i >= 0; i--) {
@@ -132,6 +198,20 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
     tokenCount += await countTokens(item.replace(/\r/g, ''));
     if (tokenCount < maxContext) included.unshift(item);
     else break;
+  }
+
+  // Unpinned examples take whatever budget remains after the history (history has priority).
+  let mesExmString = pinnedExamples;
+  if (!power.pin_examples && exampleBlocks.length > 0) {
+    let remaining = maxContext - tokenCount;
+    const acc: string[] = [];
+    for (const block of exampleBlocks) {
+      const t = await countTokens(block.replace(/\r/g, ''));
+      if (t > remaining) break;
+      remaining -= t;
+      acc.push(block);
+    }
+    mesExmString = acc.join('');
   }
 
   // Cohee's trailing-newline rule on the last in-context message.
@@ -142,13 +222,32 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
     }
   }
 
-  // mesSendString = history + final line, with the chat_start separator prepended.
-  let mesSendString = included.join('') + finalLine;
+  // @depth injections (WI atDepth, character depth_prompt, Author's Note, persona@depth).
+  const formatInject = (inj: DepthInjection): string => {
+    const role = inj.role ?? EXTENSION_ROLE.SYSTEM;
+    if (!isInstruct) return inj.content + '\n';
+    return formatInstructModeChat(ctx, {
+      name:
+        role === EXTENSION_ROLE.USER
+          ? identity.user
+          : role === EXTENSION_ROLE.ASSISTANT
+            ? identity.char
+            : 'System',
+      mes: inj.content,
+      isUser: role === EXTENSION_ROLE.USER,
+      isNarrator: role === EXTENSION_ROLE.SYSTEM,
+      forceAvatar: false,
+    });
+  };
+  const injected = injectAtDepth(included, gatherDepthInjections(input, fields, character), formatInject);
+
+  // mesSendString = examples + history (with @depth) + final line, with the chat_start separator.
+  let mesSendString = injected.join('') + finalLine;
   if (power.context.chat_start) {
     mesSendString = substituteParams(power.context.chat_start + '\n', { identity }) + mesSendString;
   }
 
-  let prompt = `${combinedStoryString}${mesSendString}`.replace(/\r/g, '');
+  let prompt = `${combinedStoryString}${mesExmString}${mesSendString}`.replace(/\r/g, '');
   if (collapse) prompt = collapseNewlines(prompt);
 
   const stoppingStrings = getStoppingStrings(ctx, power, {

@@ -36,6 +36,16 @@ export function characterBookToEntries(book: unknown): WorldInfoEntry[] {
       matchWholeWords: ext.match_whole_words ?? null,
       excludeRecursion: ext.exclude_recursion ?? false,
       preventRecursion: ext.prevent_recursion ?? false,
+      group: ext.group ?? '',
+      groupOverride: ext.group_override ?? false,
+      groupWeight: ext.group_weight ?? 100,
+      useGroupScoring: ext.use_group_scoring ?? null,
+      scanDepth: ext.scan_depth ?? null,
+      matchPersonaDescription: ext.match_persona_description ?? false,
+      matchCharacterDescription: ext.match_character_description ?? false,
+      delay: ext.delay ?? 0,
+      sticky: ext.sticky ?? 0,
+      cooldown: ext.cooldown ?? 0,
     };
   });
 }
@@ -52,6 +62,8 @@ export function extractWorldInfoSettings(parsed: Record<string, unknown>): World
     recursive: parsed.world_info_recursive !== false,
     maxRecursionSteps: num(parsed.world_info_max_recursion_steps, 0),
     includeNames: parsed.world_info_include_names !== false,
+    minActivations: num(parsed.world_info_min_activations, 0),
+    maxActivationDepth: num(parsed.world_info_min_activations_depth_max, 0),
   };
 }
 

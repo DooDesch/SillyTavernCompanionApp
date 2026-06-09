@@ -2,14 +2,18 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { probeInstance } from '@st/core';
+import { probeInstance, type DiscoveredInstance } from '@st/core';
 import { fetchLike } from '@/lib/expoFetch';
 import { useConnection } from '@/stores/connectionStore';
+import { useServers } from '@/stores/serversStore';
 
 export default function ManualScreen() {
   const connect = useConnection((s) => s.connect);
+  const upsertServer = useServers((s) => s.upsert);
   const [host, setHost] = useState('192.168.178.');
   const [port, setPort] = useState('8000');
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,15 +21,30 @@ export default function ManualScreen() {
     setBusy(true);
     setError(null);
     try {
-      const instance = await probeInstance(host.trim(), Number(port) || 8000, {
-        fetchImpl: fetchLike,
-        timeoutMs: 2500,
-      });
-      if (!instance) {
-        setError('Keine SillyTavern-Instanz unter dieser Adresse erreichbar.');
-        return;
+      const ip = host.trim();
+      const portN = Number(port) || 8000;
+      const hasAuth = !!user.trim();
+      const basicAuth = hasAuth ? { username: user.trim(), password: pass } : undefined;
+
+      let instance: DiscoveredInstance | null;
+      if (hasAuth) {
+        // Basic-Auth instances 401 the unauthenticated probe - connect directly; first call validates.
+        instance = { baseUrl: `http://${ip}:${portN}`, ip, port: portN, version: '', source: 'manual' };
+      } else {
+        instance = await probeInstance(ip, portN, { fetchImpl: fetchLike, timeoutMs: 2500 });
+        if (!instance) {
+          setError('Keine SillyTavern-Instanz unter dieser Adresse erreichbar.');
+          return;
+        }
+        instance = { ...instance, source: 'manual' };
       }
-      connect({ ...instance, source: 'manual' });
+
+      const baseUrl = instance.baseUrl;
+      await upsertServer(
+        { id: baseUrl, label: `${ip}:${portN}`, baseUrl, ip, port: portN, hasAuth },
+        basicAuth ? { user: basicAuth.username, pass: basicAuth.password } : undefined,
+      );
+      connect(instance, basicAuth);
       router.replace('/(tabs)/chats');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Verbindung fehlgeschlagen');
@@ -38,9 +57,7 @@ export default function ManualScreen() {
     <SafeAreaView className="flex-1 bg-bg" edges={['bottom']}>
       <Stack.Screen options={{ title: 'Manuell koppeln', headerShown: true }} />
       <View className="flex-1 px-5 pt-6">
-        <Text className="text-muted">
-          IP-Adresse und Port deiner SillyTavern-Instanz eingeben. (QR-Scan folgt.)
-        </Text>
+        <Text className="text-muted">IP-Adresse und Port deiner SillyTavern-Instanz eingeben.</Text>
 
         <Text className="mt-6 mb-1 text-sm text-muted">IP-Adresse</Text>
         <TextInput
@@ -59,6 +76,28 @@ export default function ManualScreen() {
           onChangeText={setPort}
           keyboardType="number-pad"
           placeholder="8000"
+          placeholderTextColor="#5a5a68"
+          className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
+        />
+
+        <Text className="mt-4 mb-1 text-sm text-muted">Benutzername (optional, bei Basic-Auth)</Text>
+        <TextInput
+          value={user}
+          onChangeText={setUser}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="-"
+          placeholderTextColor="#5a5a68"
+          className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
+        />
+
+        <Text className="mt-4 mb-1 text-sm text-muted">Passwort (optional)</Text>
+        <TextInput
+          value={pass}
+          onChangeText={setPass}
+          secureTextEntry
+          autoCapitalize="none"
+          placeholder="-"
           placeholderTextColor="#5a5a68"
           className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
         />

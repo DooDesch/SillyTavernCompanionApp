@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
  * Lightweight in-memory key-value store for non-secret data.
  *
  * (We previously used react-native-mmkv v4, but its Nitro module failed to initialise at runtime on
- * the target device — `new MMKV()` threw at module load. An in-memory store is dependency-free and
+ * the target device - `new MMKV()` threw at module load. An in-memory store is dependency-free and
  * sufficient for v1; persistence across cold starts can be reintroduced later via expo-sqlite/MMKV
  * once verified on-device.)
  */

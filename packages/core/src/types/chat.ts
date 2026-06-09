@@ -27,6 +27,8 @@ export interface StMessageExtra {
   model?: string;
   reasoning?: string;
   reasoning_signature?: string;
+  /** Attached image (data URL or server path) for multimodal/vision chat-completion. */
+  image?: string;
   [key: string]: unknown;
 }
 
@@ -43,6 +45,11 @@ export interface StChatMessage {
   gen_started?: string;
   gen_finished?: string;
   extra?: StMessageExtra;
+  /**
+   * Transient client-side stable id (for React list keys after delete/insert). Not part of the ST
+   * wire format - stripped by `chatToArray`/`stringifyChatJsonl` before a message is sent/persisted.
+   */
+  _cid?: string;
   [key: string]: unknown;
 }
 

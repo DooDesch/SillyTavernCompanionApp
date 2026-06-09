@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkWorldInfo } from './activate';
+import { checkWorldInfo, emptyTimedState } from './activate';
 import { matchKeys } from './matchKeys';
 import {
   DEFAULT_WORLD_INFO_SETTINGS,
@@ -56,6 +56,99 @@ describe('checkWorldInfo', () => {
       countTokens: count,
     });
     expect(wi.before).toBe('');
+  });
+
+  it('keeps only one entry per inclusion group', () => {
+    const wi = checkWorldInfo({
+      entries: [
+        entry({ key: ['x'], content: 'A', group: 'g', groupWeight: 100, order: 200 }),
+        entry({ key: ['x'], content: 'B', group: 'g', groupWeight: 0, order: 100 }),
+      ],
+      chatMessages: ['x'],
+      settings,
+      maxContext: 8000,
+      identity,
+      countTokens: count,
+      random: () => 0, // weighted pick lands on the first member
+    });
+    expect(wi.before).toBe('A');
+  });
+
+  it('groupOverride entries bypass the one-per-group limit', () => {
+    const wi = checkWorldInfo({
+      entries: [
+        entry({ key: ['x'], content: 'A', group: 'g', order: 200 }),
+        entry({ key: ['x'], content: 'B', group: 'g', groupOverride: true, order: 100 }),
+      ],
+      chatMessages: ['x'],
+      settings,
+      maxContext: 8000,
+      identity,
+      countTokens: count,
+      random: () => 0,
+    });
+    expect(wi.before).toContain('A');
+    expect(wi.before).toContain('B');
+  });
+
+  it('respects the delay timed effect (needs enough chat history)', () => {
+    const base = {
+      entries: [entry({ key: ['x'], content: 'LATE', delay: 3 })],
+      settings,
+      maxContext: 8000,
+      identity,
+      countTokens: count,
+    };
+    expect(checkWorldInfo({ ...base, chatMessages: ['x'] }).before).toBe('');
+    expect(checkWorldInfo({ ...base, chatMessages: ['x', 'y', 'x'] }).before).toBe('LATE');
+  });
+
+  it('widens the scan to meet minActivations', () => {
+    const wi = checkWorldInfo({
+      entries: [
+        entry({ key: ['recent'], content: 'R' }),
+        entry({ key: ['old'], content: 'O' }),
+      ],
+      // "old" is outside the default depth-1 scan; min-activations widens until it is found.
+      chatMessages: ['mentions old', 'a', 'b', 'c', 'mentions recent'],
+      settings: { ...settings, depth: 1, minActivations: 2 },
+      maxContext: 8000,
+      identity,
+      countTokens: count,
+    });
+    expect(wi.before).toContain('R');
+    expect(wi.before).toContain('O');
+  });
+
+  it('sticky keeps an entry active after its keyword disappears', () => {
+    const timed = emptyTimedState();
+    const e = entry({ uid: 1, key: ['dragon'], content: 'DRAGON', sticky: 2 });
+    const opts = { settings: { ...settings, depth: 1 }, maxContext: 8000, identity, countTokens: count, timedState: timed };
+    expect(checkWorldInfo({ ...opts, entries: [e], chatMessages: ['a dragon!'] }).before).toBe('DRAGON');
+    // Next turn: no keyword, but sticky still holds it active.
+    expect(checkWorldInfo({ ...opts, entries: [e], chatMessages: ['a dragon!', 'calm now'] }).before).toBe('DRAGON');
+  });
+
+  it('cooldown blocks reactivation for N turns', () => {
+    const timed = emptyTimedState();
+    const e = entry({ uid: 2, key: ['x'], content: 'X', cooldown: 2 });
+    const opts = { settings: { ...settings, depth: 1 }, maxContext: 8000, identity, countTokens: count, timedState: timed };
+    expect(checkWorldInfo({ ...opts, entries: [e], chatMessages: ['x'] }).before).toBe('X');
+    // Keyword present again, but the entry is on cooldown.
+    expect(checkWorldInfo({ ...opts, entries: [e], chatMessages: ['x', 'x'] }).before).toBe('');
+  });
+
+  it('scans the persona description when matchPersonaDescription is set', () => {
+    const wi = checkWorldInfo({
+      entries: [entry({ key: ['knight'], content: 'KNIGHT', matchPersonaDescription: true })],
+      chatMessages: ['hello'],
+      settings: { ...settings, depth: 1 },
+      maxContext: 8000,
+      identity,
+      countTokens: count,
+      personaDescription: 'Dennis is a brave knight.',
+    });
+    expect(wi.before).toBe('KNIGHT');
   });
 
   it('always activates constant entries (after position)', () => {

@@ -2,14 +2,21 @@ import type { CharacterCardFields } from '../characterFields';
 import type { HistoryMessage, TokenCounter } from '../buildPrompt';
 import type { Identity } from '../types';
 import { substituteParams } from '../substituteParams';
+import { parseExampleIntoIndividual, parseMesExamples } from '../examples';
+import { EXTENSION_ROLE, type DepthInjection } from '../depthInject';
 import {
   DEFAULT_PROMPT_ORDER,
   type ChatCompletionMessage,
+  type ContentPart,
   type OaiPrompt,
   type OaiSettings,
 } from './types';
 
 const DEFAULT_CHARACTER_ID = 100000;
+
+/** character_names_behavior: NONE=-1, DEFAULT=0, COMPLETION=1 (name field), CONTENT=2 (prefix). */
+const NAMES_COMPLETION = 1;
+const NAMES_CONTENT = 2;
 
 export interface BuildMessagesInput {
   oai: OaiSettings;
@@ -17,17 +24,33 @@ export interface BuildMessagesInput {
   history: HistoryMessage[];
   worldInfoBefore?: string;
   worldInfoAfter?: string;
+  /** In-chat @depth injections (WI atDepth, character depth_prompt, Author's Note, persona@depth). */
+  depthInjections?: DepthInjection[];
   identity: Identity;
   maxContext: number;
   maxTokens: number;
   countTokens: TokenCounter;
 }
 
+const ccRole = (role: number): ChatCompletionMessage['role'] =>
+  role === EXTENSION_ROLE.USER ? 'user' : role === EXTENSION_ROLE.ASSISTANT ? 'assistant' : 'system';
+
+/** Sanitize a display name into an OpenAI `name` field (allowed: a-z A-Z 0-9 _ -). */
+const sanitizeName = (name: string): string => name.replace(/[^a-zA-Z0-9_-]/g, '_');
+
 function squashSystemMessages(messages: ChatCompletionMessage[]): ChatCompletionMessage[] {
   const out: ChatCompletionMessage[] = [];
   for (const m of messages) {
     const prev = out[out.length - 1];
-    if (m.role === 'system' && !m.name && prev && prev.role === 'system' && !prev.name) {
+    if (
+      m.role === 'system' &&
+      !m.name &&
+      prev &&
+      prev.role === 'system' &&
+      !prev.name &&
+      typeof prev.content === 'string' &&
+      typeof m.content === 'string'
+    ) {
       prev.content = `${prev.content}\n${m.content}`;
     } else {
       out.push({ ...m });
@@ -93,7 +116,7 @@ export async function buildChatCompletionMessages(input: BuildMessagesInput): Pr
         return c ? { role: 'system', content: c } : null;
       }
       case 'dialogueExamples':
-        return null; // deferred (parity gap, like the text-completion path)
+        return null; // handled specially below (produces multiple messages)
       default: {
         // Custom prompt entry
         const p = promptsById.get(identifier);
@@ -103,6 +126,25 @@ export async function buildChatCompletionMessages(input: BuildMessagesInput): Pr
     }
   };
 
+  // Example dialogues → user/assistant message pairs, each block prefixed by the new-example marker.
+  const exampleMessages: ChatCompletionMessage[] = [];
+  {
+    const blocks = parseMesExamples(fields.mesExamples, false, '', true);
+    const exSep = subst(oai.new_example_chat_prompt || '');
+    for (const block of blocks) {
+      const turns = parseExampleIntoIndividual(block, identity.user, identity.char);
+      if (turns.length === 0) continue;
+      if (exSep) exampleMessages.push({ role: 'system', content: exSep, name: 'example_assistant' });
+      for (const t of turns) {
+        exampleMessages.push({
+          role: t.name === 'example_user' ? 'user' : 'assistant',
+          content: t.content,
+          name: t.name,
+        });
+      }
+    }
+  }
+
   const enabled = order.filter((o) => o.enabled);
   const historyIdx = enabled.findIndex((o) => o.identifier === 'chatHistory');
 
@@ -110,23 +152,60 @@ export async function buildChatCompletionMessages(input: BuildMessagesInput): Pr
   const post: ChatCompletionMessage[] = [];
   enabled.forEach((o, i) => {
     if (o.identifier === 'chatHistory') return;
+    const target = historyIdx === -1 || i < historyIdx ? pre : post;
+    if (o.identifier === 'dialogueExamples') {
+      target.push(...exampleMessages);
+      return;
+    }
     const msg = resolve(o.identifier);
     if (!msg) return;
-    (historyIdx === -1 || i < historyIdx ? pre : post).push(msg);
+    target.push(msg);
   });
 
   // Budget the chat history (newest-first) with whatever remains after the system prompts.
   const budget = (input.maxContext || 8192) - (input.maxTokens || 512);
   let used = 0;
-  for (const m of [...pre, ...post]) used += await countTokens(m.content);
+  for (const m of [...pre, ...post]) used += await countTokens(typeof m.content === 'string' ? m.content : '');
 
+  const namesBehavior = oai.names_behavior ?? 0;
   const historyMessages: ChatCompletionMessage[] = [];
   for (let i = history.length - 1; i >= 0; i--) {
     const m = history[i]!;
     const tokens = await countTokens(m.mes);
     if (used + tokens > budget && historyMessages.length > 0) break;
     used += tokens;
-    historyMessages.unshift({ role: m.isUser ? 'user' : 'assistant', content: m.mes });
+    const name = m.name || (m.isUser ? identity.user : identity.char);
+    const text = namesBehavior === NAMES_CONTENT ? `${name}: ${m.mes}` : m.mes;
+    const content: string | ContentPart[] =
+      m.image && m.isUser
+        ? [
+            { type: 'text', text },
+            { type: 'image_url', image_url: { url: m.image } },
+          ]
+        : text;
+    const msg: ChatCompletionMessage = { role: m.isUser ? 'user' : 'assistant', content };
+    if (namesBehavior === NAMES_COMPLETION) msg.name = sanitizeName(name);
+    historyMessages.unshift(msg);
+  }
+
+  // In-chat @depth injections, spliced into the history at `length - depth` (shallow→deep).
+  const injections = (input.depthInjections ?? []).filter((d) => d.content && d.content.length > 0);
+  if (injections.length > 0) {
+    const origLen = historyMessages.length;
+    const byDepth = new Map<number, DepthInjection[]>();
+    for (const inj of injections) {
+      const d = Math.max(0, inj.depth);
+      const arr = byDepth.get(d) ?? [];
+      arr.push(inj);
+      byDepth.set(d, arr);
+    }
+    for (const depth of [...byDepth.keys()].sort((a, b) => a - b)) {
+      const segs = byDepth
+        .get(depth)!
+        .map((inj) => ({ role: ccRole(inj.role ?? EXTENSION_ROLE.SYSTEM), content: subst(inj.content) }));
+      const idx = Math.max(0, Math.min(historyMessages.length, origLen - depth));
+      historyMessages.splice(idx, 0, ...segs);
+    }
   }
 
   const messages = [...pre, ...historyMessages, ...post];

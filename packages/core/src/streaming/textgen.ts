@@ -10,7 +10,7 @@ export interface TextgenDelta {
   text: string;
   /** Incremental reasoning/thinking text, if the backend streams it separately. */
   thinking?: string;
-  /** Choice index — > 0 indicates an alternative swipe stream. */
+  /** Choice index - > 0 indicates an alternative swipe stream. */
   index: number;
   /** True only for the terminal `[DONE]` sentinel. */
   done: boolean;

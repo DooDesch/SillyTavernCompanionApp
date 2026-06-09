@@ -36,6 +36,19 @@ export interface WorldInfoEntry {
   matchWholeWords?: boolean | null;
   excludeRecursion?: boolean;
   preventRecursion?: boolean;
+  // Inclusion groups: at most one entry per non-empty group is injected (unless groupOverride).
+  group?: string;
+  groupOverride?: boolean;
+  groupWeight?: number;
+  useGroupScoring?: boolean | null;
+  // Scan sources / scope.
+  scanDepth?: number | null;
+  matchPersonaDescription?: boolean;
+  matchCharacterDescription?: boolean;
+  // Timed effects. `delay` is stateless (chat length); sticky/cooldown need persistent state.
+  delay?: number;
+  sticky?: number;
+  cooldown?: number;
 }
 
 export interface WorldInfoSettings {
@@ -50,6 +63,10 @@ export interface WorldInfoSettings {
   recursive: boolean;
   maxRecursionSteps: number;
   includeNames: boolean;
+  /** Minimum number of entries to activate; the scan widens until met (world_info_min_activations). */
+  minActivations?: number;
+  /** Cap on how deep the min-activations widening may scan (0 = unbounded). */
+  maxActivationDepth?: number;
 }
 
 export const DEFAULT_WORLD_INFO_SETTINGS: WorldInfoSettings = {
@@ -61,6 +78,8 @@ export const DEFAULT_WORLD_INFO_SETTINGS: WorldInfoSettings = {
   recursive: true,
   maxRecursionSteps: 0,
   includeNames: true,
+  minActivations: 0,
+  maxActivationDepth: 0,
 };
 
 /** Result of activation: content grouped by insertion position. */

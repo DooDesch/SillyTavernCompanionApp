@@ -1,10 +1,10 @@
 /**
- * Macro substitution — a faithful, Hermes-safe port of the legacy `evaluateMacros` pipeline
+ * Macro substitution - a faithful, Hermes-safe port of the legacy `evaluateMacros` pipeline
  * (public/scripts/macros.js). Order is preserved: pre-env built-ins → env variables → post-env
  * built-ins. Unknown `{{...}}` are left intact, exactly like SillyTavern.
  *
  * DOM/global-coupled macros from ST ({{input}}, {{lastMessage}}, token-budget macros) are omitted;
- * the engine injects what it needs via `env`. Randomness uses Math.random (app runtime) — tests
+ * the engine injects what it needs via `env`. Randomness uses Math.random (app runtime) - tests
  * avoid asserting on random/time output.
  */
 

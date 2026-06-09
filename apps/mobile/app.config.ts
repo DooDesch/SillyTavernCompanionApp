@@ -30,12 +30,17 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'de.tiretask.stcompanion',
-    edgeToEdgeEnabled: true,
     permissions: ['android.permission.INTERNET'],
   },
   plugins: [
     'expo-router',
     'expo-secure-store',
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Erlaubt das Anhängen von Bildern an Nachrichten (für Vision-Modelle).',
+      },
+    ],
     [
       'expo-build-properties',
       {

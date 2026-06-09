@@ -4,7 +4,7 @@ import type { OaiSettings } from './chatcompletion/types';
 
 /**
  * Engine configuration extracted from the parsed `/api/settings/get` settings object
- * (the `settings` field of that response is a JSON string — parse it first).
+ * (the `settings` field of that response is a JSON string - parse it first).
  */
 export interface EngineConfig {
   power: PowerUserSubset;

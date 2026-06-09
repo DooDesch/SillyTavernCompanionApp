@@ -57,7 +57,7 @@ export async function probeInstance(
     });
     return await Promise.race([probe(), timeout]);
   } catch {
-    // Aborted, refused, or unparseable — not a reachable ST instance.
+    // Aborted, refused, or unparseable - not a reachable ST instance.
     return null;
   } finally {
     if (timer) clearTimeout(timer);

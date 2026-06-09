@@ -56,7 +56,7 @@ export interface TextgenBodyOptions {
   stoppingStrings: string[];
   stream: boolean;
   isContinue?: boolean;
-  /** Override the backend URL (api_server) — e.g. from the active connection profile. */
+  /** Override the backend URL (api_server) - e.g. from the active connection profile. */
   apiServerOverride?: string;
 }
 

@@ -60,9 +60,14 @@ export interface PowerUserSubset {
   sysprompt: SyspromptSettings;
   persona_description?: string;
   persona_description_position?: number;
+  /** Persona @depth injection params (used when persona_description_position is the at-depth value). */
+  persona_description_depth?: number;
+  persona_description_role?: number;
   prefer_character_prompt?: boolean;
   prefer_character_jailbreak?: boolean;
   collapse_newlines?: boolean;
+  /** SillyTavern tokenizer id (`tokenizers` enum) - selects the /api/tokenizers/* count endpoint. */
+  tokenizer?: number;
   token_padding?: number;
   single_line?: boolean;
   strip_examples?: boolean;

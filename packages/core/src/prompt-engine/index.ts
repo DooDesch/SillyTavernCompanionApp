@@ -39,6 +39,23 @@ export * from './chatcompletion/index';
 export { extractEngineConfig, estimateTokens, extractPersonas, applyPersonaToConfig } from './settings';
 export type { EngineConfig, Persona, PersonaList } from './settings';
 
+// Tokenizer endpoint resolution (faithful token budgeting via the ST server tokenizers)
+export { resolveTokenizer, tokenizerSlugFromModel, TOKENIZER } from './tokenizer';
+export type { ResolvedTokenizer } from './tokenizer';
+
+// Example dialogues (mes_example)
+export {
+  parseMesExamples,
+  parseExampleIntoIndividual,
+  formatInstructModeExamples,
+  getExampleBlocks,
+} from './examples';
+export type { ExampleMessage } from './examples';
+
+// In-chat @depth injection (WI atDepth, Author's Note, character depth_prompt, persona@depth)
+export { injectAtDepth, roleFromString, EXTENSION_ROLE } from './depthInject';
+export type { DepthInjection } from './depthInject';
+
 // Connection profiles
 export { extractConnectionProfiles, applyProfileToConfig } from './profiles';
 export type { ConnectionProfile, ConnectionProfiles } from './profiles';
