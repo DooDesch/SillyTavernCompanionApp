@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Stack, router, Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import type { DiscoveredInstance } from '@st/core';
 import { discoverInstances } from '@/lib/discovery';
 import { useConnection } from '@/stores/connectionStore';
 
 export default function DiscoveryScreen() {
+  const { t } = useTranslation();
   const connect = useConnection((s) => s.connect);
   const [scanning, setScanning] = useState(false);
   const [found, setFound] = useState<DiscoveredInstance[]>([]);
@@ -29,7 +31,7 @@ export default function DiscoveryScreen() {
           ),
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Scan fehlgeschlagen');
+      setError(e instanceof Error ? e.message : t('onboarding.scanFailed'));
     } finally {
       if (abortRef.current === ac) setScanning(false);
     }
@@ -49,16 +51,16 @@ export default function DiscoveryScreen() {
     <SafeAreaView className="flex-1 bg-bg" edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-1 px-5 pt-6">
-        <Text className="text-2xl font-bold text-white">SillyTavern finden</Text>
+        <Text className="text-2xl font-bold text-white">{t('onboarding.findTitle')}</Text>
         <Text className="mt-1 text-muted">
-          Suche im WLAN nach einer laufenden Instanz. Dein Handy muss im selben Netz wie der PC sein.
+          {t('onboarding.findDescription')}
         </Text>
 
         <View className="mt-6 flex-1">
           {found.length === 0 && scanning && (
             <View className="flex-row items-center gap-3">
               <ActivityIndicator color="#7c5cff" />
-              <Text className="text-muted">Netzwerk wird gescannt…</Text>
+              <Text className="text-muted">{t('onboarding.scanning')}</Text>
             </View>
           )}
 
@@ -78,7 +80,7 @@ export default function DiscoveryScreen() {
           {error && <Text className="mt-2 text-red-400">{error}</Text>}
 
           {!scanning && found.length === 0 && !error && (
-            <Text className="text-muted">Keine Instanz gefunden. Per QR oder IP koppeln.</Text>
+            <Text className="text-muted">{t('onboarding.noInstanceFound')}</Text>
           )}
         </View>
 
@@ -89,13 +91,13 @@ export default function DiscoveryScreen() {
             className="rounded-2xl bg-primary px-4 py-3 active:opacity-80 disabled:opacity-50"
           >
             <Text className="text-center text-base font-semibold text-white">
-              {scanning ? 'Scanne…' : 'Erneut scannen'}
+              {scanning ? t('onboarding.scanningButton') : t('onboarding.scanAgain')}
             </Text>
           </Pressable>
           <Link href="/onboarding/manual" asChild>
             <Pressable className="rounded-2xl border border-border px-4 py-3 active:bg-surface">
               <Text className="text-center text-base font-semibold text-white">
-                Manuell per IP / QR koppeln
+                {t('onboarding.manualPair')}
               </Text>
             </Pressable>
           </Link>

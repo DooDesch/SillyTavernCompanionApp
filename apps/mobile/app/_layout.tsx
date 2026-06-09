@@ -1,4 +1,5 @@
 import '../global.css';
+import '@/i18n';
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +12,7 @@ import { queryClient } from '@/lib/queryClient';
 import { fileStorage } from '@/lib/persist';
 import { useProfiles } from '@/stores/profilesStore';
 import { useServers } from '@/stores/serversStore';
+import { useLocale } from '@/stores/localeStore';
 
 const persister = createAsyncStoragePersister({ storage: fileStorage, throttleTime: 1000 });
 
@@ -18,6 +20,7 @@ export default function RootLayout() {
   useEffect(() => {
     void useProfiles.getState().hydrate();
     void useServers.getState().hydrate();
+    void useLocale.getState().hydrate();
   }, []);
 
   return (

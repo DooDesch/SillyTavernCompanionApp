@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConnection } from '@/stores/connectionStore';
 import { useProfiles } from '@/stores/profilesStore';
 import { useServers } from '@/stores/serversStore';
+import { useLocale, type LanguagePref } from '@/stores/localeStore';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
 import { useEngineConfig } from '@/hooks/useEngineConfig';
 import { useBackendStatus } from '@/hooks/useBackendStatus';
@@ -45,6 +47,7 @@ function Row({
 }
 
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const instance = useConnection((s) => s.instance);
   const disconnect = useConnection((s) => s.disconnect);
   const client = useConnection((s) => s.client);
@@ -78,8 +81,18 @@ export default function SettingsScreen() {
   } = useConnectionProfiles();
   const { engine } = useEngineConfig('');
   const backend = useBackendStatus(engine);
+  const langPref = useLocale((s) => s.pref);
+  const setLanguage = useLocale((s) => s.setLanguage);
   const [scanning, setScanning] = useState(false);
-  const [sheet, setSheet] = useState<'profile' | 'persona' | null>(null);
+  const [sheet, setSheet] = useState<'profile' | 'persona' | 'language' | null>(null);
+
+  const languageOptions: PickerOption[] = [
+    { id: 'system', label: t('settings.languageSystem') },
+    { id: 'de', label: 'Deutsch' },
+    { id: 'en', label: 'English' },
+  ];
+  const languageLabel =
+    langPref === 'de' ? 'Deutsch' : langPref === 'en' ? 'English' : t('settings.languageSystem');
 
   const onPickProfile = (id: string) => {
     setActiveProfile(id);
@@ -117,16 +130,18 @@ export default function SettingsScreen() {
     try {
       const found = await discoverKobold(koboldOverride ? { preferUrl: koboldOverride } : {});
       if (found.length === 0) {
-        Alert.alert('KoboldCpp', 'Kein KoboldCpp im Netzwerk gefunden (Port 5001).');
+        Alert.alert('KoboldCpp', t('settings.koboldNotFound'));
         return;
       }
       setKoboldOverride(found[0]!.baseUrl);
       Alert.alert(
-        'KoboldCpp gefunden',
-        found.length === 1 ? found[0]!.baseUrl : `${found.length} gefunden, übernommen: ${found[0]!.baseUrl}`,
+        t('settings.koboldFound'),
+        found.length === 1
+          ? found[0]!.baseUrl
+          : t('settings.koboldFoundMultiple', { count: found.length, url: found[0]!.baseUrl }),
       );
     } catch (e) {
-      Alert.alert('Fehler', e instanceof Error ? e.message : 'Scan fehlgeschlagen');
+      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('settings.scanFailed'));
     } finally {
       setScanning(false);
     }
@@ -134,9 +149,9 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ padding: 20 }}>
-      <Text className="mb-2 text-sm uppercase tracking-wide text-muted">SillyTavern</Text>
+      <Text className="mb-2 text-sm uppercase tracking-wide text-muted">{t('settings.sillyTavern')}</Text>
       <View className="rounded-2xl border border-border bg-surface px-4 py-3">
-        <Text className="text-base font-semibold text-white">{instance?.baseUrl ?? 'Nicht verbunden'}</Text>
+        <Text className="text-base font-semibold text-white">{instance?.baseUrl ?? t('common.notConnected')}</Text>
         {!!instance?.version && <Text className="mt-0.5 text-sm text-muted">SillyTavern {instance.version}</Text>}
       </View>
       <Pressable
@@ -146,12 +161,12 @@ export default function SettingsScreen() {
         }}
         className="mt-3 rounded-2xl border border-border px-4 py-3 active:bg-surface"
       >
-        <Text className="text-center text-base font-semibold text-red-400">Trennen</Text>
+        <Text className="text-center text-base font-semibold text-red-400">{t('settings.disconnect')}</Text>
       </Pressable>
 
       {servers.length > 0 && (
         <>
-          <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">Gespeicherte Server</Text>
+          <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.savedServers')}</Text>
           {servers.map((srv) => {
             const active = srv.baseUrl === instance?.baseUrl;
             return (
@@ -164,13 +179,13 @@ export default function SettingsScreen() {
                     {srv.label}
                     {srv.hasAuth ? '  🔒' : ''}
                   </Text>
-                  <Text className="mt-0.5 text-xs text-muted">{active ? 'Verbunden' : 'Tippen zum Verbinden'}</Text>
+                  <Text className="mt-0.5 text-xs text-muted">{active ? t('common.connected') : t('settings.tapToConnect')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() =>
-                    Alert.alert('Entfernen', `„${srv.label}" entfernen?`, [
-                      { text: 'Abbrechen', style: 'cancel' },
-                      { text: 'Entfernen', style: 'destructive', onPress: () => void removeServer(srv.id) },
+                    Alert.alert(t('settings.removeServer'), t('settings.removeServerConfirm', { label: srv.label }), [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      { text: t('settings.removeServer'), style: 'destructive', onPress: () => void removeServer(srv.id) },
                     ])
                   }
                   className="h-8 w-8 items-center justify-center active:opacity-60"
@@ -183,27 +198,27 @@ export default function SettingsScreen() {
         </>
       )}
 
-      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">Aktive Konfiguration</Text>
+      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.activeConfig')}</Text>
       <Row
-        label="Verbindungsprofil (Backend)"
-        value={activeProfile?.name ?? (profiles.length ? 'Auswählen…' : 'Keine Profile')}
+        label={t('settings.connectionProfile')}
+        value={activeProfile?.name ?? (profiles.length ? t('settings.selectEllipsis') : t('settings.noProfiles'))}
         sub={
           activeProfile
-            ? `${activeProfile.mode === 'cc' ? 'Chat-Completion' : 'Text-Completion'}${activeProfile.api ? ' · ' + activeProfile.api : ''}`
+            ? `${activeProfile.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion')}${activeProfile.api ? ' · ' + activeProfile.api : ''}`
             : undefined
         }
         onPress={profiles.length ? () => setSheet('profile') : undefined}
       />
       <Row
-        label="Persona"
-        value={activePersona?.name ?? (personas.length ? 'Auswählen…' : 'Keine Personas')}
+        label={t('settings.persona')}
+        value={activePersona?.name ?? (personas.length ? t('settings.selectEllipsis') : t('settings.noPersonas'))}
         onPress={personas.length ? () => setSheet('persona') : undefined}
       />
       <View className="mt-1 flex-row items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3">
         <View className="flex-1 pr-3">
-          <Text className="text-base font-semibold text-white">Mit PC synchronisieren</Text>
+          <Text className="text-base font-semibold text-white">{t('settings.syncToPc')}</Text>
           <Text className="mt-0.5 text-xs text-muted">
-            Persona-/Profil-/Sampler-Änderungen am Handy zurück an SillyTavern schreiben.
+            {t('settings.syncToPcSubtitle')}
           </Text>
         </View>
         <Switch
@@ -214,7 +229,7 @@ export default function SettingsScreen() {
         />
       </View>
 
-      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">KI-Backend</Text>
+      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.aiBackend')}</Text>
       <View className="rounded-2xl border border-border bg-surface px-4 py-3">
         <View className="flex-row items-center gap-2">
           <View
@@ -224,15 +239,15 @@ export default function SettingsScreen() {
           />
           <Text className="flex-1 text-base font-semibold text-white" numberOfLines={1}>
             {backend.isLoading
-              ? 'Prüfe…'
+              ? t('settings.checking')
               : backend.data?.connected
-                ? backend.data.model || 'Verbunden'
-                : 'Nicht verbunden'}
+                ? backend.data.model || t('common.connected')
+                : t('common.notConnected')}
           </Text>
         </View>
         <Text className="mt-1 text-xs text-muted" numberOfLines={1}>
-          {engine?.mode === 'cc' ? 'Chat-Completion' : 'Text-Completion'} ·{' '}
-          {koboldOverride ?? 'Standard (über SillyTavern)'}
+          {engine?.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion')} ·{' '}
+          {koboldOverride ?? t('settings.defaultViaSillyTavern')}
         </Text>
       </View>
       <View className="mt-3 flex-row gap-2">
@@ -244,7 +259,7 @@ export default function SettingsScreen() {
           {scanning ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text className="text-center font-semibold text-white">Automatisch erkennen</Text>
+            <Text className="text-center font-semibold text-white">{t('settings.autoDetect')}</Text>
           )}
         </Pressable>
         {!!koboldOverride && (
@@ -252,19 +267,29 @@ export default function SettingsScreen() {
             onPress={() => setKoboldOverride(undefined)}
             className="rounded-2xl border border-border px-4 py-3 active:bg-surface"
           >
-            <Text className="font-semibold text-muted">Zurücksetzen</Text>
+            <Text className="font-semibold text-muted">{t('settings.reset')}</Text>
           </Pressable>
         )}
       </View>
 
+      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.language')}</Text>
+      <Row label={t('settings.language')} value={languageLabel} onPress={() => setSheet('language')} />
+
       <Text className="mt-8 text-xs text-muted">
-        Profile wenden Instruct/Context/Sysprompt/Sampler + Backend-URL an. Roadmap: Cloud-Backends
-        (Chat-Completion), Preset-Editor.
+        {t('settings.roadmapNote')}
       </Text>
 
       <PickerSheet
+        visible={sheet === 'language'}
+        title={t('settings.language')}
+        options={languageOptions}
+        activeId={langPref}
+        onSelect={(id) => setLanguage(id as LanguagePref)}
+        onClose={() => setSheet(null)}
+      />
+      <PickerSheet
         visible={sheet === 'profile'}
-        title="Verbindungsprofil wählen"
+        title={t('settings.chooseProfile')}
         options={profileOptions}
         activeId={activeId}
         onSelect={onPickProfile}
@@ -272,7 +297,7 @@ export default function SettingsScreen() {
       />
       <PickerSheet
         visible={sheet === 'persona'}
-        title="Persona wählen"
+        title={t('settings.choosePersona')}
         options={personaOptions}
         activeId={activePersonaAvatar}
         onSelect={onPickPersona}

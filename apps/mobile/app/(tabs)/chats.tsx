@@ -3,7 +3,9 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getAllCharacters, getCharacterChats, type StCharacter } from '@st/core';
+import i18n from '@/i18n';
 import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
 
@@ -11,17 +13,18 @@ function relativeTime(ms?: number): string {
   if (!ms || !Number.isFinite(ms)) return '';
   const diff = Date.now() - ms;
   const min = Math.floor(diff / 60_000);
-  if (min < 1) return 'gerade eben';
-  if (min < 60) return `vor ${min} Min`;
+  if (min < 1) return i18n.t('chats.justNow');
+  if (min < 60) return i18n.t('chats.minutesAgo', { n: min });
   const hrs = Math.floor(min / 60);
-  if (hrs < 24) return `vor ${hrs} Std`;
+  if (hrs < 24) return i18n.t('chats.hoursAgo', { n: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `vor ${days} Tg`;
+  if (days < 7) return i18n.t('chats.daysAgo', { n: days });
   return new Date(ms).toLocaleDateString();
 }
 
 /** A single recent-chat entry: shows the last-message preview for the character's current chat. */
 function RecentChatRow({ character }: { character: StCharacter }) {
+  const { t } = useTranslation();
   const client = useConnection((s) => s.client);
 
   const { data, isLoading } = useQuery({
@@ -58,7 +61,7 @@ function RecentChatRow({ character }: { character: StCharacter }) {
           <Text className="ml-2 text-xs text-muted">{time}</Text>
         </View>
         <Text className="text-sm text-muted" numberOfLines={2}>
-          {isLoading ? '…' : preview || 'Keine Nachrichten'}
+          {isLoading ? t('common.loading') : preview || t('chats.noMessages')}
         </Text>
       </View>
     </Pressable>
@@ -66,6 +69,7 @@ function RecentChatRow({ character }: { character: StCharacter }) {
 }
 
 export default function ChatsScreen() {
+  const { t } = useTranslation();
   const client = useConnection((s) => s.client);
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
@@ -85,7 +89,7 @@ export default function ChatsScreen() {
   if (!client) {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
-        <Text className="text-muted">Nicht verbunden.</Text>
+        <Text className="text-muted">{t('chats.notConnected')}</Text>
       </View>
     );
   }
@@ -101,9 +105,9 @@ export default function ChatsScreen() {
   if (error) {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-bg px-6">
-        <Text className="text-center text-red-400">Chats konnten nicht geladen werden.</Text>
+        <Text className="text-center text-red-400">{t('chats.loadError')}</Text>
         <Pressable onPress={() => refetch()} className="rounded-xl bg-primary px-4 py-2">
-          <Text className="font-semibold text-white">Erneut versuchen</Text>
+          <Text className="font-semibold text-white">{t('common.retry')}</Text>
         </Pressable>
       </View>
     );
@@ -113,7 +117,7 @@ export default function ChatsScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-bg px-8">
         <Text className="text-center text-muted">
-          Noch keine Chats. Öffne einen Charakter und starte eine Unterhaltung.
+          {t('chats.empty')}
         </Text>
       </View>
     );

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
 import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import type { EngineConfig, StClient } from '@st/core';
 import { syncOai, syncRoot, syncTextgen } from '@/lib/sync';
 
@@ -47,6 +48,7 @@ export function QuickSettingsSheet({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const kbVisible = useKeyboardState((s) => s.isVisible);
   const isCc = engine?.mode === 'cc';
@@ -111,21 +113,21 @@ export function QuickSettingsSheet({
           style={{ paddingBottom: kbVisible ? 12 : Math.max(insets.bottom, 12) }}
           className="rounded-t-3xl bg-surface px-4 pt-4"
         >
-          <Text className="mb-3 text-base font-semibold text-white">Generierung</Text>
-          <Field label="Temperatur" value={temp} onChange={setTemp} />
-          <Field label="Antwortlänge (Tokens)" value={resp} onChange={setResp} keyboard="number-pad" />
-          <Field label="Kontextgröße (Tokens)" value={ctx} onChange={setCtx} keyboard="number-pad" />
+          <Text className="mb-3 text-base font-semibold text-white">{t('quickSettings.title')}</Text>
+          <Field label={t('quickSettings.temperature')} value={temp} onChange={setTemp} />
+          <Field label={t('quickSettings.responseLength')} value={resp} onChange={setResp} keyboard="number-pad" />
+          <Field label={t('quickSettings.contextSize')} value={ctx} onChange={setCtx} keyboard="number-pad" />
           <View className="mb-1 flex-row items-center justify-between">
-            <Text className="text-base text-white">Streaming</Text>
+            <Text className="text-base text-white">{t('quickSettings.streaming')}</Text>
             <Switch value={stream} onValueChange={setStream} trackColor={{ true: '#7c5cff', false: '#3a3a44' }} thumbColor="#ffffff" />
           </View>
-          <Text className="mt-1 text-xs text-muted">Wird auf SillyTavern (PC) gespeichert.</Text>
+          <Text className="mt-1 text-xs text-muted">{t('quickSettings.savedNotice')}</Text>
           <View className="mt-3 flex-row justify-end gap-2">
             <Pressable onPress={onClose} className="rounded-xl px-4 py-2">
-              <Text className="text-muted">Abbrechen</Text>
+              <Text className="text-muted">{t('common.cancel')}</Text>
             </Pressable>
             <Pressable onPress={save} disabled={saving} className="rounded-xl bg-primary px-4 py-2 disabled:opacity-50">
-              <Text className="font-semibold text-white">{saving ? 'Speichert…' : 'Speichern'}</Text>
+              <Text className="font-semibold text-white">{saving ? t('common.saving') : t('common.save')}</Text>
             </Pressable>
           </View>
         </Pressable>

@@ -3,12 +3,14 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-nativ
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
 import { getAllCharacters, type StCharacter } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
 
 export default function CharactersScreen() {
+  const { t } = useTranslation();
   const client = useConnection((s) => s.client);
   const [query, setQuery] = useState('');
 
@@ -37,7 +39,7 @@ export default function CharactersScreen() {
   if (!client) {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
-        <Text className="text-muted">Nicht verbunden.</Text>
+        <Text className="text-muted">{t('characters.notConnected')}</Text>
       </View>
     );
   }
@@ -54,11 +56,11 @@ export default function CharactersScreen() {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-bg px-6">
         <Text className="text-center text-red-400">
-          Charaktere konnten nicht geladen werden.{'\n'}
+          {t('characters.loadError')}{'\n'}
           {error instanceof Error ? error.message : ''}
         </Text>
         <Pressable onPress={() => refetch()} className="rounded-xl bg-primary px-4 py-2">
-          <Text className="font-semibold text-white">Erneut versuchen</Text>
+          <Text className="font-semibold text-white">{t('common.retry')}</Text>
         </Pressable>
       </View>
     );
@@ -70,7 +72,7 @@ export default function CharactersScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder={`Suchen… (${data?.length ?? 0} Charaktere)`}
+          placeholder={t('characters.searchPlaceholder', { count: data?.length ?? 0 })}
           placeholderTextColor="#5a5a68"
           autoCorrect={false}
           autoCapitalize="none"
@@ -79,7 +81,7 @@ export default function CharactersScreen() {
       </View>
       {list.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-center text-muted">Keine Treffer für „{query}".</Text>
+          <Text className="text-center text-muted">{t('characters.noResults', { query })}</Text>
         </View>
       ) : (
         <FlashList<StCharacter>
@@ -101,7 +103,7 @@ export default function CharactersScreen() {
                   {item.name}
                 </Text>
                 <Text className="text-sm text-muted" numberOfLines={1}>
-                  {item.data?.creator_notes || item.description || 'Keine Beschreibung'}
+                  {item.data?.creator_notes || item.description || t('characters.noDescription')}
                 </Text>
               </View>
             </Pressable>

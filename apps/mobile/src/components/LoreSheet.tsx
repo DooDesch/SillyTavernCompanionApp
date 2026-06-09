@@ -1,5 +1,7 @@
 import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import type { WorldInfoEntry } from '@st/core';
 
 export const entryUid = (e: WorldInfoEntry, i: number): string => String(e.uid ?? `i${i}`);
@@ -7,7 +9,7 @@ export const entryUid = (e: WorldInfoEntry, i: number): string => String(e.uid ?
 const entryLabel = (e: WorldInfoEntry): string => {
   if (e.comment && e.comment.trim()) return e.comment.trim();
   const keys = (e.key ?? []).filter(Boolean);
-  return keys.length ? keys.join(', ') : '(ohne Schlüssel)';
+  return keys.length ? keys.join(', ') : i18n.t('lore.noKeys');
 };
 
 /**
@@ -29,6 +31,7 @@ export function LoreSheet({
   onToggle: (uid: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -37,12 +40,12 @@ export function LoreSheet({
           style={{ paddingBottom: Math.max(insets.bottom, 12), maxHeight: '75%' }}
           className="rounded-t-3xl bg-surface px-4 pt-4"
         >
-          <Text className="mb-1 text-base font-semibold text-white">Lorebook</Text>
+          <Text className="mb-1 text-base font-semibold text-white">{t('lore.title')}</Text>
           <Text className="mb-2 text-xs text-muted">
-            „Aktiv" = würde bei der nächsten Antwort feuern. Schalter zum Stummschalten einzelner Einträge.
+            {t('lore.description')}
           </Text>
           {entries.length === 0 ? (
-            <Text className="py-6 text-center text-muted">Kein Lorebook für diesen Charakter aktiv.</Text>
+            <Text className="py-6 text-center text-muted">{t('lore.empty')}</Text>
           ) : (
             <ScrollView className="mb-2">
               {entries.map((e, i) => {
@@ -59,9 +62,9 @@ export function LoreSheet({
                         <Text className="flex-1 text-sm font-semibold text-white" numberOfLines={1}>
                           {entryLabel(e)}
                         </Text>
-                        {e.constant ? <Text className="text-[10px] text-primary">stets</Text> : null}
+                        {e.constant ? <Text className="text-[10px] text-primary">{t('lore.constant')}</Text> : null}
                         {active ? (
-                          <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] text-primary">aktiv</Text>
+                          <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] text-primary">{t('lore.active')}</Text>
                         ) : null}
                       </View>
                       <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
@@ -80,7 +83,7 @@ export function LoreSheet({
             </ScrollView>
           )}
           <Pressable onPress={onClose} className="rounded-xl bg-surface2 px-4 py-2.5 active:opacity-70">
-            <Text className="text-center font-semibold text-white">Schließen</Text>
+            <Text className="text-center font-semibold text-white">{t('common.close')}</Text>
           </Pressable>
         </Pressable>
       </Pressable>

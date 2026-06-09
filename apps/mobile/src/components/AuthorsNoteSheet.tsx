@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 export interface AuthorsNoteValue {
   content: string;
@@ -10,9 +11,9 @@ export interface AuthorsNoteValue {
 }
 
 const ROLES = [
-  { v: 0, label: 'System' },
-  { v: 1, label: 'User' },
-  { v: 2, label: 'KI' },
+  { v: 0, labelKey: 'authorsNote.roleSystem' },
+  { v: 1, labelKey: 'authorsNote.roleUser' },
+  { v: 2, labelKey: 'authorsNote.roleAi' },
 ];
 
 /** Per-chat Author's Note editor. Injected in-chat at the configured depth (uses the @depth pipeline). */
@@ -27,6 +28,7 @@ export function AuthorsNoteSheet({
   onSave: (v: AuthorsNoteValue) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const kbVisible = useKeyboardState((s) => s.isVisible);
   const [content, setContent] = useState(initial.content);
@@ -49,20 +51,20 @@ export function AuthorsNoteSheet({
           style={{ paddingBottom: kbVisible ? 12 : Math.max(insets.bottom, 12) }}
           className="rounded-t-3xl bg-surface px-4 pt-4"
         >
-          <Text className="mb-1 text-base font-semibold text-white">Autoren-Notiz</Text>
+          <Text className="mb-1 text-base font-semibold text-white">{t('authorsNote.title')}</Text>
           <Text className="mb-2 text-xs text-muted">
-            Steuert die Szene (Ton, Tempo, Hinweise). Wird in @Tiefe in den Chat injiziert.
+            {t('authorsNote.description')}
           </Text>
           <TextInput
             value={content}
             onChangeText={setContent}
             multiline
-            placeholder="z. B. [Halte Antworten kurz und in der Gegenwart.]"
+            placeholder={t('authorsNote.placeholder')}
             placeholderTextColor="#5a5a68"
             className="max-h-48 rounded-2xl bg-surface2 px-4 py-3 text-base text-white"
           />
           <View className="mt-3 flex-row items-center gap-3">
-            <Text className="text-sm text-muted">Tiefe</Text>
+            <Text className="text-sm text-muted">{t('authorsNote.depth')}</Text>
             <TextInput
               value={depth}
               onChangeText={setDepth}
@@ -76,20 +78,20 @@ export function AuthorsNoteSheet({
                   onPress={() => setRole(r.v)}
                   className={`rounded-xl px-3 py-2 ${role === r.v ? 'bg-primary' : 'bg-surface2'}`}
                 >
-                  <Text className={role === r.v ? 'text-white' : 'text-muted'}>{r.label}</Text>
+                  <Text className={role === r.v ? 'text-white' : 'text-muted'}>{t(r.labelKey)}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
           <View className="mt-3 flex-row justify-end gap-2">
             <Pressable onPress={onClose} className="rounded-xl px-4 py-2">
-              <Text className="text-muted">Abbrechen</Text>
+              <Text className="text-muted">{t('common.cancel')}</Text>
             </Pressable>
             <Pressable
               onPress={() => onSave({ content, depth: Math.max(0, parseInt(depth, 10) || 0), role })}
               className="rounded-xl bg-primary px-4 py-2"
             >
-              <Text className="font-semibold text-white">Speichern</Text>
+              <Text className="font-semibold text-white">{t('common.save')}</Text>
             </Pressable>
           </View>
         </Pressable>

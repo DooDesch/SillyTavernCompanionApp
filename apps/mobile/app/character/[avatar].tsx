@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { deleteChat, getCharacter, getCharacterChats, renameChat } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
@@ -14,6 +15,7 @@ function cleanFile(name: string): string {
 }
 
 export default function CharacterScreen() {
+  const { t } = useTranslation();
   const { avatar } = useLocalSearchParams<{ avatar: string }>();
   const client = useConnection((s) => s.client);
   const avatarUrl = String(avatar);
@@ -53,16 +55,16 @@ export default function CharacterScreen() {
   };
 
   const doDelete = (file: string) => {
-    Alert.alert('Chat löschen', `„${cleanFile(file)}" wirklich löschen?`, [
-      { text: 'Abbrechen', style: 'cancel' },
+    Alert.alert(t('character.deleteTitle'), t('character.deleteConfirm', { name: cleanFile(file) }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Löschen',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           if (!client) return;
           const ok = await deleteChat(client, { avatarUrl, chatFile: file });
           if (ok) refresh();
-          else Alert.alert('Fehler', 'Chat konnte nicht gelöscht werden.');
+          else Alert.alert(t('common.error'), t('character.deleteFailed'));
         },
       },
     ]);
@@ -76,12 +78,12 @@ export default function CharacterScreen() {
     if (!target || cleanFile(target) === cleanFile(original)) return;
     const ok = await renameChat(client, { avatarUrl, originalFile: original, renamedFile: target });
     if (ok) refresh();
-    else Alert.alert('Fehler', 'Chat konnte nicht umbenannt werden (Name evtl. vergeben).');
+    else Alert.alert(t('common.error'), t('character.renameFailed'));
   };
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen options={{ title: character?.name ?? 'Charakter', headerShown: true }} />
+      <Stack.Screen options={{ title: character?.name ?? t('character.fallbackTitle'), headerShown: true }} />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {character && (
           <View className="mb-4">
@@ -90,7 +92,7 @@ export default function CharacterScreen() {
                 <Avatar avatar={avatarUrl} name={character.name} size={140} />
               </Pressable>
               <Text className="mt-3 text-center text-xl font-bold text-white">{character.name}</Text>
-              {!!creator && <Text className="mt-0.5 text-xs text-muted">von {creator}</Text>}
+              {!!creator && <Text className="mt-0.5 text-xs text-muted">{t('character.byCreator', { creator })}</Text>}
             </View>
             {!!character.description && (
               <Text className="mt-3 text-sm text-muted" numberOfLines={8}>
@@ -101,14 +103,14 @@ export default function CharacterScreen() {
         )}
 
         <Pressable onPress={newChat} className="mb-5 rounded-2xl bg-primary px-4 py-3 active:opacity-80">
-          <Text className="text-center text-base font-semibold text-white">+ Neuer Chat</Text>
+          <Text className="text-center text-base font-semibold text-white">{t('character.newChat')}</Text>
         </Pressable>
 
-        <Text className="mb-2 text-sm uppercase tracking-wide text-muted">Gespeicherte Chats</Text>
+        <Text className="mb-2 text-sm uppercase tracking-wide text-muted">{t('character.savedChats')}</Text>
 
         {chatsQuery.isLoading && <ActivityIndicator color="#7c5cff" />}
         {chatsQuery.data?.length === 0 && (
-          <Text className="text-muted">Noch keine Chats. Starte einen neuen.</Text>
+          <Text className="text-muted">{t('character.noChats')}</Text>
         )}
         {chatsQuery.data?.map((chat) => {
           const file = cleanFile(chat.file_name);
@@ -131,7 +133,7 @@ export default function CharacterScreen() {
             </Pressable>
           );
         })}
-        <Text className="mt-2 text-xs text-muted">Tipp: Chat gedrückt halten zum Umbenennen/Löschen.</Text>
+        <Text className="mt-2 text-xs text-muted">{t('character.longPressHint')}</Text>
       </ScrollView>
 
       {/* Chat action menu */}
@@ -146,7 +148,7 @@ export default function CharacterScreen() {
               }}
               className="rounded-2xl px-4 py-3 active:bg-surface2"
             >
-              <Text className="text-base text-white">Öffnen</Text>
+              <Text className="text-base text-white">{t('character.open')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -156,7 +158,7 @@ export default function CharacterScreen() {
               }}
               className="rounded-2xl px-4 py-3 active:bg-surface2"
             >
-              <Text className="text-base text-white">Umbenennen</Text>
+              <Text className="text-base text-white">{t('character.rename')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -166,7 +168,7 @@ export default function CharacterScreen() {
               }}
               className="rounded-2xl px-4 py-3 active:bg-surface2"
             >
-              <Text className="text-base text-red-400">Löschen</Text>
+              <Text className="text-base text-red-400">{t('common.delete')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -177,7 +179,7 @@ export default function CharacterScreen() {
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setRenaming(null)}>
           <Pressable className="rounded-t-3xl bg-surface px-4 pb-6 pt-4">
-            <Text className="mb-2 text-base font-semibold text-white">Chat umbenennen</Text>
+            <Text className="mb-2 text-base font-semibold text-white">{t('character.renameTitle')}</Text>
             <TextInput
               value={renaming?.name ?? ''}
               onChangeText={(t) => setRenaming((r) => (r ? { ...r, name: t } : r))}
@@ -186,10 +188,10 @@ export default function CharacterScreen() {
             />
             <View className="mt-3 flex-row justify-end gap-2">
               <Pressable onPress={() => setRenaming(null)} className="rounded-xl px-4 py-2">
-                <Text className="text-muted">Abbrechen</Text>
+                <Text className="text-muted">{t('common.cancel')}</Text>
               </Pressable>
               <Pressable onPress={doRename} className="rounded-xl bg-primary px-4 py-2">
-                <Text className="font-semibold text-white">Speichern</Text>
+                <Text className="font-semibold text-white">{t('common.save')}</Text>
               </Pressable>
             </View>
           </Pressable>

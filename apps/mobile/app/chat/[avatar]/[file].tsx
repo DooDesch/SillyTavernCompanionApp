@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Keyboard, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
@@ -51,6 +52,7 @@ function readTimedState(h: StChatHeader): TimedWorldInfoState {
 }
 
 export default function ChatScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ avatar: string; file: string; fresh?: string }>();
   const avatarUrl = String(params.avatar);
   const fileName = String(params.file);
@@ -149,12 +151,12 @@ export default function ChatScreen() {
       const draft = await readChatDraft<StChatHeader, StChatMessage>(avatarUrl, fileName);
       if (!cancelled && draft && draft.messages.length > 0) {
         Alert.alert(
-          'Ungespeicherte Änderungen',
-          'Aus einer früheren Sitzung gibt es ungespeicherte Änderungen. Wiederherstellen?',
+          t('chat.unsavedTitle'),
+          t('chat.unsavedMessage'),
           [
-            { text: 'Verwerfen', style: 'destructive', onPress: () => clearChatDraft(avatarUrl, fileName) },
+            { text: t('common.discard'), style: 'destructive', onPress: () => clearChatDraft(avatarUrl, fileName) },
             {
-              text: 'Wiederherstellen',
+              text: t('common.restore'),
               onPress: () => {
                 if (draft.header) setHeader(draft.header);
                 setMessages(ensureIds(draft.messages));
@@ -167,7 +169,7 @@ export default function ChatScreen() {
     return () => {
       cancelled = true;
     };
-  }, [client, character, loaded, isFresh, engine, avatarUrl, fileName]);
+  }, [client, character, loaded, isFresh, engine, avatarUrl, fileName, t]);
 
   // Stop any TTS when leaving the chat.
   useEffect(() => {
@@ -194,15 +196,15 @@ export default function ChatScreen() {
       writeChatDraft(avatarUrl, fileName, hdr, msgs, Date.now());
       const res = await saveChat(client, { avatarUrl, fileName, chat: { header: hdr, messages: msgs }, force });
       if (res.conflict) {
-        Alert.alert('Konflikt', 'Der PC hat diesen Chat seit dem Laden geändert.', [
-          { text: 'Abbrechen', style: 'cancel' },
-          { text: 'Überschreiben', style: 'destructive', onPress: () => void persist(msgs, true) },
+        Alert.alert(t('chat.conflictTitle'), t('chat.conflictMessage'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.overwrite'), style: 'destructive', onPress: () => void persist(msgs, true) },
         ]);
       } else if (res.ok) {
         clearChatDraft(avatarUrl, fileName);
       }
     },
-    [client, header, avatarUrl, fileName, lorebook],
+    [client, header, avatarUrl, fileName, lorebook, t],
   );
 
   const runGeneration = useCallback(
@@ -278,13 +280,13 @@ export default function ChatScreen() {
         scrollToEnd();
         if (failed) {
           Alert.alert(
-            'Keine Antwort',
-            'Es wurde keine Nachricht generiert. Ist das KI-Backend (KoboldCpp/Cloud) erreichbar und in SillyTavern verbunden?',
+            t('chat.noResponseTitle'),
+            t('chat.noResponseMessage'),
           );
         }
       }
     },
-    [client, engine, character, persist, scrollToEnd, effectiveLorebook, authorsNote, header],
+    [client, engine, character, persist, scrollToEnd, effectiveLorebook, authorsNote, header, t],
   );
 
   const send = useCallback(async () => {
@@ -305,13 +307,13 @@ export default function ChatScreen() {
   const pickImage = useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Kein Zugriff', 'Die Foto-Berechtigung wurde abgelehnt.');
+      Alert.alert(t('chat.noPhotoAccessTitle'), t('chat.noPhotoAccessMessage'));
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], base64: true, quality: 0.5 });
     const asset = res.canceled ? undefined : res.assets[0];
     if (asset?.base64) setPendingImage(`data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`);
-  }, []);
+  }, [t]);
 
   const regenerate = useCallback(async () => {
     if (streaming || messages.length === 0) return;
@@ -568,10 +570,10 @@ export default function ChatScreen() {
       if (res.ok) {
         router.replace({ pathname: '/chat/[avatar]/[file]', params: { avatar: avatarUrl, file: newFile } });
       } else {
-        Alert.alert('Fehler', 'Branch konnte nicht erstellt werden.');
+        Alert.alert(t('common.error'), t('chat.branchFailed'));
       }
     },
-    [client, character, messages, engine, avatarUrl],
+    [client, character, messages, engine, avatarUrl, t],
   );
 
   if (!loaded) {
@@ -619,7 +621,10 @@ export default function ChatScreen() {
             {personas.length > 0 && (
               <Pressable onPress={() => setSheet('persona')} className="self-start active:opacity-60">
                 <Text className="text-xs text-muted" numberOfLines={1}>
-                  als {personas.find((p) => p.avatar === activePersonaAvatar)?.name ?? 'Persona wählen'} ▾
+                  {t('chat.asPersona', {
+                    name: personas.find((p) => p.avatar === activePersonaAvatar)?.name ?? t('chat.choosePersona'),
+                  })}{' '}
+                  ▾
                 </Text>
               </Pressable>
             )}
@@ -644,7 +649,7 @@ export default function ChatScreen() {
           className="bg-red-950 px-3 py-1.5 active:opacity-70"
         >
           <Text className="text-center text-xs text-red-300">
-            ⚠ KI-Backend nicht verbunden - Generierung schlägt fehl. Tippen zum Prüfen.
+            ⚠ {t('chat.backendWarning')}
           </Text>
         </Pressable>
       )}
@@ -691,7 +696,7 @@ export default function ChatScreen() {
       {pendingImage && (
         <View className="flex-row items-center gap-2 border-t border-border bg-surface px-3 pt-2">
           <Image source={{ uri: pendingImage }} style={{ width: 44, height: 44, borderRadius: 8 }} />
-          <Text className="flex-1 text-xs text-muted">Bild angehängt</Text>
+          <Text className="flex-1 text-xs text-muted">{t('chat.imageAttached')}</Text>
           <Pressable onPress={() => setPendingImage(null)} className="h-8 w-8 items-center justify-center active:opacity-60">
             <Text className="text-lg text-muted">✕</Text>
           </Pressable>
@@ -716,7 +721,7 @@ export default function ChatScreen() {
           onChangeText={setInput}
           onFocus={() => setTimeout(scrollToEnd, 250)}
           multiline
-          placeholder="Nachricht schreiben…"
+          placeholder={t('chat.inputPlaceholder')}
           placeholderTextColor="#5a5a68"
           editable={!streaming}
           className="max-h-32 flex-1 rounded-2xl bg-surface2 px-4 py-2.5 text-base text-white"
@@ -745,7 +750,7 @@ export default function ChatScreen() {
             {canContinue && (
               <ActionRow
                 icon="→|"
-                label="Fortsetzen (letzte Antwort verlängern)"
+                label={t('chat.continueExtend')}
                 onPress={() => {
                   setPlusMenu(false);
                   void continueLast();
@@ -755,7 +760,7 @@ export default function ChatScreen() {
             {engine?.mode === 'cc' ? (
               <ActionRow
                 icon="📎"
-                label="Bild anhängen"
+                label={t('chat.attachImage')}
                 onPress={() => {
                   setPlusMenu(false);
                   void pickImage();
@@ -764,7 +769,7 @@ export default function ChatScreen() {
             ) : (
               <ActionRow
                 icon="✍︎"
-                label="KI schreibt meinen Zug (Impersonate)"
+                label={t('chat.impersonate')}
                 onPress={() => {
                   setPlusMenu(false);
                   void impersonate();
@@ -783,7 +788,7 @@ export default function ChatScreen() {
           >
             <ActionRow
               icon="⧉"
-              label="Kopieren"
+              label={t('chat.copy')}
               onPress={() => {
                 if (menuIndex != null) void copyMessage(menuIndex);
                 closeMenu();
@@ -791,7 +796,7 @@ export default function ChatScreen() {
             />
             <ActionRow
               icon="✎"
-              label="Bearbeiten"
+              label={t('chat.edit')}
               onPress={() => {
                 if (menuIndex != null) startEdit(menuIndex);
                 closeMenu();
@@ -799,7 +804,7 @@ export default function ChatScreen() {
             />
             <ActionRow
               icon="🔊"
-              label="Vorlesen"
+              label={t('chat.readAloud')}
               onPress={() => {
                 if (menuIndex != null) speakMessage(menuIndex);
                 closeMenu();
@@ -809,7 +814,7 @@ export default function ChatScreen() {
               <>
                 <ActionRow
                   icon="↳"
-                  label="Fortsetzen"
+                  label={t('chat.continue')}
                   onPress={() => {
                     closeMenu();
                     void continueLast();
@@ -817,7 +822,7 @@ export default function ChatScreen() {
                 />
                 <ActionRow
                   icon="↻"
-                  label="Neu generieren"
+                  label={t('chat.regenerate')}
                   onPress={() => {
                     closeMenu();
                     void regenerate();
@@ -827,7 +832,7 @@ export default function ChatScreen() {
             )}
             <ActionRow
               icon="⑃"
-              label="Ab hier verzweigen"
+              label={t('chat.branchFromHere')}
               onPress={() => {
                 const idx = menuIndex;
                 closeMenu();
@@ -836,7 +841,7 @@ export default function ChatScreen() {
             />
             <ActionRow
               icon={menuMsg?.is_system ? '◌' : '◍'}
-              label={menuMsg?.is_system ? 'Wieder einblenden' : 'Aus Kontext ausblenden'}
+              label={menuMsg?.is_system ? t('chat.unhide') : t('chat.hideFromContext')}
               onPress={() => {
                 if (menuIndex != null) toggleHide(menuIndex);
                 closeMenu();
@@ -844,15 +849,15 @@ export default function ChatScreen() {
             />
             <ActionRow
               icon="🗑"
-              label="Löschen"
+              label={t('common.delete')}
               destructive
               onPress={() => {
                 const idx = menuIndex;
                 closeMenu();
                 if (idx == null) return;
-                Alert.alert('Löschen', 'Diese Nachricht löschen?', [
-                  { text: 'Abbrechen', style: 'cancel' },
-                  { text: 'Löschen', style: 'destructive', onPress: () => deleteMessage(idx) },
+                Alert.alert(t('common.delete'), t('chat.deleteConfirm'), [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  { text: t('common.delete'), style: 'destructive', onPress: () => deleteMessage(idx) },
                 ]);
               }}
             />
@@ -864,7 +869,7 @@ export default function ChatScreen() {
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
           <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setEditing(null)}>
           <Pressable style={{ paddingBottom: sheetPadBottom }} className="rounded-t-3xl bg-surface px-4 pt-4">
-            <Text className="mb-2 text-base font-semibold text-white">Nachricht bearbeiten</Text>
+            <Text className="mb-2 text-base font-semibold text-white">{t('chat.editMessage')}</Text>
             <TextInput
               value={editing?.text ?? ''}
               onChangeText={(t) => setEditing((e) => (e ? { ...e, text: t } : e))}
@@ -874,10 +879,10 @@ export default function ChatScreen() {
             />
             <View className="mt-3 flex-row justify-end gap-2">
               <Pressable onPress={() => setEditing(null)} className="rounded-xl px-4 py-2">
-                <Text className="text-muted">Abbrechen</Text>
+                <Text className="text-muted">{t('common.cancel')}</Text>
               </Pressable>
               <Pressable onPress={saveEdit} className="rounded-xl bg-primary px-4 py-2">
-                <Text className="font-semibold text-white">Speichern</Text>
+                <Text className="font-semibold text-white">{t('common.save')}</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -887,7 +892,7 @@ export default function ChatScreen() {
 
       <PickerSheet
         visible={sheet === 'persona'}
-        title="Persona wählen"
+        title={t('chat.choosePersona')}
         options={personas.map((p): PickerOption => ({
           id: p.avatar,
           label: p.name,
@@ -967,6 +972,7 @@ const Bubble = memo(function Bubble({
   plain?: boolean;
   onLongPress?: () => void;
 }) {
+  const { t } = useTranslation();
   const text = currentSwipeText(message);
   const isUser = message.is_user;
   const isHidden = message.is_system === true;
@@ -1010,7 +1016,7 @@ const Bubble = memo(function Bubble({
       <View className="flex-1">
         <Text className="mb-0.5 ml-1 text-xs font-semibold text-muted">
           {message.name}
-          {isHidden ? '  ·  ausgeblendet' : ''}
+          {isHidden ? `  ·  ${t('chat.hidden')}` : ''}
         </Text>
         {bubble}
         {!!time && <Text className="ml-1 mt-0.5 text-[10px] text-muted">{time}</Text>}
@@ -1039,6 +1045,7 @@ function ActionRow({
 }
 
 function TypingDots({ thinking }: { thinking?: boolean }) {
+  const { t } = useTranslation();
   const [n, setN] = useState(1);
   useEffect(() => {
     const id = setInterval(() => setN((x) => (x % 3) + 1), 400);
@@ -1046,18 +1053,19 @@ function TypingDots({ thinking }: { thinking?: boolean }) {
   }, []);
   return (
     <Text className="text-[15px] leading-5 text-muted">
-      {thinking ? 'Denkt' : ''}
+      {thinking ? t('chat.thinking') : ''}
       {'.'.repeat(n)}
     </Text>
   );
 }
 
 function ReasoningBlock({ text }: { text: string }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
     <View className="mb-1.5">
       <Pressable onPress={() => setOpen((o) => !o)} className="flex-row items-center active:opacity-60">
-        <Text className="text-xs text-muted">{open ? '▾' : '▸'} Gedanken</Text>
+        <Text className="text-xs text-muted">{open ? '▾' : '▸'} {t('chat.reasoning')}</Text>
       </Pressable>
       {open && (
         <Text selectable className="mt-1 border-l-2 border-border pl-2 text-xs italic text-muted">

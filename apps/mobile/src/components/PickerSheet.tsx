@@ -1,5 +1,6 @@
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 export interface PickerOption {
   id: string;
@@ -23,6 +24,7 @@ export function PickerSheet({
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -34,7 +36,7 @@ export function PickerSheet({
           <Text className="mb-2 px-3 text-base font-semibold text-white">{title}</Text>
           <ScrollView>
             {options.length === 0 && (
-              <Text className="px-3 py-4 text-muted">Keine Einträge.</Text>
+              <Text className="px-3 py-4 text-muted">{t('sheets.pickerEmpty')}</Text>
             )}
             {options.map((o) => {
               const active = o.id === activeId;

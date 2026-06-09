@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { probeInstance, type DiscoveredInstance } from '@st/core';
 import { fetchLike } from '@/lib/expoFetch';
 import { useConnection } from '@/stores/connectionStore';
 import { useServers } from '@/stores/serversStore';
 
 export default function ManualScreen() {
+  const { t } = useTranslation();
   const connect = useConnection((s) => s.connect);
   const upsertServer = useServers((s) => s.upsert);
   const [host, setHost] = useState('192.168.178.');
@@ -33,7 +35,7 @@ export default function ManualScreen() {
       } else {
         instance = await probeInstance(ip, portN, { fetchImpl: fetchLike, timeoutMs: 2500 });
         if (!instance) {
-          setError('Keine SillyTavern-Instanz unter dieser Adresse erreichbar.');
+          setError(t('onboarding.notReachable'));
           return;
         }
         instance = { ...instance, source: 'manual' };
@@ -47,7 +49,7 @@ export default function ManualScreen() {
       connect(instance, basicAuth);
       router.replace('/(tabs)/chats');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Verbindung fehlgeschlagen');
+      setError(e instanceof Error ? e.message : t('onboarding.connectionFailed'));
     } finally {
       setBusy(false);
     }
@@ -55,11 +57,11 @@ export default function ManualScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg" edges={['bottom']}>
-      <Stack.Screen options={{ title: 'Manuell koppeln', headerShown: true }} />
+      <Stack.Screen options={{ title: t('onboarding.manualTitle'), headerShown: true }} />
       <View className="flex-1 px-5 pt-6">
-        <Text className="text-muted">IP-Adresse und Port deiner SillyTavern-Instanz eingeben.</Text>
+        <Text className="text-muted">{t('onboarding.manualDescription')}</Text>
 
-        <Text className="mt-6 mb-1 text-sm text-muted">IP-Adresse</Text>
+        <Text className="mt-6 mb-1 text-sm text-muted">{t('onboarding.ipAddress')}</Text>
         <TextInput
           value={host}
           onChangeText={setHost}
@@ -70,7 +72,7 @@ export default function ManualScreen() {
           className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
         />
 
-        <Text className="mt-4 mb-1 text-sm text-muted">Port</Text>
+        <Text className="mt-4 mb-1 text-sm text-muted">{t('onboarding.port')}</Text>
         <TextInput
           value={port}
           onChangeText={setPort}
@@ -80,7 +82,7 @@ export default function ManualScreen() {
           className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
         />
 
-        <Text className="mt-4 mb-1 text-sm text-muted">Benutzername (optional, bei Basic-Auth)</Text>
+        <Text className="mt-4 mb-1 text-sm text-muted">{t('onboarding.username')}</Text>
         <TextInput
           value={user}
           onChangeText={setUser}
@@ -91,7 +93,7 @@ export default function ManualScreen() {
           className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
         />
 
-        <Text className="mt-4 mb-1 text-sm text-muted">Passwort (optional)</Text>
+        <Text className="mt-4 mb-1 text-sm text-muted">{t('onboarding.password')}</Text>
         <TextInput
           value={pass}
           onChangeText={setPass}
@@ -112,7 +114,7 @@ export default function ManualScreen() {
           {busy ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text className="text-center text-base font-semibold text-white">Verbinden</Text>
+            <Text className="text-center text-base font-semibold text-white">{t('onboarding.connect')}</Text>
           )}
         </Pressable>
       </View>

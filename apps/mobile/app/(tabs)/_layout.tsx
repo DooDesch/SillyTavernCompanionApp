@@ -1,7 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
   return (
     <Tabs
       // "Chats" (recent conversations) is the landing tab, like SillyTavern's home page.
@@ -18,21 +20,21 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="chats"
         options={{
-          title: 'Chats',
+          title: t('tabs.chats'),
           tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="characters"
         options={{
-          title: 'Charaktere',
+          title: t('tabs.characters'),
           tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Einstellungen',
+          title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => <Ionicons name="settings-sharp" size={size} color={color} />,
         }}
       />

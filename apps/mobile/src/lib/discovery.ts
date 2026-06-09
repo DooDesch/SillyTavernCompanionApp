@@ -7,6 +7,7 @@ import {
   type DiscoveredInstance,
   type KoboldInstance,
 } from '@st/core';
+import i18n from '@/i18n';
 import { fetchLike } from './expoFetch';
 import {
   getKoboldHint,
@@ -28,7 +29,7 @@ const uniq = <T,>(xs: T[]): T[] => [...new Set(xs)];
 async function localIpv4(): Promise<string> {
   const ip = await Network.getIpAddressAsync();
   if (!ip || ip === '0.0.0.0') {
-    throw new Error('Keine lokale IP-Adresse - bist du mit dem WLAN verbunden?');
+    throw new Error(i18n.t('onboarding.noLocalIp'));
   }
   return ip;
 }
