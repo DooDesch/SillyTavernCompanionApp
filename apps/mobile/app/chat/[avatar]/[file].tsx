@@ -228,8 +228,13 @@ export default function ChatScreen() {
     [client, header, avatarUrl, fileName, lorebook, t],
   );
 
+  // `fullMsgs` is the complete on-screen array at generation start (context + placeholder).
+  // Finalize/persist are computed from it directly — NEVER from a setMessages-updater closure:
+  // React only runs updaters at render time, so a captured variable can still be empty when
+  // persist() reads it (that silently skipped saves, and once caused a chat wipe). Message
+  // actions are disabled while streaming, so `fullMsgs` cannot go stale.
   const runGeneration = useCallback(
-    async (contextMsgs: StChatMessage[], assistantIndex: number, mode: GenMode) => {
+    async (fullMsgs: StChatMessage[], contextMsgs: StChatMessage[], assistantIndex: number, mode: GenMode) => {
       if (!client || !engine || !character) return;
       const effectiveLorebook = buildEffectiveLorebook();
       const isContinue = mode === 'continue';
@@ -281,24 +286,20 @@ export default function ChatScreen() {
         else await streamingSession.end();
         streamDebug.dump('gen');
         setStreaming(false);
-        let finalMsgs: StChatMessage[] = [];
-        setMessages((prev) => {
-          const next = [...prev];
-          const cur = next[assistantIndex];
-          if (failed) {
-            if (mode === 'new') {
-              next.splice(assistantIndex, 1); // drop the empty placeholder, keep the user message
-            } else if (cur) {
-              next[assistantIndex] = { ...cur, mes: currentSwipeText(cur) }; // restore the previous reply
-            }
+        const next = [...fullMsgs];
+        const cur = next[assistantIndex];
+        if (failed) {
+          if (mode === 'new') {
+            next.splice(assistantIndex, 1); // drop the empty placeholder, keep the user message
           } else if (cur) {
-            next[assistantIndex] = finalizeAssistant(cur, finalText, mode, finalReasoning);
+            next[assistantIndex] = { ...cur, mes: currentSwipeText(cur) }; // restore the previous reply
           }
-          finalMsgs = next;
-          return next;
-        });
+        } else if (cur) {
+          next[assistantIndex] = finalizeAssistant(cur, finalText, mode, finalReasoning);
+        }
+        setMessages(next);
         streamingSession.reset();
-        void persist(finalMsgs);
+        void persist(next);
         scrollToEnd();
         if (failed) {
           Alert.alert(
@@ -321,9 +322,10 @@ export default function ChatScreen() {
     if (img) userMsg.extra = { ...userMsg.extra, image: img };
     const assistant = makeAssistantMessage(character.name, '');
     const base = [...messages, userMsg];
-    setMessages([...base, assistant]);
+    const full = [...base, assistant];
+    setMessages(full);
     scrollToEnd();
-    await runGeneration(base, base.length, 'new');
+    await runGeneration(full, base, base.length, 'new');
   }, [input, pendingImage, streaming, character, engine, messages, runGeneration, scrollToEnd]);
 
   const pickImage = useCallback(async () => {
@@ -342,7 +344,7 @@ export default function ChatScreen() {
     const lastIdx = messages.length - 1;
     if (messages[lastIdx]?.is_user) return;
     const context = messages.slice(0, lastIdx);
-    await runGeneration(context, lastIdx, 'regenerate');
+    await runGeneration(messages, context, lastIdx, 'regenerate');
   }, [streaming, messages, runGeneration]);
 
   const cycleSwipe = useCallback(
@@ -355,19 +357,14 @@ export default function ChatScreen() {
       const sid = m.swipe_id ?? 0;
       if (dir === 1 && sid >= swipes.length - 1) {
         // At the newest swipe → generate a fresh alternative.
-        void runGeneration(messages.slice(0, lastIdx), lastIdx, 'swipe');
+        void runGeneration(messages, messages.slice(0, lastIdx), lastIdx, 'swipe');
         return;
       }
       const nsid = Math.max(0, Math.min(swipes.length - 1, sid + dir));
-      let updated: StChatMessage[] = [];
-      setMessages((prev) => {
-        const next = [...prev];
-        const cur = next[lastIdx];
-        if (cur) next[lastIdx] = { ...cur, swipe_id: nsid, mes: swipes[nsid] ?? cur.mes };
-        updated = next;
-        return next;
-      });
-      void persist(updated);
+      const next = [...messages];
+      next[lastIdx] = { ...m, swipe_id: nsid, mes: swipes[nsid] ?? m.mes };
+      setMessages(next);
+      void persist(next);
     },
     [streaming, messages, runGeneration, persist],
   );
@@ -497,57 +494,45 @@ export default function ChatScreen() {
   const saveEdit = useCallback(() => {
     if (!editing) return;
     const { index, text } = editing;
-    let updated: StChatMessage[] = [];
-    setMessages((prev) => {
-      const next = [...prev];
-      const cur = next[index];
-      if (cur) {
-        const swipes = cur.swipes ? [...cur.swipes] : undefined;
-        const sid = cur.swipe_id ?? 0;
-        if (swipes && swipes[sid] !== undefined) swipes[sid] = text;
-        next[index] = { ...cur, mes: text, ...(swipes ? { swipes } : {}) };
-      }
-      updated = next;
-      return next;
-    });
+    const next = [...messages];
+    const cur = next[index];
+    if (cur) {
+      const swipes = cur.swipes ? [...cur.swipes] : undefined;
+      const sid = cur.swipe_id ?? 0;
+      if (swipes && swipes[sid] !== undefined) swipes[sid] = text;
+      next[index] = { ...cur, mes: text, ...(swipes ? { swipes } : {}) };
+    }
+    setMessages(next);
     setEditing(null);
-    void persist(updated);
-  }, [editing, persist]);
+    void persist(next);
+  }, [editing, messages, persist]);
 
   const continueLast = useCallback(async () => {
     if (streaming || messages.length === 0) return;
     const lastIdx = messages.length - 1;
     const m = messages[lastIdx];
     if (!m || m.is_user) return;
-    await runGeneration(messages, lastIdx, 'continue');
+    await runGeneration(messages, messages, lastIdx, 'continue');
   }, [streaming, messages, runGeneration]);
 
   const deleteMessage = useCallback(
     (index: number) => {
-      let updated: StChatMessage[] = [];
-      setMessages((prev) => {
-        const next = prev.filter((_, i) => i !== index);
-        updated = next;
-        return next;
-      });
-      void persist(updated);
+      const next = messages.filter((_, i) => i !== index);
+      setMessages(next);
+      void persist(next);
     },
-    [persist],
+    [messages, persist],
   );
 
   const toggleHide = useCallback(
     (index: number) => {
-      let updated: StChatMessage[] = [];
-      setMessages((prev) => {
-        const next = [...prev];
-        const cur = next[index];
-        if (cur) next[index] = { ...cur, is_system: !cur.is_system };
-        updated = next;
-        return next;
-      });
-      void persist(updated);
+      const next = [...messages];
+      const cur = next[index];
+      if (cur) next[index] = { ...cur, is_system: !cur.is_system };
+      setMessages(next);
+      void persist(next);
     },
-    [persist],
+    [messages, persist],
   );
 
   const copyMessage = useCallback(
@@ -686,7 +671,9 @@ export default function ChatScreen() {
             charAvatar={avatarUrl}
             plain={streaming && index === messages.length - 1}
             index={index}
-            onLongPress={openMenu}
+            // Message actions are disabled while generating (like desktop ST) — finalize
+            // computes from the generation-start array, so it must not change mid-stream.
+            onLongPress={streaming ? undefined : openMenu}
           />
         )}
       />
