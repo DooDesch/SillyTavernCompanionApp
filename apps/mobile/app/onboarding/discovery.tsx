@@ -1,0 +1,106 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Stack, router, Link } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import type { DiscoveredInstance } from '@st/core';
+import { discoverInstances } from '@/lib/discovery';
+import { useConnection } from '@/stores/connectionStore';
+
+export default function DiscoveryScreen() {
+  const connect = useConnection((s) => s.connect);
+  const [scanning, setScanning] = useState(false);
+  const [found, setFound] = useState<DiscoveredInstance[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const startScan = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    setFound([]);
+    setError(null);
+    setScanning(true);
+    try {
+      await discoverInstances({
+        signal: ac.signal,
+        onFound: (instance) =>
+          setFound((prev) =>
+            prev.some((p) => p.baseUrl === instance.baseUrl) ? prev : [...prev, instance],
+          ),
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Scan fehlgeschlagen');
+    } finally {
+      if (abortRef.current === ac) setScanning(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void startScan();
+    return () => abortRef.current?.abort();
+  }, [startScan]);
+
+  const onConnect = (instance: DiscoveredInstance) => {
+    connect(instance);
+    router.replace('/(tabs)/chats');
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-bg" edges={['top', 'bottom']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View className="flex-1 px-5 pt-6">
+        <Text className="text-2xl font-bold text-white">SillyTavern finden</Text>
+        <Text className="mt-1 text-muted">
+          Suche im WLAN nach einer laufenden Instanz. Dein Handy muss im selben Netz wie der PC sein.
+        </Text>
+
+        <View className="mt-6 flex-1">
+          {found.length === 0 && scanning && (
+            <View className="flex-row items-center gap-3">
+              <ActivityIndicator color="#7c5cff" />
+              <Text className="text-muted">Netzwerk wird gescannt…</Text>
+            </View>
+          )}
+
+          {found.map((instance) => (
+            <Pressable
+              key={instance.baseUrl}
+              onPress={() => onConnect(instance)}
+              className="mb-3 rounded-2xl border border-border bg-surface px-4 py-3 active:bg-surface2"
+            >
+              <Text className="text-base font-semibold text-white">{instance.baseUrl}</Text>
+              <Text className="mt-0.5 text-sm text-muted">
+                SillyTavern {instance.version ?? '?'} · {instance.rttMs ?? '?'} ms
+              </Text>
+            </Pressable>
+          ))}
+
+          {error && <Text className="mt-2 text-red-400">{error}</Text>}
+
+          {!scanning && found.length === 0 && !error && (
+            <Text className="text-muted">Keine Instanz gefunden. Per QR oder IP koppeln.</Text>
+          )}
+        </View>
+
+        <View className="gap-3 pb-2">
+          <Pressable
+            onPress={startScan}
+            disabled={scanning}
+            className="rounded-2xl bg-primary px-4 py-3 active:opacity-80 disabled:opacity-50"
+          >
+            <Text className="text-center text-base font-semibold text-white">
+              {scanning ? 'Scanne…' : 'Erneut scannen'}
+            </Text>
+          </Pressable>
+          <Link href="/onboarding/manual" asChild>
+            <Pressable className="rounded-2xl border border-border px-4 py-3 active:bg-surface">
+              <Text className="text-center text-base font-semibold text-white">
+                Manuell per IP / QR koppeln
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
