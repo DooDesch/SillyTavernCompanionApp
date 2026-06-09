@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, Stack } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { probeInstance, type DiscoveredInstance } from '@st/core';
 import { fetchLike } from '@/lib/expoFetch';
 import { useConnection } from '@/stores/connectionStore';
 import { useServers } from '@/stores/serversStore';
+import { AppText, Button, Field } from '@/components/ui';
+import { colors } from '@/theme/tokens';
+import { haptics } from '@/theme/haptics';
 
 export default function ManualScreen() {
   const { t } = useTranslation();
@@ -36,6 +39,7 @@ export default function ManualScreen() {
         instance = await probeInstance(ip, portN, { fetchImpl: fetchLike, timeoutMs: 2500 });
         if (!instance) {
           setError(t('onboarding.notReachable'));
+          haptics.error();
           return;
         }
         instance = { ...instance, source: 'manual' };
@@ -47,77 +51,68 @@ export default function ManualScreen() {
         basicAuth ? { user: basicAuth.username, pass: basicAuth.password } : undefined,
       );
       connect(instance, basicAuth);
+      haptics.success();
       router.replace('/(tabs)/chats');
     } catch (e) {
       setError(e instanceof Error ? e.message : t('onboarding.connectionFailed'));
+      haptics.error();
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-bg" edges={['bottom']}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Stack.Screen options={{ title: t('onboarding.manualTitle'), headerShown: true }} />
-      <View className="flex-1 px-5 pt-6">
-        <Text className="text-muted">{t('onboarding.manualDescription')}</Text>
+      <KeyboardAwareScrollView
+        bottomOffset={20}
+        contentContainerStyle={{ padding: 20, gap: 16 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <AppText variant="body" color="muted">
+          {t('onboarding.manualDescription')}
+        </AppText>
 
-        <Text className="mt-6 mb-1 text-sm text-muted">{t('onboarding.ipAddress')}</Text>
-        <TextInput
+        <Field
+          label={t('onboarding.ipAddress')}
           value={host}
           onChangeText={setHost}
           autoCapitalize="none"
+          autoCorrect={false}
           keyboardType="numbers-and-punctuation"
           placeholder="192.168.178.23"
-          placeholderTextColor="#5a5a68"
-          className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
         />
-
-        <Text className="mt-4 mb-1 text-sm text-muted">{t('onboarding.port')}</Text>
-        <TextInput
+        <Field
+          label={t('onboarding.port')}
           value={port}
           onChangeText={setPort}
           keyboardType="number-pad"
           placeholder="8000"
-          placeholderTextColor="#5a5a68"
-          className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
         />
-
-        <Text className="mt-4 mb-1 text-sm text-muted">{t('onboarding.username')}</Text>
-        <TextInput
+        <Field
+          label={t('onboarding.username')}
           value={user}
           onChangeText={setUser}
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="-"
-          placeholderTextColor="#5a5a68"
-          className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
+          textContentType="username"
+          placeholder="—"
         />
-
-        <Text className="mt-4 mb-1 text-sm text-muted">{t('onboarding.password')}</Text>
-        <TextInput
+        <Field
+          label={t('onboarding.password')}
           value={pass}
           onChangeText={setPass}
-          secureTextEntry
+          password
           autoCapitalize="none"
-          placeholder="-"
-          placeholderTextColor="#5a5a68"
-          className="rounded-2xl border border-border bg-surface px-4 py-3 text-base text-white"
+          textContentType="password"
+          placeholder="—"
+          error={error ?? undefined}
         />
 
-        {error && <Text className="mt-4 text-red-400">{error}</Text>}
-
-        <Pressable
-          onPress={onConnect}
-          disabled={busy}
-          className="mt-6 rounded-2xl bg-primary px-4 py-3 active:opacity-80 disabled:opacity-50"
-        >
-          {busy ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text className="text-center text-base font-semibold text-white">{t('onboarding.connect')}</Text>
-          )}
-        </Pressable>
-      </View>
-    </SafeAreaView>
+        <View className="mt-2">
+          <Button label={t('onboarding.connect')} leftIcon="link" loading={busy} onPress={onConnect} />
+        </View>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }

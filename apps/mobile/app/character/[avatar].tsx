@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +8,17 @@ import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
 import { ImageViewerModal } from '@/components/ImageViewerModal';
 import { nowSendDate } from '@/lib/messages';
+import {
+  AppText,
+  Button,
+  Field,
+  ListRow,
+  SectionHeader,
+  Sheet,
+  SheetActionRow,
+  SkeletonList,
+} from '@/components/ui';
+import { haptics } from '@/theme/haptics';
 
 function cleanFile(name: string): string {
   return name.replace(/\.jsonl$/i, '');
@@ -39,6 +49,7 @@ export default function CharacterScreen() {
   const [menuFile, setMenuFile] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(false);
   const [renaming, setRenaming] = useState<{ file: string; name: string } | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['chats', client?.baseUrl, avatarUrl] });
 
@@ -48,10 +59,7 @@ export default function CharacterScreen() {
 
   const newChat = () => {
     const name = `${character?.name ?? 'Chat'} - ${nowSendDate()}`;
-    router.push({
-      pathname: '/chat/[avatar]/[file]',
-      params: { avatar: avatarUrl, file: name, fresh: '1' },
-    });
+    router.push({ pathname: '/chat/[avatar]/[file]', params: { avatar: avatarUrl, file: name, fresh: '1' } });
   };
 
   const doDelete = (file: string) => {
@@ -81,123 +89,133 @@ export default function CharacterScreen() {
     else Alert.alert(t('common.error'), t('character.renameFailed'));
   };
 
+  const description = character?.description?.trim();
+
   return (
     <View className="flex-1 bg-bg">
       <Stack.Screen options={{ title: character?.name ?? t('character.fallbackTitle'), headerShown: true }} />
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {character && (
-          <View className="mb-4">
-            <View className="items-center">
-              <Pressable onPress={() => setShowImage(true)} className="active:opacity-80">
-                <Avatar avatar={avatarUrl} name={character.name} size={140} />
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        {character ? (
+          <View className="mb-5 items-center">
+            <Pressable onPress={() => setShowImage(true)} className="active:opacity-80">
+              <Avatar avatar={avatarUrl} name={character.name} size={128} ring />
+            </Pressable>
+            <AppText variant="h1" style={{ marginTop: 14, textAlign: 'center' }}>
+              {character.name}
+            </AppText>
+            {creator ? (
+              <AppText variant="caption" color="subtle" style={{ marginTop: 2 }}>
+                {t('character.byCreator', { creator })}
+              </AppText>
+            ) : null}
+            {description ? (
+              <Pressable onPress={() => setExpanded((e) => !e)} className="mt-4 active:opacity-70">
+                <AppText variant="body" color="muted" numberOfLines={expanded ? undefined : 6} style={{ textAlign: 'center' }}>
+                  {description}
+                </AppText>
+                {description.length > 180 ? (
+                  <AppText variant="label" color="accent" style={{ marginTop: 6, textAlign: 'center' }}>
+                    {expanded ? t('character.readLess') : t('character.readMore')}
+                  </AppText>
+                ) : null}
               </Pressable>
-              <Text className="mt-3 text-center text-xl font-bold text-white">{character.name}</Text>
-              {!!creator && <Text className="mt-0.5 text-xs text-muted">{t('character.byCreator', { creator })}</Text>}
-            </View>
-            {!!character.description && (
-              <Text className="mt-3 text-sm text-muted" numberOfLines={8}>
-                {character.description}
-              </Text>
-            )}
+            ) : null}
+          </View>
+        ) : (
+          <View className="mb-5 items-center gap-3 py-6">
+            <Avatar avatar={avatarUrl} name="?" size={128} />
           </View>
         )}
 
-        <Pressable onPress={newChat} className="mb-5 rounded-2xl bg-primary px-4 py-3 active:opacity-80">
-          <Text className="text-center text-base font-semibold text-white">{t('character.newChat')}</Text>
-        </Pressable>
+        <Button label={t('character.newChat')} leftIcon="plus" onPress={newChat} />
 
-        <Text className="mb-2 text-sm uppercase tracking-wide text-muted">{t('character.savedChats')}</Text>
+        <SectionHeader title={t('character.savedChats')} />
 
-        {chatsQuery.isLoading && <ActivityIndicator color="#7c5cff" />}
-        {chatsQuery.data?.length === 0 && (
-          <Text className="text-muted">{t('character.noChats')}</Text>
+        {chatsQuery.isLoading ? (
+          <SkeletonList count={3} />
+        ) : chatsQuery.data && chatsQuery.data.length > 0 ? (
+          <View className="gap-2">
+            {chatsQuery.data.map((chat) => {
+              const file = cleanFile(chat.file_name);
+              const preview = typeof chat['mes'] === 'string' ? String(chat['mes']) : undefined;
+              return (
+                <ListRow
+                  key={chat.file_name}
+                  title={file}
+                  subtitle={preview}
+                  subtitleLines={1}
+                  chevron
+                  onPress={() => openChat(file)}
+                  onLongPress={() => {
+                    haptics.impact();
+                    setMenuFile(chat.file_name);
+                  }}
+                />
+              );
+            })}
+          </View>
+        ) : (
+          <AppText variant="body" color="muted">
+            {t('character.noChats')}
+          </AppText>
         )}
-        {chatsQuery.data?.map((chat) => {
-          const file = cleanFile(chat.file_name);
-          return (
-            <Pressable
-              key={chat.file_name}
-              onPress={() => openChat(file)}
-              onLongPress={() => setMenuFile(chat.file_name)}
-              delayLongPress={300}
-              className="mb-2 rounded-2xl border border-border bg-surface px-4 py-3 active:bg-surface2"
-            >
-              <Text className="text-base font-semibold text-white" numberOfLines={1}>
-                {file}
-              </Text>
-              {typeof chat['mes'] === 'string' && (
-                <Text className="mt-0.5 text-sm text-muted" numberOfLines={1}>
-                  {String(chat['mes'])}
-                </Text>
-              )}
-            </Pressable>
-          );
-        })}
-        <Text className="mt-2 text-xs text-muted">{t('character.longPressHint')}</Text>
+
+        <AppText variant="caption" color="subtle" style={{ marginTop: 12 }}>
+          {t('character.longPressHint')}
+        </AppText>
       </ScrollView>
 
       {/* Chat action menu */}
-      <Modal visible={menuFile != null} transparent animationType="fade" onRequestClose={() => setMenuFile(null)}>
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setMenuFile(null)}>
-          <Pressable className="rounded-t-3xl bg-surface px-2 pb-6 pt-2">
-            <Pressable
-              onPress={() => {
-                const f = menuFile;
-                setMenuFile(null);
-                if (f) openChat(cleanFile(f));
-              }}
-              className="rounded-2xl px-4 py-3 active:bg-surface2"
-            >
-              <Text className="text-base text-white">{t('character.open')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                const f = menuFile;
-                setMenuFile(null);
-                if (f) setRenaming({ file: f, name: cleanFile(f) });
-              }}
-              className="rounded-2xl px-4 py-3 active:bg-surface2"
-            >
-              <Text className="text-base text-white">{t('character.rename')}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                const f = menuFile;
-                setMenuFile(null);
-                if (f) doDelete(f);
-              }}
-              className="rounded-2xl px-4 py-3 active:bg-surface2"
-            >
-              <Text className="text-base text-red-400">{t('common.delete')}</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <Sheet visible={menuFile != null} onClose={() => setMenuFile(null)}>
+        <SheetActionRow
+          icon="chats"
+          label={t('character.open')}
+          onPress={() => {
+            const f = menuFile;
+            setMenuFile(null);
+            if (f) openChat(cleanFile(f));
+          }}
+        />
+        <SheetActionRow
+          icon="edit"
+          label={t('character.rename')}
+          onPress={() => {
+            const f = menuFile;
+            setMenuFile(null);
+            if (f) setRenaming({ file: f, name: cleanFile(f) });
+          }}
+        />
+        <SheetActionRow
+          icon="delete"
+          label={t('common.delete')}
+          destructive
+          onPress={() => {
+            const f = menuFile;
+            setMenuFile(null);
+            if (f) doDelete(f);
+          }}
+        />
+      </Sheet>
 
-      {/* Rename modal */}
-      <Modal visible={renaming != null} transparent animationType="slide" onRequestClose={() => setRenaming(null)}>
-        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setRenaming(null)}>
-          <Pressable className="rounded-t-3xl bg-surface px-4 pb-6 pt-4">
-            <Text className="mb-2 text-base font-semibold text-white">{t('character.renameTitle')}</Text>
-            <TextInput
-              value={renaming?.name ?? ''}
-              onChangeText={(t) => setRenaming((r) => (r ? { ...r, name: t } : r))}
-              autoFocus
-              className="rounded-2xl bg-surface2 px-4 py-3 text-base text-white"
-            />
-            <View className="mt-3 flex-row justify-end gap-2">
-              <Pressable onPress={() => setRenaming(null)} className="rounded-xl px-4 py-2">
-                <Text className="text-muted">{t('common.cancel')}</Text>
-              </Pressable>
-              <Pressable onPress={doRename} className="rounded-xl bg-primary px-4 py-2">
-                <Text className="font-semibold text-white">{t('common.save')}</Text>
-              </Pressable>
+      {/* Rename */}
+      <Sheet visible={renaming != null} onClose={() => setRenaming(null)} title={t('character.renameTitle')}>
+        <View className="px-2 pb-2 pt-1">
+          <Field
+            value={renaming?.name ?? ''}
+            onChangeText={(text) => setRenaming((r) => (r ? { ...r, name: text } : r))}
+            autoFocus
+            autoCapitalize="none"
+          />
+          <View className="mt-3 flex-row gap-2">
+            <View className="flex-1">
+              <Button label={t('common.cancel')} variant="secondary" onPress={() => setRenaming(null)} />
             </View>
-          </Pressable>
-        </Pressable>
-        </KeyboardAvoidingView>
-      </Modal>
+            <View className="flex-1">
+              <Button label={t('common.save')} onPress={doRename} />
+            </View>
+          </View>
+        </View>
+      </Sheet>
 
       <ImageViewerModal visible={showImage} uri={fullImageUri} onClose={() => setShowImage(false)} />
     </View>

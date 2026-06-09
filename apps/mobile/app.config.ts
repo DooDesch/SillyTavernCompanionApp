@@ -15,7 +15,8 @@ const config: ExpoConfig = {
   version: '0.1.0',
   orientation: 'portrait',
   userInterfaceStyle: 'dark',
-  newArchEnabled: true,
+  // New Architecture is the default (and only) arch on SDK 56 / RN 0.85, so an explicit
+  // `newArchEnabled: true` is redundant — and it isn't in this Expo version's config types.
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
@@ -34,6 +35,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-font',
     'expo-secure-store',
     'expo-localization',
     [

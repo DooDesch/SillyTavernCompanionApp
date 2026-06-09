@@ -1,9 +1,10 @@
-import { Image, Modal, Pressable, Text, View } from 'react-native';
+import { Image, Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '@/theme/icons';
 
 /**
  * Fullscreen image viewer: shows an image `contain`-fit on a black backdrop so the whole picture is
- * visible (not cropped). Tap anywhere or the ✕ to close.
+ * visible (not cropped). Tap anywhere or the close button to dismiss.
  */
 export function ImageViewerModal({
   visible,
@@ -22,11 +23,15 @@ export function ImageViewerModal({
           <Image source={{ uri }} style={{ flex: 1, width: '100%', height: '100%' }} resizeMode="contain" />
         ) : null}
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
           onPress={onClose}
           style={{ position: 'absolute', top: insets.top + 8, right: 16 }}
           className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
         >
-          <Text className="text-xl text-white">✕</Text>
+          <View>
+            <Icon name="close" size={20} color="#FFFFFF" />
+          </View>
         </Pressable>
       </Pressable>
     </Modal>

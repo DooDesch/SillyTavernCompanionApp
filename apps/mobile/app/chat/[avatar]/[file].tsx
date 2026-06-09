@@ -1,7 +1,8 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Keyboard, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Keyboard, Pressable, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,6 +41,12 @@ import { PickerSheet, type PickerOption } from '@/components/PickerSheet';
 import { AuthorsNoteSheet, type AuthorsNoteValue } from '@/components/AuthorsNoteSheet';
 import { QuickSettingsSheet } from '@/components/QuickSettingsSheet';
 import { LoreSheet, entryUid } from '@/components/LoreSheet';
+import { AppText, Button, IconButton, Sheet, SheetActionRow } from '@/components/ui';
+import { Icon } from '@/theme/icons';
+import { colors, fonts } from '@/theme/tokens';
+import { haptics } from '@/theme/haptics';
+import { useReducedMotion } from '@/theme/motion';
+import { useBottomInset } from '@/theme/insets';
 
 type GenMode = 'new' | 'regenerate' | 'swipe' | 'continue';
 
@@ -63,9 +70,7 @@ export default function ChatScreen() {
   const syncToPc = useProfiles((s) => s.syncToPc);
   const insets = useSafeAreaInsets();
   const kbVisible = useKeyboardState((s) => s.isVisible);
-  // No safe-area bottom inset while the keyboard is up (the KeyboardAvoidingView already lifts the
-  // sheet above it) - otherwise the inset becomes a dead gap below the buttons.
-  const sheetPadBottom = kbVisible ? 12 : Math.max(insets.bottom, 12);
+  const bottomInset = useBottomInset(16);
   const listRef = useRef<FlashListRef<StChatMessage>>(null);
   const abortRef = useRef<AbortController | null>(null);
   const abortedByUserRef = useRef(false);
@@ -103,21 +108,30 @@ export default function ChatScreen() {
     depth: typeof meta?.note_depth === 'number' ? meta.note_depth : 4,
     role: typeof meta?.note_role === 'number' ? meta.note_role : 0,
   };
-  const authorsNote: DepthInjection | undefined = authorsNoteValue.content.trim()
-    ? { depth: authorsNoteValue.depth, role: authorsNoteValue.role, content: authorsNoteValue.content }
-    : undefined;
+  const authorsNote: DepthInjection | undefined = useMemo(
+    () =>
+      authorsNoteValue.content.trim()
+        ? { depth: authorsNoteValue.depth, role: authorsNoteValue.role, content: authorsNoteValue.content }
+        : undefined,
+    [authorsNoteValue.content, authorsNoteValue.depth, authorsNoteValue.role],
+  );
 
-  // Lorebook with user-muted entries removed + the timed-effect state attached (mutated during scan).
-  const effectiveLorebook = lorebook
-    ? {
-        entries:
-          disabledLore.size > 0
-            ? lorebook.entries.filter((e, i) => !disabledLore.has(entryUid(e, i)))
-            : lorebook.entries,
-        settings: lorebook.settings,
-        timedState: timedStateRef.current,
-      }
-    : undefined;
+  // Lorebook with user-muted entries removed + the timed-effect state attached. Built on demand at
+  // generation time (not during render) so we never read the mutable timed-state ref while rendering.
+  const buildEffectiveLorebook = useCallback(
+    () =>
+      lorebook
+        ? {
+            entries:
+              disabledLore.size > 0
+                ? lorebook.entries.filter((e, i) => !disabledLore.has(entryUid(e, i)))
+                : lorebook.entries,
+            settings: lorebook.settings,
+            timedState: timedStateRef.current,
+          }
+        : undefined,
+    [lorebook, disabledLore],
+  );
 
   useEffect(() => {
     if (!client || !character || loaded) return;
@@ -210,6 +224,7 @@ export default function ChatScreen() {
   const runGeneration = useCallback(
     async (contextMsgs: StChatMessage[], assistantIndex: number, mode: GenMode) => {
       if (!client || !engine || !character) return;
+      const effectiveLorebook = buildEffectiveLorebook();
       const isContinue = mode === 'continue';
       const prefix = isContinue ? currentSwipeText(contextMsgs[assistantIndex]!) : '';
       setStreaming(true);
@@ -286,7 +301,7 @@ export default function ChatScreen() {
         }
       }
     },
-    [client, engine, character, persist, scrollToEnd, effectiveLorebook, authorsNote, header, t],
+    [client, engine, character, persist, scrollToEnd, buildEffectiveLorebook, authorsNote, header, t],
   );
 
   const send = useCallback(async () => {
@@ -358,6 +373,7 @@ export default function ChatScreen() {
   // Impersonate: draft the user's next turn into the input box (text-completion only).
   const impersonate = useCallback(async () => {
     if (streaming || !client || !engine || !character || engine.mode === 'cc') return;
+    const effectiveLorebook = buildEffectiveLorebook();
     setStreaming(true);
     const ac = new AbortController();
     abortRef.current = ac;
@@ -376,7 +392,7 @@ export default function ChatScreen() {
       abortRef.current = null;
       setStreaming(false);
     }
-  }, [streaming, client, engine, character, messages, effectiveLorebook, authorsNote]);
+  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote]);
 
   // Persist a header change (e.g. Author's Note) back to the server.
   const saveHeader = useCallback(
@@ -580,7 +596,7 @@ export default function ChatScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator color="#7c5cff" />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -597,60 +613,54 @@ export default function ChatScreen() {
   const closeMenu = () => setMenuIndex(null);
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#0b0b0f' }} behavior="padding">
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior="padding">
       <Stack.Screen options={{ headerShown: false }} />
       <View
         style={{ paddingTop: insets.top }}
-        className="flex-row items-center gap-1 border-b border-border bg-surface px-2 pb-2"
+        className="flex-row items-center gap-0.5 border-b border-border bg-surface px-1 pb-2"
       >
-        <Pressable
+        <IconButton
+          name="back"
+          size="lg"
+          accessibilityLabel={t('a11y.back')}
+          haptic={false}
           onPress={() => router.back()}
-          className="h-10 w-10 items-center justify-center active:opacity-60"
-        >
-          <Text className="text-3xl text-white">‹</Text>
-        </Pressable>
+        />
         <Pressable
           onPress={() => router.push({ pathname: '/character/[avatar]', params: { avatar: avatarUrl } })}
-          className="flex-1 flex-row items-center gap-2 active:opacity-70"
+          className="flex-1 flex-row items-center gap-2.5 active:opacity-70"
         >
-          <Avatar avatar={avatarUrl} name={character?.name ?? '?'} size={36} />
+          <Avatar avatar={avatarUrl} name={character?.name ?? '?'} size={38} />
           <View className="flex-1">
-            <Text className="text-lg font-semibold text-white" numberOfLines={1}>
+            <AppText variant="h2" numberOfLines={1}>
               {character?.name ?? 'Chat'}
-            </Text>
+            </AppText>
             {personas.length > 0 && (
-              <Pressable onPress={() => setSheet('persona')} className="self-start active:opacity-60">
-                <Text className="text-xs text-muted" numberOfLines={1}>
+              <Pressable onPress={() => setSheet('persona')} className="flex-row items-center self-start active:opacity-60">
+                <AppText variant="caption" color="muted" numberOfLines={1}>
                   {t('chat.asPersona', {
                     name: personas.find((p) => p.avatar === activePersonaAvatar)?.name ?? t('chat.choosePersona'),
-                  })}{' '}
-                  ▾
-                </Text>
+                  })}
+                </AppText>
+                <Icon name="chevronDown" size={13} color={colors.textMuted} />
               </Pressable>
             )}
           </View>
         </Pressable>
-        <Pressable onPress={() => setSheet('note')} className="h-9 w-9 items-center justify-center active:opacity-60">
-          <Text className={`text-lg ${authorsNote ? 'text-primary' : 'text-muted'}`}>✎</Text>
-        </Pressable>
-        {!!lorebook && (
-          <Pressable onPress={openLore} className="h-9 w-9 items-center justify-center active:opacity-60">
-            <Text className="text-lg text-muted">📖</Text>
-          </Pressable>
-        )}
-        <Pressable onPress={() => setSheet('quick')} className="h-9 w-9 items-center justify-center active:opacity-60">
-          <Text className="text-lg text-muted">⚙︎</Text>
-        </Pressable>
+        <IconButton name="note" accessibilityLabel={t('a11y.authorsNote')} active={!!authorsNote} onPress={() => setSheet('note')} />
+        {!!lorebook && <IconButton name="lore" accessibilityLabel={t('a11y.lorebook')} onPress={openLore} />}
+        <IconButton name="tune" accessibilityLabel={t('a11y.generationSettings')} onPress={() => setSheet('quick')} />
       </View>
 
       {backend.data && !backend.data.connected && (
         <Pressable
           onPress={() => router.push('/(tabs)/settings')}
-          className="bg-red-950 px-3 py-1.5 active:opacity-70"
+          className="flex-row items-center justify-center gap-2 bg-danger-soft px-3 py-2 active:opacity-70"
         >
-          <Text className="text-center text-xs text-red-300">
-            ⚠ {t('chat.backendWarning')}
-          </Text>
+          <Icon name="warning" size={14} color={colors.danger} />
+          <AppText variant="caption" color="danger" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {t('chat.backendWarning')}
+          </AppText>
         </Pressable>
       )}
       <FlashList
@@ -671,224 +681,208 @@ export default function ChatScreen() {
       />
 
       {showSwipeBar && (
-        <View className="flex-row items-center justify-center gap-4 pb-1">
-          <Pressable onPress={regenerate} className="rounded-full bg-surface2 px-3 py-1 active:opacity-70">
-            <Text className="text-sm text-white">↻</Text>
-          </Pressable>
-          <Pressable onPress={() => cycleSwipe(-1)} className="px-3 py-1 active:opacity-60">
-            <Text className="text-lg text-muted">‹</Text>
-          </Pressable>
-          <Text className="text-xs text-muted">
-            {swipeId}/{swipeCount}
-          </Text>
-          <Pressable onPress={() => cycleSwipe(1)} className="px-3 py-1 active:opacity-60">
-            <Text className="text-lg text-muted">›</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => void continueLast()}
-            className="rounded-full bg-surface2 px-3 py-1 active:opacity-70"
-          >
-            <Text className="text-sm text-white">→|</Text>
-          </Pressable>
+        <View className="flex-row items-center justify-center gap-2 pb-1 pt-0.5">
+          <IconButton name="regenerate" size="sm" surface accessibilityLabel={t('a11y.regenerate')} onPress={regenerate} />
+          <View className="flex-row items-center rounded-pill bg-surface-2 px-1">
+            <IconButton name="chevronLeft" size="sm" accessibilityLabel={t('a11y.previousSwipe')} onPress={() => cycleSwipe(-1)} />
+            <AppText variant="label" color="muted" style={{ minWidth: 36, textAlign: 'center' }}>
+              {swipeId}/{swipeCount}
+            </AppText>
+            <IconButton name="chevronRight" size="sm" accessibilityLabel={t('a11y.nextSwipe')} onPress={() => cycleSwipe(1)} />
+          </View>
+          <IconButton name="fastForward" size="sm" surface accessibilityLabel={t('a11y.continueReply')} onPress={() => void continueLast()} />
         </View>
       )}
 
       {pendingImage && (
-        <View className="flex-row items-center gap-2 border-t border-border bg-surface px-3 pt-2">
-          <Image source={{ uri: pendingImage }} style={{ width: 44, height: 44, borderRadius: 8 }} />
-          <Text className="flex-1 text-xs text-muted">{t('chat.imageAttached')}</Text>
-          <Pressable onPress={() => setPendingImage(null)} className="h-8 w-8 items-center justify-center active:opacity-60">
-            <Text className="text-lg text-muted">✕</Text>
-          </Pressable>
+        <View className="flex-row items-center gap-3 border-t border-border bg-surface px-3 pt-2">
+          <Image source={{ uri: pendingImage }} style={{ width: 44, height: 44, borderRadius: 10 }} />
+          <AppText variant="caption" color="muted" style={{ flex: 1 }}>
+            {t('chat.imageAttached')}
+          </AppText>
+          <IconButton name="close" size="sm" accessibilityLabel={t('a11y.removeImage')} haptic={false} onPress={() => setPendingImage(null)} />
         </View>
       )}
       <View
-        style={{ paddingBottom: kbVisible ? 8 : Math.max(insets.bottom, 8) }}
-        className="flex-row items-end gap-2 border-t border-border bg-surface px-3 pt-2"
+        style={{ paddingBottom: kbVisible ? 10 : bottomInset }}
+        className="flex-row items-end gap-2 border-t border-border bg-surface px-2 pt-2"
       >
-        <Pressable
+        <IconButton
+          name="plus"
+          accessibilityLabel={t('a11y.more')}
+          disabled={streaming}
           onPress={() => {
             Keyboard.dismiss();
             setPlusMenu(true);
           }}
-          disabled={streaming}
-          className="h-11 w-9 items-center justify-center active:opacity-60 disabled:opacity-30"
-        >
-          <Text className="text-3xl leading-9 text-muted">＋</Text>
-        </Pressable>
+        />
         <TextInput
           value={input}
           onChangeText={setInput}
           onFocus={() => setTimeout(scrollToEnd, 250)}
           multiline
           placeholder={t('chat.inputPlaceholder')}
-          placeholderTextColor="#5a5a68"
+          placeholderTextColor={colors.textSubtle}
           editable={!streaming}
-          className="max-h-32 flex-1 rounded-2xl bg-surface2 px-4 py-2.5 text-base text-white"
+          className="max-h-32 flex-1 rounded-3xl border border-border bg-surface-2 px-4 py-2.5 text-text"
+          style={{ fontFamily: fonts.regular, fontSize: 16, minHeight: 44 }}
         />
         {streaming ? (
-          <Pressable onPress={stop} className="h-11 w-11 items-center justify-center rounded-full bg-red-600 active:opacity-80">
-            <Text className="text-white">■</Text>
+          <Pressable
+            onPress={stop}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.stop')}
+            className="h-11 w-11 items-center justify-center rounded-full bg-danger active:opacity-80"
+          >
+            <Icon name="stop" size={18} color={colors.onAccent} />
           </Pressable>
         ) : (
           <Pressable
-            onPress={send}
+            onPress={() => {
+              haptics.tap();
+              void send();
+            }}
             disabled={!input.trim() && !pendingImage}
-            className="h-11 w-11 items-center justify-center rounded-full bg-primary active:opacity-80 disabled:opacity-40"
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.send')}
+            className="h-11 w-11 items-center justify-center rounded-full bg-accent active:bg-accent-pressed disabled:opacity-40"
           >
-            <Text className="text-lg text-white">↑</Text>
+            <Icon name="send" size={18} color={colors.onAccent} />
           </Pressable>
         )}
       </View>
 
-      <Modal visible={plusMenu} transparent animationType="fade" onRequestClose={() => setPlusMenu(false)}>
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setPlusMenu(false)}>
-          <Pressable
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}
-            className="rounded-t-3xl bg-surface px-2 pt-2"
-          >
-            {canContinue && (
-              <ActionRow
-                icon="→|"
-                label={t('chat.continueExtend')}
-                onPress={() => {
-                  setPlusMenu(false);
-                  void continueLast();
-                }}
-              />
-            )}
-            {engine?.mode === 'cc' ? (
-              <ActionRow
-                icon="📎"
-                label={t('chat.attachImage')}
-                onPress={() => {
-                  setPlusMenu(false);
-                  void pickImage();
-                }}
-              />
-            ) : (
-              <ActionRow
-                icon="✍︎"
-                label={t('chat.impersonate')}
-                onPress={() => {
-                  setPlusMenu(false);
-                  void impersonate();
-                }}
-              />
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <Sheet visible={plusMenu} onClose={() => setPlusMenu(false)}>
+        {canContinue && (
+          <SheetActionRow
+            icon="fastForward"
+            label={t('chat.continueExtend')}
+            onPress={() => {
+              setPlusMenu(false);
+              void continueLast();
+            }}
+          />
+        )}
+        {engine?.mode === 'cc' ? (
+          <SheetActionRow
+            icon="attach"
+            label={t('chat.attachImage')}
+            onPress={() => {
+              setPlusMenu(false);
+              void pickImage();
+            }}
+          />
+        ) : (
+          <SheetActionRow
+            icon="impersonate"
+            label={t('chat.impersonate')}
+            onPress={() => {
+              setPlusMenu(false);
+              void impersonate();
+            }}
+          />
+        )}
+      </Sheet>
 
-      <Modal visible={menuIndex != null} transparent animationType="fade" onRequestClose={closeMenu}>
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={closeMenu}>
-          <Pressable
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}
-            className="rounded-t-3xl bg-surface px-2 pt-2"
-          >
-            <ActionRow
-              icon="⧉"
-              label={t('chat.copy')}
+      <Sheet visible={menuIndex != null} onClose={closeMenu} title={t('a11y.messageActions')}>
+        <SheetActionRow
+          icon="copy"
+          label={t('chat.copy')}
+          onPress={() => {
+            if (menuIndex != null) void copyMessage(menuIndex);
+            closeMenu();
+          }}
+        />
+        <SheetActionRow
+          icon="edit"
+          label={t('chat.edit')}
+          onPress={() => {
+            if (menuIndex != null) startEdit(menuIndex);
+            closeMenu();
+          }}
+        />
+        <SheetActionRow
+          icon="speak"
+          label={t('chat.readAloud')}
+          onPress={() => {
+            if (menuIndex != null) speakMessage(menuIndex);
+            closeMenu();
+          }}
+        />
+        {menuIsLastAssistant && !streaming && (
+          <>
+            <SheetActionRow
+              icon="continue"
+              label={t('chat.continue')}
               onPress={() => {
-                if (menuIndex != null) void copyMessage(menuIndex);
                 closeMenu();
+                void continueLast();
               }}
             />
-            <ActionRow
-              icon="✎"
-              label={t('chat.edit')}
+            <SheetActionRow
+              icon="regenerate"
+              label={t('chat.regenerate')}
               onPress={() => {
-                if (menuIndex != null) startEdit(menuIndex);
                 closeMenu();
+                void regenerate();
               }}
             />
-            <ActionRow
-              icon="🔊"
-              label={t('chat.readAloud')}
-              onPress={() => {
-                if (menuIndex != null) speakMessage(menuIndex);
-                closeMenu();
-              }}
-            />
-            {menuIsLastAssistant && !streaming && (
-              <>
-                <ActionRow
-                  icon="↳"
-                  label={t('chat.continue')}
-                  onPress={() => {
-                    closeMenu();
-                    void continueLast();
-                  }}
-                />
-                <ActionRow
-                  icon="↻"
-                  label={t('chat.regenerate')}
-                  onPress={() => {
-                    closeMenu();
-                    void regenerate();
-                  }}
-                />
-              </>
-            )}
-            <ActionRow
-              icon="⑃"
-              label={t('chat.branchFromHere')}
-              onPress={() => {
-                const idx = menuIndex;
-                closeMenu();
-                if (idx != null) void branchFrom(idx);
-              }}
-            />
-            <ActionRow
-              icon={menuMsg?.is_system ? '◌' : '◍'}
-              label={menuMsg?.is_system ? t('chat.unhide') : t('chat.hideFromContext')}
-              onPress={() => {
-                if (menuIndex != null) toggleHide(menuIndex);
-                closeMenu();
-              }}
-            />
-            <ActionRow
-              icon="🗑"
-              label={t('common.delete')}
-              destructive
-              onPress={() => {
-                const idx = menuIndex;
-                closeMenu();
-                if (idx == null) return;
-                Alert.alert(t('common.delete'), t('chat.deleteConfirm'), [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  { text: t('common.delete'), style: 'destructive', onPress: () => deleteMessage(idx) },
-                ]);
-              }}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
+          </>
+        )}
+        <SheetActionRow
+          icon="branch"
+          label={t('chat.branchFromHere')}
+          onPress={() => {
+            const idx = menuIndex;
+            closeMenu();
+            if (idx != null) void branchFrom(idx);
+          }}
+        />
+        <SheetActionRow
+          icon={menuMsg?.is_system ? 'show' : 'hide'}
+          label={menuMsg?.is_system ? t('chat.unhide') : t('chat.hideFromContext')}
+          onPress={() => {
+            if (menuIndex != null) toggleHide(menuIndex);
+            closeMenu();
+          }}
+        />
+        <SheetActionRow
+          icon="delete"
+          label={t('common.delete')}
+          destructive
+          onPress={() => {
+            const idx = menuIndex;
+            closeMenu();
+            if (idx == null) return;
+            Alert.alert(t('common.delete'), t('chat.deleteConfirm'), [
+              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('common.delete'), style: 'destructive', onPress: () => deleteMessage(idx) },
+            ]);
+          }}
+        />
+      </Sheet>
 
-      <Modal visible={!!editing} transparent animationType="slide" onRequestClose={() => setEditing(null)}>
-        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-          <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setEditing(null)}>
-          <Pressable style={{ paddingBottom: sheetPadBottom }} className="rounded-t-3xl bg-surface px-4 pt-4">
-            <Text className="mb-2 text-base font-semibold text-white">{t('chat.editMessage')}</Text>
-            <TextInput
-              value={editing?.text ?? ''}
-              onChangeText={(t) => setEditing((e) => (e ? { ...e, text: t } : e))}
-              multiline
-              autoFocus
-              className="max-h-72 rounded-2xl bg-surface2 px-4 py-3 text-base text-white"
-            />
-            <View className="mt-3 flex-row justify-end gap-2">
-              <Pressable onPress={() => setEditing(null)} className="rounded-xl px-4 py-2">
-                <Text className="text-muted">{t('common.cancel')}</Text>
-              </Pressable>
-              <Pressable onPress={saveEdit} className="rounded-xl bg-primary px-4 py-2">
-                <Text className="font-semibold text-white">{t('common.save')}</Text>
-              </Pressable>
+      <Sheet visible={!!editing} onClose={() => setEditing(null)} title={t('chat.editMessage')}>
+        <View className="px-2 pb-1">
+          <TextInput
+            value={editing?.text ?? ''}
+            onChangeText={(text) => setEditing((e) => (e ? { ...e, text } : e))}
+            multiline
+            autoFocus
+            placeholderTextColor={colors.textSubtle}
+            className="rounded-field border border-border bg-surface-2 px-4 py-3 text-text"
+            style={{ fontFamily: fonts.regular, fontSize: 16, minHeight: 110, maxHeight: 280, textAlignVertical: 'top' }}
+          />
+          <View className="mt-3 flex-row gap-2">
+            <View className="flex-1">
+              <Button label={t('common.cancel')} variant="secondary" onPress={() => setEditing(null)} />
             </View>
-          </Pressable>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </Modal>
+            <View className="flex-1">
+              <Button label={t('common.save')} onPress={saveEdit} />
+            </View>
+          </View>
+        </View>
+      </Sheet>
 
       <PickerSheet
         visible={sheet === 'persona'}
@@ -985,16 +979,16 @@ const Bubble = memo(function Bubble({
     <Pressable
       onLongPress={onLongPress}
       delayLongPress={350}
-      className={`rounded-2xl px-3.5 py-2.5 ${isUser ? 'bg-user' : 'bg-char'} ${isHidden ? 'opacity-50' : ''}`}
+      className={`rounded-3xl px-4 py-2.5 ${isUser ? 'bg-user-bubble' : 'bg-char-bubble'} ${isHidden ? 'opacity-50' : ''}`}
     >
       {image ? (
-        <Image source={{ uri: image }} style={{ width: 180, height: 180, borderRadius: 10, marginBottom: text ? 6 : 0 }} resizeMode="cover" />
+        <Image source={{ uri: image }} style={{ width: 200, height: 200, borderRadius: 14, marginBottom: text ? 8 : 0 }} resizeMode="cover" />
       ) : null}
       {!isUser && reasoning ? <ReasoningBlock text={reasoning} /> : null}
       {showDots ? (
         <TypingDots thinking={!!reasoning} />
       ) : plain ? (
-        <Text className="text-[15px] leading-5 text-white">{text || ' '}</Text>
+        <AppText variant="body">{text || ' '}</AppText>
       ) : (
         <RichText text={text || ' '} />
       )}
@@ -1003,59 +997,66 @@ const Bubble = memo(function Bubble({
 
   if (isUser) {
     return (
-      <View className="mb-2 max-w-[88%] self-end">
+      <View className="mb-3 max-w-[86%] self-end">
         {bubble}
-        {!!time && <Text className="mr-1 mt-0.5 text-right text-[10px] text-muted">{time}</Text>}
+        {!!time && (
+          <AppText variant="caption" color="subtle" style={{ marginRight: 6, marginTop: 3, textAlign: 'right' }}>
+            {time}
+          </AppText>
+        )}
       </View>
     );
   }
 
   return (
-    <View className="mb-2 max-w-[90%] flex-row gap-2 self-start">
-      {charAvatar ? <Avatar avatar={charAvatar} name={message.name} size={28} /> : null}
+    <View className="mb-3 max-w-[92%] flex-row gap-2 self-start">
+      {charAvatar ? <Avatar avatar={charAvatar} name={message.name} size={30} /> : null}
       <View className="flex-1">
-        <Text className="mb-0.5 ml-1 text-xs font-semibold text-muted">
+        <AppText variant="label" color="muted" numberOfLines={1} style={{ marginLeft: 4, marginBottom: 3 }}>
           {message.name}
           {isHidden ? `  ·  ${t('chat.hidden')}` : ''}
-        </Text>
+        </AppText>
         {bubble}
-        {!!time && <Text className="ml-1 mt-0.5 text-[10px] text-muted">{time}</Text>}
+        {!!time && (
+          <AppText variant="caption" color="subtle" style={{ marginLeft: 4, marginTop: 3 }}>
+            {time}
+          </AppText>
+        )}
       </View>
     </View>
   );
 });
 
-function ActionRow({
-  icon,
-  label,
-  onPress,
-  destructive,
-}: {
-  icon: string;
-  label: string;
-  onPress: () => void;
-  destructive?: boolean;
-}) {
-  return (
-    <Pressable onPress={onPress} className="flex-row items-center gap-3 rounded-2xl px-4 py-3 active:bg-surface2">
-      <Text className={`w-6 text-center text-lg ${destructive ? 'text-red-400' : 'text-white'}`}>{icon}</Text>
-      <Text className={`text-base ${destructive ? 'text-red-400' : 'text-white'}`}>{label}</Text>
-    </Pressable>
-  );
+const DOT = { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textSubtle } as const;
+
+function dotOpacity(v: number, i: number): number {
+  'worklet';
+  const phase = (((v - i) % 3) + 3) % 3;
+  return phase < 1.5 ? 0.3 + 0.7 * (phase / 1.5) : 0.3 + 0.7 * ((3 - phase) / 1.5);
 }
 
 function TypingDots({ thinking }: { thinking?: boolean }) {
   const { t } = useTranslation();
-  const [n, setN] = useState(1);
+  const reduced = useReducedMotion();
+  const v = useSharedValue(0);
   useEffect(() => {
-    const id = setInterval(() => setN((x) => (x % 3) + 1), 400);
-    return () => clearInterval(id);
-  }, []);
+    if (reduced) return;
+    v.value = withRepeat(withTiming(3, { duration: 1100 }), -1, false);
+  }, [reduced, v]);
+  const d0 = useAnimatedStyle(() => ({ opacity: dotOpacity(v.value, 0) }));
+  const d1 = useAnimatedStyle(() => ({ opacity: dotOpacity(v.value, 1) }));
+  const d2 = useAnimatedStyle(() => ({ opacity: dotOpacity(v.value, 2) }));
   return (
-    <Text className="text-[15px] leading-5 text-muted">
-      {thinking ? t('chat.thinking') : ''}
-      {'.'.repeat(n)}
-    </Text>
+    <View className="flex-row items-center gap-1.5 py-1">
+      {thinking ? (
+        <AppText variant="body" color="muted" style={{ marginRight: 2 }}>
+          {t('chat.thinking')}
+        </AppText>
+      ) : null}
+      <Animated.View style={[d0, DOT]} />
+      <Animated.View style={[d1, DOT]} />
+      <Animated.View style={[d2, DOT]} />
+    </View>
   );
 }
 
@@ -1063,15 +1064,23 @@ function ReasoningBlock({ text }: { text: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
-    <View className="mb-1.5">
-      <Pressable onPress={() => setOpen((o) => !o)} className="flex-row items-center active:opacity-60">
-        <Text className="text-xs text-muted">{open ? '▾' : '▸'} {t('chat.reasoning')}</Text>
+    <View className="mb-2">
+      <Pressable onPress={() => setOpen((o) => !o)} className="flex-row items-center gap-1 active:opacity-60">
+        <Icon name={open ? 'chevronDown' : 'chevronRight'} size={13} color={colors.textSubtle} />
+        <AppText variant="caption" color="subtle">
+          {t('chat.reasoning')}
+        </AppText>
       </Pressable>
-      {open && (
-        <Text selectable className="mt-1 border-l-2 border-border pl-2 text-xs italic text-muted">
+      {open ? (
+        <AppText
+          selectable
+          variant="caption"
+          color="muted"
+          style={{ marginTop: 4, borderLeftWidth: 2, borderLeftColor: colors.borderStrong, paddingLeft: 8, fontStyle: 'italic' }}
+        >
           {text}
-        </Text>
-      )}
+        </AppText>
+      ) : null}
     </View>
   );
 }

@@ -1,23 +1,26 @@
 import { memo } from 'react';
-import { Platform, Text, View, type TextStyle } from 'react-native';
+import { Text, View, type TextStyle } from 'react-native';
+import { colors, fonts } from '@/theme/tokens';
 
 /**
  * SillyTavern-style message renderer (Hermes-safe, no eval).
  * Block level: fenced code blocks, ATX headings, blockquotes, and bullet/numbered lists; everything
  * else is paragraph prose (consecutive non-blank lines kept together so multi-line actions / "quotes"
  * don't split mid-span). Inline (prose): bold, italic (actions), inline code, "quoted speech".
+ *
+ * Colors are drawn from the design tokens so prose stays legible (>= 4.5:1) on the character bubble.
  */
-
 const COLORS = {
-  base: '#d9d9e3',
-  quote: '#8fb6ff', // speech
-  italic: '#c2a8f0', // actions / narration
-  bold: '#ffffff',
-  code: '#ffd479',
-  heading: '#ffffff',
+  base: colors.text, // prose
+  quote: '#8FB6FF', // speech
+  italic: '#C4A6F2', // actions / narration
+  bold: colors.text,
+  code: colors.warning, // inline code
+  heading: colors.text,
+  codeBlock: '#CDD6F4',
 };
 
-const MONO = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' });
+const MONO = fonts.mono;
 
 interface Span {
   text: string;
@@ -131,16 +134,16 @@ function parseInline(text: string): Span[] {
 }
 
 function spanStyle(s: Span): TextStyle {
-  if (s.code) return { color: COLORS.code, fontFamily: MONO, fontSize: 13 };
+  if (s.code) return { color: COLORS.code, fontFamily: MONO, fontSize: 13.5 };
   if (s.quote) return { color: COLORS.quote };
-  if (s.bold) return { color: COLORS.bold, fontWeight: '700' };
-  if (s.italic) return { color: COLORS.italic, fontStyle: 'italic' };
+  if (s.bold) return { color: COLORS.bold, fontFamily: fonts.semibold };
+  if (s.italic) return { color: COLORS.italic, fontFamily: fonts.regular, fontStyle: 'italic' };
   return { color: COLORS.base };
 }
 
-function InlineText({ text, className }: { text: string; className?: string }) {
+function InlineText({ text }: { text: string }) {
   return (
-    <Text selectable className={className} style={{ color: COLORS.base, fontSize: 15, lineHeight: 21 }}>
+    <Text selectable style={{ color: COLORS.base, fontFamily: fonts.regular, fontSize: 15, lineHeight: 22 }}>
       {parseInline(text).map((s, j) => (
         <Text key={j} style={spanStyle(s)}>
           {s.text}
@@ -158,8 +161,8 @@ function RichTextImpl({ text }: { text: string }) {
         switch (b.type) {
           case 'code':
             return (
-              <View key={i} className="my-1 rounded-lg bg-surface2 px-3 py-2">
-                <Text selectable style={{ color: '#cdd6f4', fontFamily: MONO, fontSize: 13, lineHeight: 18 }}>
+              <View key={i} className="my-1 rounded-field bg-surface-2 px-3 py-2">
+                <Text selectable style={{ color: COLORS.codeBlock, fontFamily: MONO, fontSize: 13, lineHeight: 19 }}>
                   {b.content}
                 </Text>
               </View>
@@ -169,14 +172,19 @@ function RichTextImpl({ text }: { text: string }) {
               <Text
                 key={i}
                 selectable
-                style={{ color: COLORS.heading, fontWeight: '700', fontSize: b.level <= 2 ? 18 : 16, marginVertical: 2 }}
+                style={{
+                  color: COLORS.heading,
+                  fontFamily: fonts.semibold,
+                  fontSize: b.level <= 2 ? 18 : 16,
+                  marginVertical: 2,
+                }}
               >
                 {b.content}
               </Text>
             );
           case 'quote':
             return (
-              <View key={i} className="my-1 border-l-2 border-border pl-2">
+              <View key={i} className="my-1 border-l-2 border-border-strong pl-2.5">
                 <InlineText text={b.content} />
               </View>
             );
@@ -185,7 +193,7 @@ function RichTextImpl({ text }: { text: string }) {
               <View key={i} className="my-1">
                 {b.items.map((it, k) => (
                   <View key={k} className="flex-row">
-                    <Text style={{ color: COLORS.base, fontSize: 15, lineHeight: 21 }}>
+                    <Text style={{ color: COLORS.base, fontFamily: fonts.regular, fontSize: 15, lineHeight: 22 }}>
                       {b.ordered ? `${k + 1}. ` : '•  '}
                     </Text>
                     <View className="flex-1">

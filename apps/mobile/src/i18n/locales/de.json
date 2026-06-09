@@ -1,4 +1,27 @@
 {
+  "a11y": {
+    "attachImage": "Bild anhängen",
+    "authorsNote": "Autoren-Notiz",
+    "back": "Zurück",
+    "changePersona": "Persona wechseln",
+    "clearSearch": "Suche leeren",
+    "closeSheet": "Schließen",
+    "continueReply": "Antwort fortsetzen",
+    "generationSettings": "Generierungs-Einstellungen",
+    "lorebook": "Lorebook",
+    "messageActions": "Nachrichten-Aktionen",
+    "more": "Weitere Aktionen",
+    "newChat": "Neuer Chat",
+    "nextSwipe": "Nächste Variante",
+    "previousSwipe": "Vorherige Variante",
+    "regenerate": "Neu generieren",
+    "removeImage": "Bild entfernen",
+    "removeServer": "Server entfernen",
+    "search": "Suchen",
+    "send": "Nachricht senden",
+    "showPassword": "Passwort anzeigen/verbergen",
+    "stop": "Generierung stoppen"
+  },
   "authorsNote": {
     "depth": "Tiefe",
     "description": "Steuert die Szene (Ton, Tempo, Hinweise). Wird in @Tiefe in den Chat injiziert.",
@@ -15,18 +38,24 @@
     "deleteTitle": "Chat löschen",
     "fallbackTitle": "Charakter",
     "longPressHint": "Tipp: Chat gedrückt halten zum Umbenennen/Löschen.",
-    "newChat": "+ Neuer Chat",
+    "newChat": "Neuer Chat",
     "noChats": "Noch keine Chats. Starte einen neuen.",
     "open": "Öffnen",
+    "readLess": "Weniger anzeigen",
+    "readMore": "Mehr anzeigen",
     "rename": "Umbenennen",
     "renameFailed": "Chat konnte nicht umbenannt werden (Name evtl. vergeben).",
     "renameTitle": "Chat umbenennen",
     "savedChats": "Gespeicherte Chats"
   },
   "characters": {
+    "countLabel": "{{count}} Charaktere",
+    "emptyMessage": "Auf diesem Server wurden keine Charaktere gefunden.",
+    "emptyTitle": "Keine Charaktere",
     "loadError": "Charaktere konnten nicht geladen werden.",
     "noDescription": "Keine Beschreibung",
     "noResults": "Keine Treffer für „{{query}}\".",
+    "noResultsTitle": "Keine Treffer",
     "notConnected": "Nicht verbunden.",
     "searchPlaceholder": "Suchen… ({{count}} Charaktere)"
   },
@@ -64,18 +93,25 @@
   },
   "chats": {
     "daysAgo": "vor {{n}} Tg",
-    "empty": "Noch keine Chats. Öffne einen Charakter und starte eine Unterhaltung.",
+    "earlier": "Älter",
+    "empty": "Öffne einen Charakter und starte eine Unterhaltung.",
+    "emptyCta": "Charaktere durchsuchen",
+    "emptyTitle": "Noch keine Chats",
     "hoursAgo": "vor {{n}} Std",
     "justNow": "gerade eben",
     "loadError": "Chats konnten nicht geladen werden.",
     "minutesAgo": "vor {{n}} Min",
     "noMessages": "Keine Nachrichten",
-    "notConnected": "Nicht verbunden."
+    "notConnected": "Nicht verbunden.",
+    "today": "Heute",
+    "yesterday": "Gestern"
   },
   "common": {
     "cancel": "Abbrechen",
+    "clear": "Leeren",
     "close": "Schließen",
     "connected": "Verbunden",
+    "connecting": "Verbinde…",
     "delete": "Löschen",
     "discard": "Verwerfen",
     "error": "Fehler",
@@ -113,6 +149,7 @@
     "scanFailed": "Scan fehlgeschlagen",
     "scanning": "Netzwerk wird gescannt…",
     "scanningButton": "Scanne…",
+    "tagline": "Deine Charaktere, für unterwegs.",
     "username": "Benutzername (optional, bei Basic-Auth)"
   },
   "quickSettings": {
@@ -153,7 +190,8 @@
     "syncToPc": "Mit PC synchronisieren",
     "syncToPcSubtitle": "Persona-/Profil-/Sampler-Änderungen am Handy zurück an SillyTavern schreiben.",
     "tapToConnect": "Tippen zum Verbinden",
-    "textCompletion": "Text-Completion"
+    "textCompletion": "Text-Completion",
+    "versionLabel": "Version {{version}}"
   },
   "sheets": {
     "pickerEmpty": "Keine Einträge."

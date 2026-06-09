@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, Switch, Text, TextInput, View } from 'react-native';
-import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Switch, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { EngineConfig, StClient } from '@st/core';
 import { syncOai, syncRoot, syncTextgen } from '@/lib/sync';
+import { Sheet, AppText, Button } from './ui';
+import { colors, fonts } from '@/theme/tokens';
 
 /**
  * The few generation knobs worth tweaking from the phone (temperature, response length, context size,
  * streaming). Writes back to the desktop settings (read-modify-write) - the full preset editor stays
  * desktop-only, by design.
  */
-function Field({
+function NumRow({
   label,
   value,
   onChange,
@@ -24,12 +24,13 @@ function Field({
 }) {
   return (
     <View className="mb-3 flex-row items-center justify-between">
-      <Text className="text-base text-white">{label}</Text>
+      <AppText variant="bodyLg">{label}</AppText>
       <TextInput
         value={value}
         onChangeText={onChange}
         keyboardType={keyboard}
-        className="w-28 rounded-xl bg-surface2 px-3 py-2 text-center text-base text-white"
+        className="w-28 rounded-field border border-border bg-surface-2 text-center text-text"
+        style={{ fontFamily: fonts.regular, fontSize: 16, height: 44 }}
       />
     </View>
   );
@@ -49,8 +50,6 @@ export function QuickSettingsSheet({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  const kbVisible = useKeyboardState((s) => s.isVisible);
   const isCc = engine?.mode === 'cc';
   const tg = (engine?.textgen ?? {}) as Record<string, unknown>;
   const oai = engine?.oai;
@@ -106,33 +105,32 @@ export function QuickSettingsSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-      <Pressable className="flex-1 justify-end bg-black/50" onPress={onClose}>
-        <Pressable
-          style={{ paddingBottom: kbVisible ? 12 : Math.max(insets.bottom, 12) }}
-          className="rounded-t-3xl bg-surface px-4 pt-4"
-        >
-          <Text className="mb-3 text-base font-semibold text-white">{t('quickSettings.title')}</Text>
-          <Field label={t('quickSettings.temperature')} value={temp} onChange={setTemp} />
-          <Field label={t('quickSettings.responseLength')} value={resp} onChange={setResp} keyboard="number-pad" />
-          <Field label={t('quickSettings.contextSize')} value={ctx} onChange={setCtx} keyboard="number-pad" />
-          <View className="mb-1 flex-row items-center justify-between">
-            <Text className="text-base text-white">{t('quickSettings.streaming')}</Text>
-            <Switch value={stream} onValueChange={setStream} trackColor={{ true: '#7c5cff', false: '#3a3a44' }} thumbColor="#ffffff" />
+    <Sheet visible={visible} onClose={onClose} title={t('quickSettings.title')}>
+      <View className="px-2 pb-1 pt-1">
+        <NumRow label={t('quickSettings.temperature')} value={temp} onChange={setTemp} />
+        <NumRow label={t('quickSettings.responseLength')} value={resp} onChange={setResp} keyboard="number-pad" />
+        <NumRow label={t('quickSettings.contextSize')} value={ctx} onChange={setCtx} keyboard="number-pad" />
+        <View className="mb-1 flex-row items-center justify-between">
+          <AppText variant="bodyLg">{t('quickSettings.streaming')}</AppText>
+          <Switch
+            value={stream}
+            onValueChange={setStream}
+            trackColor={{ true: colors.accent, false: colors.surface3 }}
+            thumbColor={colors.onAccent}
+          />
+        </View>
+        <AppText variant="caption" color="subtle" style={{ marginTop: 4 }}>
+          {t('quickSettings.savedNotice')}
+        </AppText>
+        <View className="mt-4 flex-row gap-2">
+          <View className="flex-1">
+            <Button label={t('common.cancel')} variant="secondary" onPress={onClose} />
           </View>
-          <Text className="mt-1 text-xs text-muted">{t('quickSettings.savedNotice')}</Text>
-          <View className="mt-3 flex-row justify-end gap-2">
-            <Pressable onPress={onClose} className="rounded-xl px-4 py-2">
-              <Text className="text-muted">{t('common.cancel')}</Text>
-            </Pressable>
-            <Pressable onPress={save} disabled={saving} className="rounded-xl bg-primary px-4 py-2 disabled:opacity-50">
-              <Text className="font-semibold text-white">{saving ? t('common.saving') : t('common.save')}</Text>
-            </Pressable>
+          <View className="flex-1">
+            <Button label={saving ? t('common.saving') : t('common.save')} loading={saving} onPress={save} />
           </View>
-        </Pressable>
-      </Pressable>
-      </KeyboardAvoidingView>
-    </Modal>
+        </View>
+      </View>
+    </Sheet>
   );
 }

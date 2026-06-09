@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, Switch, View } from 'react-native';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConnection } from '@/stores/connectionStore';
@@ -13,36 +14,41 @@ import { useBackendStatus } from '@/hooks/useBackendStatus';
 import { discoverKobold } from '@/lib/discovery';
 import { syncPersonaToPc, syncSelectedProfileToPc } from '@/lib/sync';
 import { PickerSheet, type PickerOption } from '@/components/PickerSheet';
+import { Screen, Header, Section, Card, Button, AppText, Badge, IconButton } from '@/components/ui';
+import { Icon, type IconName } from '@/theme/icons';
+import { colors } from '@/theme/tokens';
 
-function Row({
+function SettingRow({
   label,
   value,
   sub,
+  icon,
   onPress,
 }: {
   label: string;
   value: string;
   sub?: string;
+  icon?: IconName;
   onPress?: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      className="mb-2 flex-row items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3 active:bg-surface2"
-    >
+    <Card onPress={onPress} className="flex-row items-center gap-3 px-4 py-3">
+      {icon ? <Icon name={icon} size={18} color={colors.textMuted} /> : null}
       <View className="flex-1">
-        <Text className="text-xs text-muted">{label}</Text>
-        <Text className="mt-0.5 text-base font-semibold text-white" numberOfLines={1}>
+        <AppText variant="caption" color="subtle">
+          {label}
+        </AppText>
+        <AppText variant="title" numberOfLines={1} style={{ marginTop: 2 }}>
           {value}
-        </Text>
-        {!!sub && (
-          <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
+        </AppText>
+        {sub ? (
+          <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 1 }}>
             {sub}
-          </Text>
-        )}
+          </AppText>
+        ) : null}
       </View>
-      {!!onPress && <Text className="ml-2 text-lg text-muted">›</Text>}
-    </Pressable>
+      {onPress ? <Icon name="chevronRight" size={18} color={colors.textSubtle} /> : null}
+    </Card>
   );
 }
 
@@ -147,137 +153,162 @@ export default function SettingsScreen() {
     }
   };
 
+  const backendConnected = backend.data?.connected;
+  const appVersion = Constants.expoConfig?.version ?? '—';
+
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerStyle={{ padding: 20 }}>
-      <Text className="mb-2 text-sm uppercase tracking-wide text-muted">{t('settings.sillyTavern')}</Text>
-      <View className="rounded-2xl border border-border bg-surface px-4 py-3">
-        <Text className="text-base font-semibold text-white">{instance?.baseUrl ?? t('common.notConnected')}</Text>
-        {!!instance?.version && <Text className="mt-0.5 text-sm text-muted">SillyTavern {instance.version}</Text>}
-      </View>
-      <Pressable
-        onPress={() => {
-          disconnect();
-          router.replace('/onboarding/discovery');
-        }}
-        className="mt-3 rounded-2xl border border-border px-4 py-3 active:bg-surface"
-      >
-        <Text className="text-center text-base font-semibold text-red-400">{t('settings.disconnect')}</Text>
-      </Pressable>
+    <Screen edges={['top']}>
+      <Header title={t('tabs.settings')} />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 }}>
+        {/* Connection */}
+        <Section title={t('settings.sillyTavern')} icon="server">
+          <Card className="flex-row items-center gap-3 px-4 py-3.5">
+            <View className="h-9 w-9 items-center justify-center rounded-2xl bg-accent-soft">
+              <Icon name="server" size={18} color={colors.accent} />
+            </View>
+            <View className="flex-1">
+              <AppText variant="title" numberOfLines={1}>
+                {instance?.baseUrl ?? t('common.notConnected')}
+              </AppText>
+              {instance?.version ? (
+                <AppText variant="caption" color="muted" style={{ marginTop: 1 }}>
+                  SillyTavern {instance.version}
+                </AppText>
+              ) : null}
+            </View>
+          </Card>
+        </Section>
 
-      {servers.length > 0 && (
-        <>
-          <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.savedServers')}</Text>
-          {servers.map((srv) => {
-            const active = srv.baseUrl === instance?.baseUrl;
-            return (
-              <View
-                key={srv.id}
-                className="mb-2 flex-row items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3"
-              >
-                <Pressable className="flex-1 active:opacity-60" onPress={() => void reconnectTo(srv.id)}>
-                  <Text className="text-base font-semibold text-white" numberOfLines={1}>
-                    {srv.label}
-                    {srv.hasAuth ? '  🔒' : ''}
-                  </Text>
-                  <Text className="mt-0.5 text-xs text-muted">{active ? t('common.connected') : t('settings.tapToConnect')}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() =>
-                    Alert.alert(t('settings.removeServer'), t('settings.removeServerConfirm', { label: srv.label }), [
-                      { text: t('common.cancel'), style: 'cancel' },
-                      { text: t('settings.removeServer'), style: 'destructive', onPress: () => void removeServer(srv.id) },
-                    ])
-                  }
-                  className="h-8 w-8 items-center justify-center active:opacity-60"
-                >
-                  <Text className="text-lg text-muted">✕</Text>
-                </Pressable>
-              </View>
-            );
-          })}
-        </>
-      )}
-
-      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.activeConfig')}</Text>
-      <Row
-        label={t('settings.connectionProfile')}
-        value={activeProfile?.name ?? (profiles.length ? t('settings.selectEllipsis') : t('settings.noProfiles'))}
-        sub={
-          activeProfile
-            ? `${activeProfile.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion')}${activeProfile.api ? ' · ' + activeProfile.api : ''}`
-            : undefined
-        }
-        onPress={profiles.length ? () => setSheet('profile') : undefined}
-      />
-      <Row
-        label={t('settings.persona')}
-        value={activePersona?.name ?? (personas.length ? t('settings.selectEllipsis') : t('settings.noPersonas'))}
-        onPress={personas.length ? () => setSheet('persona') : undefined}
-      />
-      <View className="mt-1 flex-row items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3">
-        <View className="flex-1 pr-3">
-          <Text className="text-base font-semibold text-white">{t('settings.syncToPc')}</Text>
-          <Text className="mt-0.5 text-xs text-muted">
-            {t('settings.syncToPcSubtitle')}
-          </Text>
-        </View>
-        <Switch
-          value={syncToPc}
-          onValueChange={setSyncToPc}
-          trackColor={{ true: '#7c5cff', false: '#3a3a44' }}
-          thumbColor="#ffffff"
-        />
-      </View>
-
-      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.aiBackend')}</Text>
-      <View className="rounded-2xl border border-border bg-surface px-4 py-3">
-        <View className="flex-row items-center gap-2">
-          <View
-            className={`h-2.5 w-2.5 rounded-full ${
-              backend.isLoading ? 'bg-muted' : backend.data?.connected ? 'bg-green-500' : 'bg-red-500'
-            }`}
+        <View className="mt-3">
+          <Button
+            label={t('settings.disconnect')}
+            variant="danger"
+            leftIcon="link"
+            onPress={() => {
+              disconnect();
+              router.replace('/onboarding/discovery');
+            }}
           />
-          <Text className="flex-1 text-base font-semibold text-white" numberOfLines={1}>
-            {backend.isLoading
-              ? t('settings.checking')
-              : backend.data?.connected
-                ? backend.data.model || t('common.connected')
-                : t('common.notConnected')}
-          </Text>
         </View>
-        <Text className="mt-1 text-xs text-muted" numberOfLines={1}>
-          {engine?.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion')} ·{' '}
-          {koboldOverride ?? t('settings.defaultViaSillyTavern')}
-        </Text>
-      </View>
-      <View className="mt-3 flex-row gap-2">
-        <Pressable
-          onPress={detectKobold}
-          disabled={scanning}
-          className="flex-1 rounded-2xl bg-primary px-4 py-3 active:opacity-80 disabled:opacity-50"
-        >
-          {scanning ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text className="text-center font-semibold text-white">{t('settings.autoDetect')}</Text>
-          )}
-        </Pressable>
-        {!!koboldOverride && (
-          <Pressable
-            onPress={() => setKoboldOverride(undefined)}
-            className="rounded-2xl border border-border px-4 py-3 active:bg-surface"
-          >
-            <Text className="font-semibold text-muted">{t('settings.reset')}</Text>
-          </Pressable>
-        )}
-      </View>
 
-      <Text className="mb-2 mt-7 text-sm uppercase tracking-wide text-muted">{t('settings.language')}</Text>
-      <Row label={t('settings.language')} value={languageLabel} onPress={() => setSheet('language')} />
+        {/* Saved servers */}
+        {servers.length > 0 ? (
+          <Section title={t('settings.savedServers')}>
+            {servers.map((srv) => {
+              const active = srv.baseUrl === instance?.baseUrl;
+              return (
+                <Card
+                  key={srv.id}
+                  onPress={() => void reconnectTo(srv.id)}
+                  className="flex-row items-center gap-3 px-4 py-3"
+                >
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <AppText variant="title" numberOfLines={1} style={{ flexShrink: 1 }}>
+                        {srv.label}
+                      </AppText>
+                      {srv.hasAuth ? <Icon name="lock" size={13} color={colors.textSubtle} /> : null}
+                      {active ? <Badge label={t('common.connected')} tone="success" dot /> : null}
+                    </View>
+                    {!active ? (
+                      <AppText variant="caption" color="muted" style={{ marginTop: 1 }}>
+                        {t('settings.tapToConnect')}
+                      </AppText>
+                    ) : null}
+                  </View>
+                  <IconButton
+                    name="close"
+                    size="sm"
+                    accessibilityLabel={t('a11y.removeServer')}
+                    haptic={false}
+                    onPress={() =>
+                      Alert.alert(t('settings.removeServer'), t('settings.removeServerConfirm', { label: srv.label }), [
+                        { text: t('common.cancel'), style: 'cancel' },
+                        { text: t('settings.removeServer'), style: 'destructive', onPress: () => void removeServer(srv.id) },
+                      ])
+                    }
+                  />
+                </Card>
+              );
+            })}
+          </Section>
+        ) : null}
 
-      <Text className="mt-8 text-xs text-muted">
-        {t('settings.roadmapNote')}
-      </Text>
+        {/* Active config */}
+        <Section title={t('settings.activeConfig')} icon="tune">
+          <SettingRow
+            label={t('settings.connectionProfile')}
+            value={activeProfile?.name ?? (profiles.length ? t('settings.selectEllipsis') : t('settings.noProfiles'))}
+            sub={
+              activeProfile
+                ? `${activeProfile.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion')}${activeProfile.api ? ' · ' + activeProfile.api : ''}`
+                : undefined
+            }
+            onPress={profiles.length ? () => setSheet('profile') : undefined}
+          />
+          <SettingRow
+            label={t('settings.persona')}
+            value={activePersona?.name ?? (personas.length ? t('settings.selectEllipsis') : t('settings.noPersonas'))}
+            onPress={personas.length ? () => setSheet('persona') : undefined}
+          />
+          <Card className="flex-row items-center gap-3 px-4 py-3.5">
+            <View className="flex-1">
+              <AppText variant="title">{t('settings.syncToPc')}</AppText>
+              <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+                {t('settings.syncToPcSubtitle')}
+              </AppText>
+            </View>
+            <Switch
+              value={syncToPc}
+              onValueChange={setSyncToPc}
+              trackColor={{ true: colors.accent, false: colors.surface3 }}
+              thumbColor={colors.onAccent}
+            />
+          </Card>
+        </Section>
+
+        {/* AI backend */}
+        <Section title={t('settings.aiBackend')} icon="zap">
+          <Card className="flex-row items-center gap-3 px-4 py-3.5">
+            <View
+              className={`h-2.5 w-2.5 rounded-full ${backend.isLoading ? 'bg-text-subtle' : backendConnected ? 'bg-success' : 'bg-danger'}`}
+            />
+            <View className="flex-1">
+              <AppText variant="title" numberOfLines={1}>
+                {backend.isLoading
+                  ? t('settings.checking')
+                  : backendConnected
+                    ? backend.data?.model || t('common.connected')
+                    : t('common.notConnected')}
+              </AppText>
+              <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 1 }}>
+                {engine?.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion')} ·{' '}
+                {koboldOverride ?? t('settings.defaultViaSillyTavern')}
+              </AppText>
+            </View>
+          </Card>
+          <View className="flex-row gap-2">
+            <View className="flex-1">
+              <Button label={t('settings.autoDetect')} leftIcon="search" loading={scanning} onPress={detectKobold} />
+            </View>
+            {koboldOverride ? (
+              <Button label={t('settings.reset')} variant="secondary" fullWidth={false} onPress={() => setKoboldOverride(undefined)} />
+            ) : null}
+          </View>
+        </Section>
+
+        {/* Language */}
+        <Section title={t('settings.language')} icon="globe">
+          <SettingRow label={t('settings.language')} value={languageLabel} onPress={() => setSheet('language')} />
+        </Section>
+
+        <AppText variant="caption" color="subtle" style={{ marginTop: 24, textAlign: 'center' }}>
+          {t('settings.versionLabel', { version: appVersion })}
+        </AppText>
+        <AppText variant="caption" color="subtle" style={{ marginTop: 8 }}>
+          {t('settings.roadmapNote')}
+        </AppText>
+      </ScrollView>
 
       <PickerSheet
         visible={sheet === 'language'}
@@ -303,6 +334,6 @@ export default function SettingsScreen() {
         onSelect={onPickPersona}
         onClose={() => setSheet(null)}
       />
-    </ScrollView>
+    </Screen>
   );
 }

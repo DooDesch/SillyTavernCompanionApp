@@ -1,4 +1,27 @@
 {
+  "a11y": {
+    "attachImage": "Attach image",
+    "authorsNote": "Author's Note",
+    "back": "Go back",
+    "changePersona": "Change persona",
+    "clearSearch": "Clear search",
+    "closeSheet": "Close",
+    "continueReply": "Continue reply",
+    "generationSettings": "Generation settings",
+    "lorebook": "Lorebook",
+    "messageActions": "Message actions",
+    "more": "More actions",
+    "newChat": "New chat",
+    "nextSwipe": "Next variation",
+    "previousSwipe": "Previous variation",
+    "regenerate": "Regenerate",
+    "removeImage": "Remove image",
+    "removeServer": "Remove server",
+    "search": "Search",
+    "send": "Send message",
+    "showPassword": "Show or hide password",
+    "stop": "Stop generating"
+  },
   "authorsNote": {
     "depth": "Depth",
     "description": "Controls the scene (tone, pace, hints). Injected into the chat at @depth.",
@@ -15,18 +38,24 @@
     "deleteTitle": "Delete chat",
     "fallbackTitle": "Character",
     "longPressHint": "Tip: long-press a chat to rename/delete.",
-    "newChat": "+ New chat",
+    "newChat": "New chat",
     "noChats": "No chats yet. Start a new one.",
     "open": "Open",
+    "readLess": "Show less",
+    "readMore": "Show more",
     "rename": "Rename",
     "renameFailed": "Chat could not be renamed (name may already be taken).",
     "renameTitle": "Rename chat",
     "savedChats": "Saved chats"
   },
   "characters": {
+    "countLabel": "{{count}} characters",
+    "emptyMessage": "No characters were found on this server.",
+    "emptyTitle": "No characters",
     "loadError": "Characters could not be loaded.",
     "noDescription": "No description",
     "noResults": "No matches for “{{query}}”.",
+    "noResultsTitle": "No matches",
     "notConnected": "Not connected.",
     "searchPlaceholder": "Search… ({{count}} characters)"
   },
@@ -64,18 +93,25 @@
   },
   "chats": {
     "daysAgo": "{{n}} d ago",
-    "empty": "No chats yet. Open a character and start a conversation.",
+    "earlier": "Earlier",
+    "empty": "Open a character and start a conversation.",
+    "emptyCta": "Browse characters",
+    "emptyTitle": "No chats yet",
     "hoursAgo": "{{n}} h ago",
     "justNow": "just now",
     "loadError": "Chats could not be loaded.",
     "minutesAgo": "{{n}} min ago",
     "noMessages": "No messages",
-    "notConnected": "Not connected."
+    "notConnected": "Not connected.",
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "common": {
     "cancel": "Cancel",
+    "clear": "Clear",
     "close": "Close",
     "connected": "Connected",
+    "connecting": "Connecting…",
     "delete": "Delete",
     "discard": "Discard",
     "error": "Error",
@@ -113,6 +149,7 @@
     "scanFailed": "Scan failed",
     "scanning": "Scanning network…",
     "scanningButton": "Scanning…",
+    "tagline": "Your characters, on the go.",
     "username": "Username (optional, for Basic Auth)"
   },
   "quickSettings": {
@@ -153,7 +190,8 @@
     "syncToPc": "Sync with PC",
     "syncToPcSubtitle": "Write persona/profile/sampler changes made on the phone back to SillyTavern.",
     "tapToConnect": "Tap to connect",
-    "textCompletion": "Text completion"
+    "textCompletion": "Text completion",
+    "versionLabel": "Version {{version}}"
   },
   "sheets": {
     "pickerEmpty": "No entries."

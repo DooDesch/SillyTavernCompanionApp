@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { getAllCharacters, getCharacterChats, type StCharacter } from '@st/core'
 import i18n from '@/i18n';
 import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
+import { Screen, Header, ListRow, SkeletonList, EmptyState, Button, AppText } from '@/components/ui';
 
 function relativeTime(ms?: number): string {
   if (!ms || !Number.isFinite(ms)) return '';
@@ -22,7 +23,21 @@ function relativeTime(ms?: number): string {
   return new Date(ms).toLocaleDateString();
 }
 
-/** A single recent-chat entry: shows the last-message preview for the character's current chat. */
+type Bucket = 'today' | 'yesterday' | 'earlier';
+
+function dayBucket(ms: number): Bucket {
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (ms >= startToday) return 'today';
+  if (ms >= startToday - 86_400_000) return 'yesterday';
+  return 'earlier';
+}
+
+type Row =
+  | { kind: 'header'; key: string; label: string }
+  | { kind: 'row'; key: string; character: StCharacter };
+
+/** A recent-chat entry: shows the last-message preview for the character's current chat. */
 function RecentChatRow({ character }: { character: StCharacter }) {
   const { t } = useTranslation();
   const client = useConnection((s) => s.client);
@@ -46,31 +61,22 @@ function RecentChatRow({ character }: { character: StCharacter }) {
   const time = relativeTime(Number(chat?.last_mes ?? character.date_last_chat));
 
   return (
-    <Pressable
+    <ListRow
+      leading={<Avatar avatar={character.avatar} name={character.name} size={52} />}
+      title={character.name}
+      meta={time}
+      subtitle={isLoading ? t('common.loading') : preview || t('chats.noMessages')}
       onPress={() =>
         router.push({ pathname: '/chat/[avatar]/[file]', params: { avatar: character.avatar, file: fileId } })
       }
-      className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-surface px-3 py-3 active:bg-surface2"
-    >
-      <Avatar avatar={character.avatar} name={character.name} size={48} />
-      <View className="flex-1">
-        <View className="flex-row items-center justify-between">
-          <Text className="flex-1 text-base font-semibold text-white" numberOfLines={1}>
-            {character.name}
-          </Text>
-          <Text className="ml-2 text-xs text-muted">{time}</Text>
-        </View>
-        <Text className="text-sm text-muted" numberOfLines={2}>
-          {isLoading ? t('common.loading') : preview || t('chats.noMessages')}
-        </Text>
-      </View>
-    </Pressable>
+    />
   );
 }
 
 export default function ChatsScreen() {
   const { t } = useTranslation();
   const client = useConnection((s) => s.client);
+  const host = useConnection((s) => s.instance?.baseUrl)?.replace(/^https?:\/\//, '');
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['characters', client?.baseUrl],
@@ -78,61 +84,67 @@ export default function ChatsScreen() {
     enabled: !!client,
   });
 
-  const recent = useMemo(
-    () =>
-      (data ?? [])
-        .filter((c) => (c.date_last_chat ?? 0) > 0 && !!c.chat)
-        .sort((a, b) => (b.date_last_chat ?? 0) - (a.date_last_chat ?? 0)),
-    [data],
-  );
-
-  if (!client) {
-    return (
-      <View className="flex-1 items-center justify-center bg-bg">
-        <Text className="text-muted">{t('chats.notConnected')}</Text>
-      </View>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-bg">
-        <ActivityIndicator color="#7c5cff" />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View className="flex-1 items-center justify-center gap-3 bg-bg px-6">
-        <Text className="text-center text-red-400">{t('chats.loadError')}</Text>
-        <Pressable onPress={() => refetch()} className="rounded-xl bg-primary px-4 py-2">
-          <Text className="font-semibold text-white">{t('common.retry')}</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (recent.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center bg-bg px-8">
-        <Text className="text-center text-muted">
-          {t('chats.empty')}
-        </Text>
-      </View>
-    );
-  }
+  const rows = useMemo<Row[]>(() => {
+    const recent = (data ?? [])
+      .filter((c) => (c.date_last_chat ?? 0) > 0 && !!c.chat)
+      .sort((a, b) => (b.date_last_chat ?? 0) - (a.date_last_chat ?? 0));
+    const out: Row[] = [];
+    let lastBucket: Bucket | null = null;
+    for (const c of recent) {
+      const bucket = dayBucket(c.date_last_chat ?? 0);
+      if (bucket !== lastBucket) {
+        out.push({ kind: 'header', key: `h-${bucket}`, label: t(`chats.${bucket}`) });
+        lastBucket = bucket;
+      }
+      out.push({ kind: 'row', key: c.avatar, character: c });
+    }
+    return out;
+  }, [data, t]);
 
   return (
-    <View className="flex-1 bg-bg">
-      <FlashList<StCharacter>
-        data={recent}
-        keyExtractor={(item) => item.avatar}
-        onRefresh={refetch}
-        refreshing={isRefetching}
-        contentContainerStyle={{ padding: 12 }}
-        renderItem={({ item }) => <RecentChatRow character={item} />}
-      />
-    </View>
+    <Screen edges={['top']}>
+      <Header title={t('tabs.chats')} subtitle={host} />
+      {!client ? (
+        <EmptyState icon="wifi" title={t('chats.notConnected')} />
+      ) : isLoading ? (
+        <SkeletonList count={7} />
+      ) : error ? (
+        <View className="flex-1 items-center justify-center gap-4 px-8">
+          <AppText variant="body" color="danger" style={{ textAlign: 'center' }}>
+            {t('chats.loadError')}
+          </AppText>
+          <Button label={t('common.retry')} variant="secondary" leftIcon="refresh" fullWidth={false} onPress={() => refetch()} />
+        </View>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          icon="chats"
+          title={t('chats.emptyTitle')}
+          message={t('chats.empty')}
+          actionLabel={t('chats.emptyCta')}
+          actionIcon="characters"
+          onAction={() => router.push('/(tabs)/characters')}
+        />
+      ) : (
+        <FlashList<Row>
+          data={rows}
+          keyExtractor={(item) => item.key}
+          getItemType={(item) => item.kind}
+          onRefresh={refetch}
+          refreshing={isRefetching}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 }}
+          renderItem={({ item }) =>
+            item.kind === 'header' ? (
+              <AppText variant="label" color="subtle" style={{ textTransform: 'uppercase', marginTop: 16, marginBottom: 8, marginLeft: 4 }}>
+                {item.label}
+              </AppText>
+            ) : (
+              <View className="mb-2">
+                <RecentChatRow character={item.character} />
+              </View>
+            )
+          }
+        />
+      )}
+    </Screen>
   );
 }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, Text, TextInput, View } from 'react-native';
-import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Sheet, AppText, Button } from './ui';
+import { colors, fonts } from '@/theme/tokens';
+import { haptics } from '@/theme/haptics';
 
 export interface AuthorsNoteValue {
   content: string;
@@ -29,8 +30,6 @@ export function AuthorsNoteSheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  const kbVisible = useKeyboardState((s) => s.isVisible);
   const [content, setContent] = useState(initial.content);
   const [depth, setDepth] = useState(String(initial.depth));
   const [role, setRole] = useState(initial.role);
@@ -44,59 +43,60 @@ export function AuthorsNoteSheet({
   }, [visible, initial.content, initial.depth, initial.role]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-      <Pressable className="flex-1 justify-end bg-black/50" onPress={onClose}>
-        <Pressable
-          style={{ paddingBottom: kbVisible ? 12 : Math.max(insets.bottom, 12) }}
-          className="rounded-t-3xl bg-surface px-4 pt-4"
-        >
-          <Text className="mb-1 text-base font-semibold text-white">{t('authorsNote.title')}</Text>
-          <Text className="mb-2 text-xs text-muted">
-            {t('authorsNote.description')}
-          </Text>
+    <Sheet visible={visible} onClose={onClose} title={t('authorsNote.title')}>
+      <View className="px-2 pb-1">
+        <AppText variant="caption" color="muted" style={{ marginBottom: 10 }}>
+          {t('authorsNote.description')}
+        </AppText>
+        <TextInput
+          value={content}
+          onChangeText={setContent}
+          multiline
+          placeholder={t('authorsNote.placeholder')}
+          placeholderTextColor={colors.textSubtle}
+          className="rounded-field border border-border bg-surface-2 px-4 py-3 text-text"
+          style={{ fontFamily: fonts.regular, fontSize: 16, minHeight: 96, maxHeight: 180, textAlignVertical: 'top' }}
+        />
+        <View className="mt-3 flex-row items-center gap-3">
+          <AppText variant="label" color="muted">
+            {t('authorsNote.depth')}
+          </AppText>
           <TextInput
-            value={content}
-            onChangeText={setContent}
-            multiline
-            placeholder={t('authorsNote.placeholder')}
-            placeholderTextColor="#5a5a68"
-            className="max-h-48 rounded-2xl bg-surface2 px-4 py-3 text-base text-white"
+            value={depth}
+            onChangeText={setDepth}
+            keyboardType="number-pad"
+            className="w-16 rounded-field border border-border bg-surface-2 text-center text-text"
+            style={{ fontFamily: fonts.regular, fontSize: 16, height: 44 }}
           />
-          <View className="mt-3 flex-row items-center gap-3">
-            <Text className="text-sm text-muted">{t('authorsNote.depth')}</Text>
-            <TextInput
-              value={depth}
-              onChangeText={setDepth}
-              keyboardType="number-pad"
-              className="w-16 rounded-xl bg-surface2 px-3 py-2 text-center text-base text-white"
-            />
-            <View className="flex-1 flex-row justify-end gap-1">
-              {ROLES.map((r) => (
-                <Pressable
-                  key={r.v}
-                  onPress={() => setRole(r.v)}
-                  className={`rounded-xl px-3 py-2 ${role === r.v ? 'bg-primary' : 'bg-surface2'}`}
-                >
-                  <Text className={role === r.v ? 'text-white' : 'text-muted'}>{t(r.labelKey)}</Text>
-                </Pressable>
-              ))}
-            </View>
+          <View className="flex-1 flex-row justify-end gap-1.5">
+            {ROLES.map((r) => (
+              <Pressable
+                key={r.v}
+                onPress={() => {
+                  haptics.selection();
+                  setRole(r.v);
+                }}
+                className={`rounded-field px-3 py-2 ${role === r.v ? 'bg-accent' : 'border border-border bg-surface-2'}`}
+              >
+                <AppText variant="label" color={role === r.v ? 'onAccent' : 'muted'}>
+                  {t(r.labelKey)}
+                </AppText>
+              </Pressable>
+            ))}
           </View>
-          <View className="mt-3 flex-row justify-end gap-2">
-            <Pressable onPress={onClose} className="rounded-xl px-4 py-2">
-              <Text className="text-muted">{t('common.cancel')}</Text>
-            </Pressable>
-            <Pressable
+        </View>
+        <View className="mt-4 flex-row gap-2">
+          <View className="flex-1">
+            <Button label={t('common.cancel')} variant="secondary" onPress={onClose} />
+          </View>
+          <View className="flex-1">
+            <Button
+              label={t('common.save')}
               onPress={() => onSave({ content, depth: Math.max(0, parseInt(depth, 10) || 0), role })}
-              className="rounded-xl bg-primary px-4 py-2"
-            >
-              <Text className="font-semibold text-white">{t('common.save')}</Text>
-            </Pressable>
+            />
           </View>
-        </Pressable>
-      </Pressable>
-      </KeyboardAvoidingView>
-    </Modal>
+        </View>
+      </View>
+    </Sheet>
   );
 }
