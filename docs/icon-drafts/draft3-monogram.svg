@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>SillyTavern Companion — Draft 3: ST Monogram</title>
+  <defs>
+    <linearGradient id="vio" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9277FF"/>
+      <stop offset="100%" stop-color="#6C4BE0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="46%" r="50%">
+      <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#0B0B0F"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <!-- badge ring -->
+  <circle cx="512" cy="512" r="332" fill="none" stroke="#7C5CFF" stroke-width="12" opacity="0.32"/>
+  <!-- S: stroke-built, two stacked arcs -->
+  <path d="M 470 372 H 408 A 76 76 0 0 0 408 524 H 444 A 76 76 0 0 1 444 676 H 372"
+        fill="none" stroke="url(#vio)" stroke-width="74" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- T -->
+  <path d="M 552 372 H 700 M 626 372 V 676"
+        fill="none" stroke="url(#vio)" stroke-width="74" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

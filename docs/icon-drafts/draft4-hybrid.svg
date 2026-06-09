@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>SillyTavern Companion — Draft 4: Hanging Speech-Bubble Tavern Sign</title>
+  <defs>
+    <linearGradient id="vio" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9277FF"/>
+      <stop offset="100%" stop-color="#6C4BE0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#0B0B0F"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <!-- bracket arm + chains (muted violet) -->
+  <rect x="287" y="246" width="450" height="30" rx="15" fill="#7C5CFF" opacity="0.55"/>
+  <rect x="368" y="276" width="14" height="78" rx="7" fill="#7C5CFF" opacity="0.55"/>
+  <rect x="642" y="276" width="14" height="78" rx="7" fill="#7C5CFF" opacity="0.55"/>
+  <!-- hanging speech bubble (the tavern sign) -->
+  <rect x="298" y="354" width="428" height="296" rx="96" fill="url(#vio)"/>
+  <!-- tail -->
+  <path d="M 408 632 L 372 752 L 518 644 Z" fill="#6C4BE0"/>
+  <!-- typing dots -->
+  <circle cx="424" cy="502" r="25" fill="#0B0B0F"/>
+  <circle cx="512" cy="502" r="25" fill="#0B0B0F"/>
+  <circle cx="600" cy="502" r="25" fill="#0B0B0F"/>
+</svg>

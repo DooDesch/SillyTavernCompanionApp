@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>SillyTavern Companion — Android 13+ themed-icon layer (single white silhouette, tankard punched out)</title>
+  <defs>
+    <mask id="cut">
+      <rect width="1024" height="1024" fill="black"/>
+      <g transform="translate(0 47)">
+        <rect x="287" y="252" width="450" height="30" rx="15" fill="white"/>
+        <rect x="356" y="282" width="14" height="84" rx="7" fill="white"/>
+        <rect x="654" y="282" width="14" height="84" rx="7" fill="white"/>
+        <rect x="300" y="366" width="424" height="312" rx="52" fill="white"/>
+        <!-- tankard punched out of the sign -->
+        <rect x="442" y="468" width="126" height="156" rx="22" fill="black"/>
+        <path d="M 568 502 A 52 52 0 0 1 568 590" fill="none" stroke="black" stroke-width="26" stroke-linecap="round"/>
+        <circle cx="466" cy="462" r="26" fill="black"/>
+        <circle cx="506" cy="448" r="30" fill="black"/>
+        <circle cx="547" cy="462" r="26" fill="black"/>
+      </g>
+    </mask>
+  </defs>
+  <rect width="1024" height="1024" fill="#FFFFFF" mask="url(#cut)"/>
+</svg>

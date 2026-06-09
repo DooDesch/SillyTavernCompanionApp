@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>SillyTavern Companion — Draft 1: Speech Bubble</title>
+  <defs>
+    <linearGradient id="vio" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9277FF"/>
+      <stop offset="100%" stop-color="#6C4BE0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="46%" r="50%">
+      <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#0B0B0F"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <!-- bubble -->
+  <rect x="282" y="322" width="460" height="330" rx="112" fill="url(#vio)"/>
+  <!-- tail -->
+  <path d="M 396 630 L 352 760 L 512 648 Z" fill="#6C4BE0"/>
+  <!-- typing dots -->
+  <circle cx="416" cy="487" r="27" fill="#0B0B0F"/>
+  <circle cx="512" cy="487" r="27" fill="#0B0B0F"/>
+  <circle cx="608" cy="487" r="27" fill="#0B0B0F"/>
+</svg>

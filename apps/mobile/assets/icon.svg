@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>SillyTavern Companion — Draft 2: Tavern Sign with Tankard</title>
+  <defs>
+    <linearGradient id="vio" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9277FF"/>
+      <stop offset="100%" stop-color="#6C4BE0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#0B0B0F"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <!-- bracket arm + chains (muted violet) -->
+  <rect x="287" y="252" width="450" height="30" rx="15" fill="#7C5CFF" opacity="0.55"/>
+  <rect x="356" y="282" width="14" height="84" rx="7" fill="#7C5CFF" opacity="0.55"/>
+  <rect x="654" y="282" width="14" height="84" rx="7" fill="#7C5CFF" opacity="0.55"/>
+  <!-- hanging sign -->
+  <rect x="300" y="366" width="424" height="312" rx="52" fill="url(#vio)"/>
+  <!-- tankard cut-out: body -->
+  <rect x="442" y="468" width="126" height="156" rx="22" fill="#0B0B0F"/>
+  <!-- tankard handle -->
+  <path d="M 568 502 A 52 52 0 0 1 568 590" fill="none" stroke="#0B0B0F" stroke-width="26" stroke-linecap="round"/>
+  <!-- foam -->
+  <circle cx="466" cy="462" r="26" fill="#0B0B0F"/>
+  <circle cx="506" cy="448" r="30" fill="#0B0B0F"/>
+  <circle cx="547" cy="462" r="26" fill="#0B0B0F"/>
+</svg>

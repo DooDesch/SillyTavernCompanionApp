@@ -21,3 +21,8 @@ web-build/
 !.graphify/graph.html
 !.graphify/flows.json
 !.graphify/wiki/
+
+# Release signing — NEVER commit; back up keystore + passwords out-of-band
+apps/mobile/credentials/
+*.keystore
+*.jks
