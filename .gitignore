@@ -30,3 +30,6 @@ apps/mobile/credentials/
 
 # Device screenshots - may contain private chat content, never commit
 docs/screenshots/
+
+# Local Expo module build output
+apps/mobile/modules/**/android/build/
