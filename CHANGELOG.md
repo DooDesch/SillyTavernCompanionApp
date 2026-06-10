@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.9.2] - 2026-06-10 (Beta)
+
+### Added
+- Phone-friendly generation controls: temperature and response length as sliders
+  (tap the value for exact input), context size as a preset stepper (2k-128k).
+  Untouched values are never written back, so desktop settings outside the mobile
+  ranges stay intact.
+- Hint texts explaining the difference between "Streaming" (backend, synced with
+  SillyTavern) and "Smooth streaming" (app-side display only).
+- Read-aloud playback bar above the composer with a stop button; long texts are
+  now chunked below Android's TTS limit (previously >4000 chars threw).
+
+### Fixed
+- Bottom sheets no longer show a dead padding band under their buttons while the
+  keyboard is open.
+- Gestures inside bottom sheets (slider drag, pan-to-dismiss on the handle) were
+  inert on Android; they work now.
+- Stopping a generation before the first token no longer leaves an empty reply
+  bubble behind.
+
+### Changed
+- APK size reduced from 98.4 MB to ~37 MB (arm64-only native libs + R8 code
+  shrinking). 32-bit devices are no longer supported by the prebuilt APK.
+- Releases are now built and published automatically when a version tag is pushed.
+
 ## [0.9.1] - 2026-06-10 (Beta)
 
 ### Added
