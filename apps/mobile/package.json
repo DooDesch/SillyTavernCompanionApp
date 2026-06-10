@@ -28,6 +28,7 @@
     "expo-image-picker": "~56.0.16",
     "expo-keep-awake": "~56.0.3",
     "expo-linking": "~56.0.13",
+    "expo-local-authentication": "~56.0.4",
     "expo-localization": "~56.0.6",
     "expo-network": "~56.0.5",
     "expo-router": "~56.2.9",

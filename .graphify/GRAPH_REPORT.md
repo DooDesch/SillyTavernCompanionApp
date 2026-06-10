@@ -15,11 +15,11 @@
 - Requested: auto
 - Resolved: committed (source: default-auto)
 - Included files: 168 · Candidates: 188
-- Excluded: 0 untracked · 69700 ignored · 3 sensitive · 0 missing committed
+- Excluded: 0 untracked · 69702 ignored · 3 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `25a4bad`
+- Built from Git commit: `666236e`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `Icon()` - 17 edges

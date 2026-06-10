@@ -81,6 +81,12 @@ const config: ExpoConfig = {
       },
     ],
     [
+      'expo-local-authentication',
+      {
+        faceIDPermission: 'Entsperrt die App per Face ID, wenn die App-Sperre aktiviert ist.',
+      },
+    ],
+    [
       'expo-build-properties',
       {
         android: {

@@ -8,6 +8,7 @@ import { useConnection } from '@/stores/connectionStore';
 import { useProfiles } from '@/stores/profilesStore';
 import { useServers } from '@/stores/serversStore';
 import { useLocale, type LanguagePref } from '@/stores/localeStore';
+import { usePrefs, type ChatListMode } from '@/stores/prefsStore';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
 import { useEngineConfig } from '@/hooks/useEngineConfig';
 import { useBackendStatus } from '@/hooks/useBackendStatus';
@@ -89,8 +90,15 @@ export default function SettingsScreen() {
   const backend = useBackendStatus(engine);
   const langPref = useLocale((s) => s.pref);
   const setLanguage = useLocale((s) => s.setLanguage);
+  const chatList = usePrefs((s) => s.chatList);
+  const setChatList = usePrefs((s) => s.setChatList);
   const [scanning, setScanning] = useState(false);
-  const [sheet, setSheet] = useState<'profile' | 'persona' | 'language' | null>(null);
+  const [sheet, setSheet] = useState<'profile' | 'persona' | 'language' | 'chatlist' | null>(null);
+
+  const chatListOptions: PickerOption[] = [
+    { id: 'latest', label: t('settings.chatListLatest'), sublabel: t('settings.chatListLatestSub') },
+    { id: 'all', label: t('settings.chatListAll'), sublabel: t('settings.chatListAllSub') },
+  ];
 
   const languageOptions: PickerOption[] = [
     { id: 'system', label: t('settings.languageSystem') },
@@ -297,6 +305,15 @@ export default function SettingsScreen() {
           </View>
         </Section>
 
+        {/* Display */}
+        <Section title={t('settings.display')} icon="chats">
+          <SettingRow
+            label={t('settings.chatList')}
+            value={chatList === 'all' ? t('settings.chatListAll') : t('settings.chatListLatest')}
+            onPress={() => setSheet('chatlist')}
+          />
+        </Section>
+
         {/* Language */}
         <Section title={t('settings.language')} icon="globe">
           <SettingRow label={t('settings.language')} value={languageLabel} onPress={() => setSheet('language')} />
@@ -310,6 +327,14 @@ export default function SettingsScreen() {
         </AppText>
       </ScrollView>
 
+      <PickerSheet
+        visible={sheet === 'chatlist'}
+        title={t('settings.chatList')}
+        options={chatListOptions}
+        activeId={chatList}
+        onSelect={(id) => setChatList(id as ChatListMode)}
+        onClose={() => setSheet(null)}
+      />
       <PickerSheet
         visible={sheet === 'language'}
         title={t('settings.language')}
