@@ -103,10 +103,11 @@ cd android
 Version bumps: `version` in `apps/mobile/app.config.ts` (+ root/core/mobile `package.json`) and
 `android.versionCode` +1 per release.
 
-## Known gaps
+## Known gaps & roadmap
 
-Deliberately deferred: group chats, stateful variable macros (`getvar`/`setvar`), server-side TTS,
-full preset/template editors (heavy configuration stays on the desktop by design).
+See [ROADMAP.md](ROADMAP.md). Deliberately deferred: group chats, stateful variable macros
+(`getvar`/`setvar`), server-side TTS, full preset/template editors (heavy configuration stays
+on the desktop by design).
 
 ## License & attribution
 
