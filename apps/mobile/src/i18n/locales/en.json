@@ -81,7 +81,7 @@
   "chat": {
     "asPersona": "as {{name}}",
     "attachImage": "Attach image",
-    "backendWarning": "AI backend not connected - generation will fail. Tap to check.",
+    "backendWarning": "AI backend not connected - tap to check.",
     "branchFailed": "Could not create branch.",
     "branchFromHere": "Branch from here",
     "choosePersona": "Choose persona",

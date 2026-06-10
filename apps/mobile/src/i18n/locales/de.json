@@ -81,7 +81,7 @@
   "chat": {
     "asPersona": "als {{name}}",
     "attachImage": "Bild anhängen",
-    "backendWarning": "KI-Backend nicht verbunden - Generierung schlägt fehl. Tippen zum Prüfen.",
+    "backendWarning": "KI-Backend nicht verbunden - tippen zum Prüfen.",
     "branchFailed": "Branch konnte nicht erstellt werden.",
     "branchFromHere": "Ab hier verzweigen",
     "choosePersona": "Persona wählen",
