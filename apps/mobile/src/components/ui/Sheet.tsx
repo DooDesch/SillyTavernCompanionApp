@@ -69,13 +69,16 @@ export function Sheet({
     });
   }, [visible, mounted, translateY, progress]);
 
+  // runOnJS(true): the reanimated worklet fast path for gesture events crashed natively
+  // ("Object is not a function"); JS-thread dispatch is plenty for a dismiss drag.
   const pan = Gesture.Pan()
+    .runOnJS(true)
     .onUpdate((e) => {
       translateY.value = Math.max(0, e.translationY);
     })
     .onEnd((e) => {
       if (e.translationY > 110 || e.velocityY > 800) {
-        runOnJS(onClose)();
+        onClose();
       } else {
         translateY.value = withSpring(0, springs.sheet);
       }

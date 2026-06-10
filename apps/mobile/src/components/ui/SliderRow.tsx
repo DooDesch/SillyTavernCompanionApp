@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { AppText } from './AppText';
 import { colors, fonts } from '@/theme/tokens';
 
@@ -79,26 +79,30 @@ export function SliderRow({
     onChange(v);
   };
 
+  // runOnJS(true): callbacks run on the JS thread via the classic event path. The reanimated
+  // fast path (worklet callbacks) crashed natively here ("Object is not a function" in
+  // EventHandler.receiveEvent) and a slider doesn't need UI-thread dispatch - shared values
+  // remain settable from JS, so the fill/thumb still animate via reanimated.
   const pan = Gesture.Pan()
+    .runOnJS(true)
     .onUpdate((e) => {
-      'worklet';
       if (trackW <= 0) return;
       const p = clamp01(e.x / trackW);
       pct.value = p;
-      runOnJS(commitPct)(p);
+      commitPct(p);
     })
     .onEnd((e) => {
-      'worklet';
       if (trackW <= 0) return;
-      runOnJS(commitPct)(clamp01(e.x / trackW));
+      commitPct(clamp01(e.x / trackW));
     });
-  const tap = Gesture.Tap().onEnd((e) => {
-    'worklet';
-    if (trackW <= 0) return;
-    const p = clamp01(e.x / trackW);
-    pct.value = withTiming(p, { duration: 80 });
-    runOnJS(commitPct)(p);
-  });
+  const tap = Gesture.Tap()
+    .runOnJS(true)
+    .onEnd((e) => {
+      if (trackW <= 0) return;
+      const p = clamp01(e.x / trackW);
+      pct.value = withTiming(p, { duration: 80 });
+      commitPct(p);
+    });
 
   const fillStyle = useAnimatedStyle(() => ({ width: `${pct.value * 100}%` }));
   const thumbStyle = useAnimatedStyle(() => ({ left: pct.value * Math.max(trackW - THUMB, 0) }));
