@@ -18,6 +18,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { queryClient } from '@/lib/queryClient';
 import { fileStorage } from '@/lib/persist';
+import { LockGate } from '@/components/LockGate';
 import { useProfiles } from '@/stores/profilesStore';
 import { useServers } from '@/stores/serversStore';
 import { useLocale } from '@/stores/localeStore';
@@ -78,6 +79,7 @@ export default function RootLayout() {
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
+            <LockGate />
           </PersistQueryClientProvider>
         </SafeAreaProvider>
       </KeyboardProvider>

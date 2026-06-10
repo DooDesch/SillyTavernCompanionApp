@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Switch, View } from 'react-native';
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useConnection } from '@/stores/connectionStore';
@@ -92,7 +93,45 @@ export default function SettingsScreen() {
   const setLanguage = useLocale((s) => s.setLanguage);
   const chatList = usePrefs((s) => s.chatList);
   const setChatList = usePrefs((s) => s.setChatList);
+  const appLock = usePrefs((s) => s.appLock);
+  const setAppLock = usePrefs((s) => s.setAppLock);
+  const [lockAvailable, setLockAvailable] = useState(false);
   const [scanning, setScanning] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [hw, enrolled] = await Promise.all([
+          LocalAuthentication.hasHardwareAsync(),
+          LocalAuthentication.isEnrolledAsync(),
+        ]);
+        // Device-credential-only setups (PIN without biometrics) still work via the fallback.
+        const level = await LocalAuthentication.getEnrolledLevelAsync();
+        setLockAvailable((hw && enrolled) || level !== LocalAuthentication.SecurityLevel.NONE);
+      } catch {
+        setLockAvailable(false);
+      }
+    })();
+  }, []);
+
+  // Enabling requires a successful authentication first - users without working
+  // credentials must never be able to lock themselves out.
+  const toggleAppLock = async (on: boolean) => {
+    if (!on) {
+      setAppLock(false);
+      return;
+    }
+    try {
+      const res = await LocalAuthentication.authenticateAsync({
+        promptMessage: t('lock.prompt'),
+        cancelLabel: t('common.cancel'),
+        disableDeviceFallback: false,
+      });
+      if (res.success) setAppLock(true);
+    } catch {
+      // leave disabled
+    }
+  };
   const [sheet, setSheet] = useState<'profile' | 'persona' | 'language' | 'chatlist' | null>(null);
 
   const chatListOptions: PickerOption[] = [
@@ -312,6 +351,25 @@ export default function SettingsScreen() {
             value={chatList === 'all' ? t('settings.chatListAll') : t('settings.chatListLatest')}
             onPress={() => setSheet('chatlist')}
           />
+        </Section>
+
+        {/* Security */}
+        <Section title={t('settings.security')} icon="lock">
+          <Card className="flex-row items-center gap-3 px-4 py-3.5">
+            <View className="flex-1">
+              <AppText variant="title">{t('settings.appLock')}</AppText>
+              <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+                {lockAvailable ? t('settings.appLockSubtitle') : t('settings.appLockUnavailable')}
+              </AppText>
+            </View>
+            <Switch
+              value={appLock}
+              disabled={!lockAvailable}
+              onValueChange={(on) => void toggleAppLock(on)}
+              trackColor={{ true: colors.accent, false: colors.surface3 }}
+              thumbColor={colors.onAccent}
+            />
+          </Card>
         </Section>
 
         {/* Language */}

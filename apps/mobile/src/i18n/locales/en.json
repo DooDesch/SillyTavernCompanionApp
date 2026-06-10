@@ -238,6 +238,12 @@
     "writeWarning": "Changes are written to the settings on the PC (like the quick settings). Only changed fields are transferred.",
     "writeWarningTitle": "Save to SillyTavern?"
   },
+  "lock": {
+    "prompt": "Unlock SillyTavern Companion",
+    "subtitle": "SillyTavern Companion is locked.",
+    "title": "Locked",
+    "unlock": "Unlock"
+  },
   "lore": {
     "active": "active",
     "constant": "always",
@@ -282,6 +288,9 @@
   "settings": {
     "activeConfig": "Active configuration",
     "aiBackend": "AI backend",
+    "appLock": "App lock",
+    "appLockSubtitle": "Unlock on launch and after 1 minute in the background (biometrics or device PIN).",
+    "appLockUnavailable": "No screen lock set up on this device.",
     "autoDetect": "Auto-detect",
     "chatCompletion": "Chat completion",
     "chatList": "Show chats",
@@ -310,6 +319,7 @@
     "roadmapNote": "Profiles apply instruct/context/system prompt/sampler + backend URL. Roadmap: cloud backends (chat completion), preset editor.",
     "savedServers": "Saved servers",
     "scanFailed": "Scan failed",
+    "security": "Security",
     "selectEllipsis": "Select…",
     "sillyTavern": "SillyTavern",
     "syncToPc": "Sync with PC",
