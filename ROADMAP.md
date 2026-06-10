@@ -15,6 +15,12 @@ by size, not by order.
 - [ ] **Better controls for temperature / response length / context size** - plain number
       inputs are fiddly on the phone. Sliders or steppers with sensible ranges, live value
       display and reset-to-preset.
+- [ ] **Read-aloud (TTS) playback controls**: once "Read aloud" is running there is currently
+      no way to pause or stop it. Idea: a small playback bar above the message input
+      (speaker icon + progress/message hint + pause/stop); also worth considering: a stop
+      affordance on the speaking bubble itself, and an Android MediaSession notification
+      with system media controls if reads get long. Auto-stop when leaving the chat already
+      exists.
 
 ## Features
 
