@@ -7,7 +7,10 @@
     "clearSearch": "Clear search",
     "closeSheet": "Close",
     "continueReply": "Continue reply",
+    "decrease": "Decrease",
+    "editValue": "Enter value",
     "generationSettings": "Generation settings",
+    "increase": "Increase",
     "lorebook": "Lorebook",
     "messageActions": "Message actions",
     "more": "More actions",
@@ -20,7 +23,8 @@
     "search": "Search",
     "send": "Send message",
     "showPassword": "Show or hide password",
-    "stop": "Stop generating"
+    "stop": "Stop generating",
+    "stopReading": "Stop reading aloud"
   },
   "authorsNote": {
     "depth": "Depth",
@@ -84,6 +88,7 @@
     "noResponseMessage": "No message was generated. Is the AI backend (KoboldCpp/Cloud) reachable and connected in SillyTavern?",
     "noResponseTitle": "No response",
     "readAloud": "Read aloud",
+    "readingAloud": "Reading aloud…",
     "reasoning": "Thoughts",
     "regenerate": "Regenerate",
     "thinking": "Thinking",
@@ -161,8 +166,9 @@
     "responseLength": "Response length (tokens)",
     "savedNotice": "Saved to SillyTavern (PC).",
     "smoothStreaming": "Smooth streaming",
-    "smoothStreamingHint": "Reveal text word by word while generating (app only).",
+    "smoothStreamingHint": "App display only: text appears word by word.",
     "streaming": "Streaming",
+    "streamingHint": "Backend sends tokens as they are generated - synced with SillyTavern.",
     "temperature": "Temperature",
     "title": "Generation"
   },

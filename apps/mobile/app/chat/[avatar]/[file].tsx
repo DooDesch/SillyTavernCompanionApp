@@ -38,7 +38,9 @@ import { streamDebug } from '@/lib/streamDebug';
 import { syncPersonaToPc } from '@/lib/sync';
 import { ensureIds, makeAssistantMessage, makeUserMessage, nowSendDate } from '@/lib/messages';
 import { clearChatDraft, readChatDraft, writeChatDraft } from '@/lib/persist';
+import { chunkForSpeech, plainForSpeech } from '@/lib/tts';
 import { RichText } from '@/components/RichText';
+import { ReadAloudBar } from '@/components/ReadAloudBar';
 import { StreamingBubbleContent, ReasoningBlock } from '@/components/StreamingText';
 import { Avatar } from '@/components/Avatar';
 import { PickerSheet, type PickerOption } from '@/components/PickerSheet';
@@ -106,6 +108,8 @@ export default function ChatScreen() {
   const [sheet, setSheet] = useState<'persona' | 'note' | 'quick' | 'lore' | null>(null);
   const [disabledLore, setDisabledLore] = useState<Set<string>>(new Set());
   const [activeLore, setActiveLore] = useState<Set<string>>(new Set());
+  const [speaking, setSpeaking] = useState<{ index: number; name: string } | null>(null);
+  const speakSessionRef = useRef(0);
 
   // Author's Note lives in the chat header's chat_metadata (round-trips to the desktop).
   const meta = header?.chat_metadata as Record<string, unknown> | undefined;
@@ -555,18 +559,39 @@ export default function ChatScreen() {
     [messages],
   );
 
-  // Read a message aloud with the device's own TTS (no server TTS config needed).
+  // Read a message aloud with the device's own TTS (no server TTS config needed). The session
+  // token guards the stop->speak race: a flushed utterance's onStopped arrives AFTER the next
+  // read already set state and must not clear the new bar.
+  const stopSpeaking = useCallback(() => {
+    speakSessionRef.current++;
+    void Speech.stop();
+    setSpeaking(null);
+  }, []);
+
   const speakMessage = useCallback(
     (index: number) => {
       const m = messages[index];
       if (!m) return;
-      // Strip RP markup so the asterisks/quotes aren't read literally.
-      const plain = currentSwipeText(m)
-        .replace(/[*_`#>]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      Speech.stop();
-      if (plain) Speech.speak(plain);
+      const plain = plainForSpeech(currentSwipeText(m));
+      const session = ++speakSessionRef.current;
+      void Speech.stop(); // flushes the whole native queue
+      if (!plain) {
+        setSpeaking(null);
+        return;
+      }
+      const clear = () => {
+        if (speakSessionRef.current === session) setSpeaking(null);
+      };
+      const chunks = chunkForSpeech(plain);
+      chunks.forEach((c, i) =>
+        Speech.speak(c, {
+          ...(i === chunks.length - 1 ? { onDone: clear } : {}),
+          onStopped: clear,
+          onError: clear,
+        }),
+      );
+      // Capture the name now - the bar must never dereference messages[index] later.
+      setSpeaking({ index, name: m.name });
     },
     [messages],
   );
@@ -703,6 +728,8 @@ export default function ChatScreen() {
           <IconButton name="fastForward" size="sm" surface accessibilityLabel={t('a11y.continueReply')} onPress={() => void continueLast()} />
         </View>
       )}
+
+      {speaking && <ReadAloudBar name={speaking.name} onStop={stopSpeaking} />}
 
       {pendingImage && (
         <View className="flex-row items-center gap-3 border-t border-border bg-surface px-3 pt-2">

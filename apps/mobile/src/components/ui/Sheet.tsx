@@ -82,11 +82,20 @@ export function Sheet({
     });
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
+  const bottomPad = Math.max(insets.bottom, 12);
   // Lift the sheet above the keyboard. keyboard-controller's `height` is NEGATIVE while the
   // keyboard is open (made for direct translateY use) - subtracting it pushed the sheet DOWN
   // off-screen, which made typing in any sheet impossible.
+  // While the keyboard is open the OS bottom inset sits behind it, so the inset padding became
+  // dead space under the buttons: slide the sheet down by the surplus (keyboard.progress is
+  // 0..1, frame-synced) so exactly 12px of breathing room stays visible above the keyboard.
   const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value + keyboard.height.value }],
+    transform: [
+      {
+        translateY:
+          translateY.value + keyboard.height.value + keyboard.progress.value * (bottomPad - 12),
+      },
+    ],
   }));
 
   if (!mounted) return null;
@@ -111,7 +120,7 @@ export function Sheet({
                 ) : null}
               </View>
             </GestureDetector>
-            <View style={{ paddingBottom: Math.max(insets.bottom, 12) }} className="px-2 pt-1">
+            <View style={{ paddingBottom: bottomPad }} className="px-2 pt-1">
               {children}
             </View>
           </View>

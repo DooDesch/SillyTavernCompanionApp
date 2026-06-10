@@ -1,42 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Switch, TextInput, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { EngineConfig, StClient } from '@st/core';
 import { syncOai, syncRoot, syncTextgen } from '@/lib/sync';
 import { usePrefs } from '@/stores/prefsStore';
-import { Sheet, AppText, Button } from './ui';
-import { colors, fonts } from '@/theme/tokens';
+import { Sheet, AppText, Button, SliderRow, StepperRow } from './ui';
+import { colors } from '@/theme/tokens';
+
+const CONTEXT_PRESETS = [2048, 4096, 8192, 16384, 32768, 65536, 131072];
 
 /**
  * The few generation knobs worth tweaking from the phone (temperature, response length, context size,
  * streaming). Writes back to the desktop settings (read-modify-write) - the full preset editor stays
- * desktop-only, by design.
+ * desktop-only, by design. Values start as `null` when the engine doesn't expose them and are only
+ * patched once the user actually touches them (non-destructive for desktop values outside our ranges).
  */
-function NumRow({
-  label,
-  value,
-  onChange,
-  keyboard = 'decimal-pad',
-}: {
-  label: string;
-  value: string;
-  onChange: (s: string) => void;
-  keyboard?: 'decimal-pad' | 'number-pad';
-}) {
-  return (
-    <View className="mb-3 flex-row items-center justify-between">
-      <AppText variant="bodyLg">{label}</AppText>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        keyboardType={keyboard}
-        className="w-28 rounded-field border border-border bg-surface-2 text-center text-text"
-        style={{ fontFamily: fonts.regular, fontSize: 16, height: 44 }}
-      />
-    </View>
-  );
-}
-
 export function QuickSettingsSheet({
   visible,
   engine,
@@ -62,17 +40,17 @@ export function QuickSettingsSheet({
   const curCtx = isCc ? oai?.openai_max_context ?? engine?.maxContext : engine?.maxContext;
   const curStream = isCc ? oai?.stream_openai !== false : (tg.streaming as boolean | undefined) !== false;
 
-  const [temp, setTemp] = useState('');
-  const [resp, setResp] = useState('');
-  const [ctx, setCtx] = useState('');
+  const [temp, setTemp] = useState<number | null>(null);
+  const [resp, setResp] = useState<number | null>(null);
+  const [ctx, setCtx] = useState<number | null>(null);
   const [stream, setStream] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      setTemp(curTemp != null ? String(curTemp) : '');
-      setResp(curResp != null ? String(curResp) : '');
-      setCtx(curCtx != null ? String(curCtx) : '');
+      setTemp(typeof curTemp === 'number' ? curTemp : null);
+      setResp(typeof curResp === 'number' ? curResp : null);
+      setCtx(typeof curCtx === 'number' ? curCtx : null);
       setStream(curStream);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,23 +59,20 @@ export function QuickSettingsSheet({
   const save = async () => {
     if (!client || !engine) return;
     setSaving(true);
-    const tempN = parseFloat(temp);
-    const respN = parseInt(resp, 10);
-    const ctxN = parseInt(ctx, 10);
     try {
       if (isCc) {
         const patch: Record<string, unknown> = { stream_openai: stream };
-        if (!Number.isNaN(tempN)) patch.temp_openai = tempN;
-        if (!Number.isNaN(respN)) patch.openai_max_tokens = respN;
-        if (!Number.isNaN(ctxN)) patch.openai_max_context = ctxN;
+        if (temp != null) patch.temp_openai = temp;
+        if (resp != null) patch.openai_max_tokens = resp;
+        if (ctx != null) patch.openai_max_context = ctx;
         await syncOai(client, patch);
       } else {
         const tgPatch: Record<string, unknown> = { streaming: stream };
-        if (!Number.isNaN(tempN)) tgPatch.temp = tempN;
+        if (temp != null) tgPatch.temp = temp;
         await syncTextgen(client, tgPatch);
         const rootPatch: Record<string, unknown> = {};
-        if (!Number.isNaN(respN)) rootPatch.amount_gen = respN;
-        if (!Number.isNaN(ctxN)) rootPatch.max_context = ctxN;
+        if (resp != null) rootPatch.amount_gen = resp;
+        if (ctx != null) rootPatch.max_context = ctx;
         if (Object.keys(rootPatch).length) await syncRoot(client, rootPatch);
       }
       onSaved();
@@ -110,31 +85,55 @@ export function QuickSettingsSheet({
   return (
     <Sheet visible={visible} onClose={onClose} title={t('quickSettings.title')}>
       <View className="px-2 pb-1 pt-1">
-        <NumRow label={t('quickSettings.temperature')} value={temp} onChange={setTemp} />
-        <NumRow label={t('quickSettings.responseLength')} value={resp} onChange={setResp} keyboard="number-pad" />
-        <NumRow label={t('quickSettings.contextSize')} value={ctx} onChange={setCtx} keyboard="number-pad" />
-        <View className="mb-1 flex-row items-center justify-between">
-          <AppText variant="bodyLg">{t('quickSettings.streaming')}</AppText>
-          <Switch
-            value={stream}
-            onValueChange={setStream}
-            trackColor={{ true: colors.accent, false: colors.surface3 }}
-            thumbColor={colors.onAccent}
-          />
+        <SliderRow
+          label={t('quickSettings.temperature')}
+          value={temp}
+          min={0}
+          max={2}
+          step={0.05}
+          decimals={2}
+          hardMax={5}
+          onChange={setTemp}
+        />
+        <SliderRow
+          label={t('quickSettings.responseLength')}
+          value={resp}
+          min={16}
+          max={2048}
+          step={16}
+          hardMax={32768}
+          onChange={setResp}
+        />
+        <StepperRow label={t('quickSettings.contextSize')} value={ctx} values={CONTEXT_PRESETS} onChange={setCtx} />
+        <View className="mb-3">
+          <View className="flex-row items-center justify-between">
+            <AppText variant="bodyLg">{t('quickSettings.streaming')}</AppText>
+            <Switch
+              value={stream}
+              onValueChange={setStream}
+              trackColor={{ true: colors.accent, false: colors.surface3 }}
+              thumbColor={colors.onAccent}
+            />
+          </View>
+          <AppText variant="caption" color="subtle" style={{ marginTop: 2, paddingRight: 56 }}>
+            {t('quickSettings.streamingHint')}
+          </AppText>
         </View>
         {/* Device-local render preference: applies immediately, never synced to the desktop. */}
-        <View className="mb-1 flex-row items-center justify-between">
-          <AppText variant="bodyLg">{t('quickSettings.smoothStreaming')}</AppText>
-          <Switch
-            value={smoothStreaming}
-            onValueChange={setSmoothStreaming}
-            trackColor={{ true: colors.accent, false: colors.surface3 }}
-            thumbColor={colors.onAccent}
-          />
+        <View className="mb-1">
+          <View className="flex-row items-center justify-between">
+            <AppText variant="bodyLg">{t('quickSettings.smoothStreaming')}</AppText>
+            <Switch
+              value={smoothStreaming}
+              onValueChange={setSmoothStreaming}
+              trackColor={{ true: colors.accent, false: colors.surface3 }}
+              thumbColor={colors.onAccent}
+            />
+          </View>
+          <AppText variant="caption" color="subtle" style={{ marginTop: 2, paddingRight: 56 }}>
+            {t('quickSettings.smoothStreamingHint')}
+          </AppText>
         </View>
-        <AppText variant="caption" color="subtle">
-          {t('quickSettings.smoothStreamingHint')}
-        </AppText>
         <AppText variant="caption" color="subtle" style={{ marginTop: 4 }}>
           {t('quickSettings.savedNotice')}
         </AppText>

@@ -7,7 +7,10 @@
     "clearSearch": "Suche leeren",
     "closeSheet": "Schließen",
     "continueReply": "Antwort fortsetzen",
+    "decrease": "Verringern",
+    "editValue": "Wert eingeben",
     "generationSettings": "Generierungs-Einstellungen",
+    "increase": "Erhöhen",
     "lorebook": "Lorebook",
     "messageActions": "Nachrichten-Aktionen",
     "more": "Weitere Aktionen",
@@ -20,7 +23,8 @@
     "search": "Suchen",
     "send": "Nachricht senden",
     "showPassword": "Passwort anzeigen/verbergen",
-    "stop": "Generierung stoppen"
+    "stop": "Generierung stoppen",
+    "stopReading": "Vorlesen stoppen"
   },
   "authorsNote": {
     "depth": "Tiefe",
@@ -84,6 +88,7 @@
     "noResponseMessage": "Es wurde keine Nachricht generiert. Ist das KI-Backend (KoboldCpp/Cloud) erreichbar und in SillyTavern verbunden?",
     "noResponseTitle": "Keine Antwort",
     "readAloud": "Vorlesen",
+    "readingAloud": "Liest vor …",
     "reasoning": "Gedanken",
     "regenerate": "Neu generieren",
     "thinking": "Denkt",
@@ -161,8 +166,9 @@
     "responseLength": "Antwortlänge (Tokens)",
     "savedNotice": "Wird auf SillyTavern (PC) gespeichert.",
     "smoothStreaming": "Sanftes Streaming",
-    "smoothStreamingHint": "Text beim Generieren Wort für Wort einblenden (nur in der App).",
+    "smoothStreamingHint": "Nur Darstellung in der App: Text erscheint Wort für Wort.",
     "streaming": "Streaming",
+    "streamingHint": "Backend sendet Tokens sofort - wird mit SillyTavern synchronisiert.",
     "temperature": "Temperatur",
     "title": "Generierung"
   },

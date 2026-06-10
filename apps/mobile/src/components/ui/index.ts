@@ -12,3 +12,5 @@ export { Field, type FieldProps } from './Field';
 export { Skeleton, SkeletonList } from './Skeleton';
 export { EmptyState } from './EmptyState';
 export { Sheet, SheetActionRow } from './Sheet';
+export { SliderRow, parseNum } from './SliderRow';
+export { StepperRow } from './StepperRow';
