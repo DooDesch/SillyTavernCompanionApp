@@ -66,11 +66,25 @@ export function useLorebook(character?: StCharacter): Lorebook | undefined {
 
   return useMemo(() => {
     if (!wiSettings) return undefined;
-    const embedded = character?.data?.character_book
-      ? characterBookToEntries(character.data.character_book)
-      : [];
-    const entries = [...embedded, ...(worldEntries ?? [])];
+    const book = character?.data?.character_book as { name?: string } | undefined;
+    // ST imports an embedded book as a world file and links it via extensions.world -
+    // evaluating both would double every entry. Skip the embedded copy when the linked
+    // world IS that book (same name).
+    const embeddedIsLinked = !!book?.name && book.name === linkedWorld;
+    const embedded =
+      character?.data?.character_book && !embeddedIsLinked
+        ? characterBookToEntries(character.data.character_book)
+        : [];
+    // Safety net: collapse exact duplicates (same keys + content) regardless of source -
+    // they would fire identically and only double-spend the WI budget.
+    const seen = new Set<string>();
+    const entries = [...embedded, ...(worldEntries ?? [])].filter((e) => {
+      const id = JSON.stringify([e.key ?? [], e.keysecondary ?? [], e.content]);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
     if (entries.length === 0) return undefined;
     return { entries, settings: wiSettings };
-  }, [wiSettings, character, worldEntries]);
+  }, [wiSettings, character, worldEntries, linkedWorld]);
 }

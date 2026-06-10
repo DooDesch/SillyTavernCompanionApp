@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getAllCharacters, getCharacterChats, type ChatFileInfo, type StCharacter } from '@st/core';
@@ -140,6 +140,16 @@ export default function ChatsScreen() {
     queryFn: () => getAllCharacters(client!),
     enabled: !!client,
   });
+
+  // Tab screens stay mounted - without a focus refetch, chats created elsewhere only
+  // appeared after a manual pull-to-refresh.
+  useFocusEffect(
+    useCallback(() => {
+      if (!client) return;
+      void refetch();
+      void queryClient.invalidateQueries({ queryKey: ['charchats'] });
+    }, [client, refetch, queryClient]),
+  );
 
   const recent = useMemo(
     () =>

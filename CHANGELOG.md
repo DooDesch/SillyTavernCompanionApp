@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.14.0] - 2026-06-10 (Beta)
+
+### Added
+- Swipe horizontally on the last reply to cycle its variants/greetings (e.g. swipe
+  left to go from < 1/4 > to < 2/4 >) - like the desktop.
+- Confirmation dialogs before regenerate, generating a new variant and continue,
+  so a misclick next to the swipe controls no longer costs a reply.
+
+### Fixed
+- Lorebook entries no longer appear twice when a character's embedded book was
+  imported and linked as a world by SillyTavern; exact duplicate entries are
+  collapsed as a safety net.
+- Newly created chats now show up on the Chats tab immediately (saves invalidate
+  the lists, and the tab refreshes when it regains focus).
+
 ## [0.13.1] - 2026-06-10 (Beta)
 
 ### Fixed

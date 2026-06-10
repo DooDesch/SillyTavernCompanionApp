@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Image, Keyboard, Pressable, TextInput, View }
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { KeyboardAvoidingView, useKeyboardState } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -252,9 +253,13 @@ export default function ChatScreen() {
         ]);
       } else if (res.ok) {
         clearChatDraft(avatarUrl, fileName);
+        // Keep the chat lists fresh: a save may have just created this chat file or
+        // changed the newest-message ordering the chats tab sorts by.
+        void queryClient.invalidateQueries({ queryKey: ['charchats'] });
+        void queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
-    [client, header, avatarUrl, fileName, lorebook, t],
+    [client, header, avatarUrl, fileName, lorebook, queryClient, t],
   );
 
   // `fullMsgs` is the complete on-screen array at generation start (context + placeholder).
@@ -370,13 +375,26 @@ export default function ChatScreen() {
     if (asset?.base64) setPendingImage(`data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`);
   }, [t]);
 
-  const regenerate = useCallback(async () => {
+  // Guard the three generation triggers behind a confirm - they sit next to the
+  // heavily-used swipe controls and a misclick costs a full generation (or a reply).
+  const confirmGenerate = useCallback(
+    (message: string, action: () => void) => {
+      Alert.alert(t('chat.confirmGenTitle'), message, [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('chat.confirmGenGo'), onPress: action },
+      ]);
+    },
+    [t],
+  );
+
+  const regenerate = useCallback(() => {
     if (streaming || messages.length === 0) return;
     const lastIdx = messages.length - 1;
     if (messages[lastIdx]?.is_user) return;
-    const context = messages.slice(0, lastIdx);
-    await runGeneration(messages, context, lastIdx, 'regenerate');
-  }, [streaming, messages, runGeneration]);
+    confirmGenerate(t('chat.confirmRegenerate'), () => {
+      void runGeneration(messages, messages.slice(0, lastIdx), lastIdx, 'regenerate');
+    });
+  }, [streaming, messages, runGeneration, confirmGenerate, t]);
 
   const cycleSwipe = useCallback(
     (dir: 1 | -1) => {
@@ -390,8 +408,10 @@ export default function ChatScreen() {
         // The greeting has no preceding user input - only cycle its greetings, never
         // generate a new swipe from an empty context (matches desktop ST).
         if (lastIdx === 0) return;
-        // At the newest swipe → generate a fresh alternative.
-        void runGeneration(messages, messages.slice(0, lastIdx), lastIdx, 'swipe');
+        // At the newest swipe → generate a fresh alternative (confirmed: easy to misclick).
+        confirmGenerate(t('chat.confirmNewSwipe'), () => {
+          void runGeneration(messages, messages.slice(0, lastIdx), lastIdx, 'swipe');
+        });
         return;
       }
       const nsid = Math.max(0, Math.min(swipes.length - 1, sid + dir));
@@ -400,7 +420,7 @@ export default function ChatScreen() {
       setMessages(next);
       void persist(next);
     },
-    [streaming, messages, runGeneration, persist],
+    [streaming, messages, runGeneration, persist, confirmGenerate, t],
   );
 
   const stop = useCallback(() => {
@@ -541,13 +561,15 @@ export default function ChatScreen() {
     void persist(next);
   }, [editing, messages, persist]);
 
-  const continueLast = useCallback(async () => {
+  const continueLast = useCallback(() => {
     if (streaming || messages.length === 0) return;
     const lastIdx = messages.length - 1;
     const m = messages[lastIdx];
     if (!m || m.is_user) return;
-    await runGeneration(messages, messages, lastIdx, 'continue');
-  }, [streaming, messages, runGeneration]);
+    confirmGenerate(t('chat.confirmContinue'), () => {
+      void runGeneration(messages, messages, lastIdx, 'continue');
+    });
+  }, [streaming, messages, runGeneration, confirmGenerate, t]);
 
   const deleteMessage = useCallback(
     (index: number) => {
@@ -725,17 +747,27 @@ export default function ChatScreen() {
         // user scrolls up to read (ST-web-like). Replaces scroll-to-end on content size
         // change, which fought the user and fired per streamed token.
         maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
-        renderItem={({ item, index }) => (
-          <Bubble
-            message={item}
-            charAvatar={avatarUrl}
-            plain={streaming && index === messages.length - 1}
-            index={index}
-            // Message actions are disabled while generating (like desktop ST) - finalize
-            // computes from the generation-start array, so it must not change mid-stream.
-            onLongPress={streaming ? undefined : openMenu}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          const isLast = index === messages.length - 1;
+          const bubble = (
+            <Bubble
+              message={item}
+              charAvatar={avatarUrl}
+              plain={streaming && isLast}
+              index={index}
+              // Message actions are disabled while generating (like desktop ST) - finalize
+              // computes from the generation-start array, so it must not change mid-stream.
+              onLongPress={streaming ? undefined : openMenu}
+            />
+          );
+          return isLast && !item.is_user ? (
+            <SwipeRow enabled={!streaming} onSwipe={cycleSwipe}>
+              {bubble}
+            </SwipeRow>
+          ) : (
+            bubble
+          );
+        }}
       />
 
       {showSwipeBar && (
@@ -1003,6 +1035,36 @@ function finalizeAssistant(
     return withExtra({ ...cur, mes: finalText, swipes, swipe_id: sid, gen_finished: finished });
   }
   return withExtra({ ...cur, mes: finalText, swipes: [finalText], swipe_id: 0, gen_finished: finished });
+}
+
+/**
+ * Horizontal swipe on the last assistant bubble cycles its variants (greetings/swipes),
+ * matching the desktop. Axis thresholds keep vertical list scrolling untouched; JS-thread
+ * callbacks because the reanimated gesture fast path crashes natively in this app.
+ */
+function SwipeRow({
+  enabled,
+  onSwipe,
+  children,
+}: {
+  enabled: boolean;
+  onSwipe: (dir: 1 | -1) => void;
+  children: React.ReactNode;
+}) {
+  const pan = Gesture.Pan()
+    .enabled(enabled)
+    .runOnJS(true)
+    .activeOffsetX([-24, 24])
+    .failOffsetY([-14, 14])
+    .onEnd((e) => {
+      if (e.translationX <= -40 || e.velocityX < -800) onSwipe(1); // swipe left → next
+      else if (e.translationX >= 40 || e.velocityX > 800) onSwipe(-1); // swipe right → previous
+    });
+  return (
+    <GestureDetector gesture={pan}>
+      <View collapsable={false}>{children}</View>
+    </GestureDetector>
+  );
 }
 
 function shortTime(d: string | number | undefined): string {
