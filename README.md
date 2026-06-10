@@ -36,7 +36,11 @@ engine, so generations build the **same prompt as the desktop**.
 
 ## Installation (users)
 
-1. Download `app-release.apk` from the [latest release](https://github.com/DooDesch/SillyTavernCompanionApp/releases).
+<img src="docs/media/qr-releases.png" alt="QR code linking to the releases page" width="170" align="right" />
+
+Scan the QR code with your phone to jump straight to the newest APK.
+
+1. Download the APK from the [latest release](https://github.com/DooDesch/SillyTavernCompanionApp/releases).
 2. Open it on your Android phone (Android 7+). Allow *"install from unknown sources"* when asked -
    the APK is signed but not distributed through Google Play, so Play Protect will warn about an
    unknown developer. That is expected.
@@ -137,9 +141,10 @@ Native Android-App für **SillyTavern**: findet deine laufende ST-Instanz im WLA
 Server-Änderung), verbindet sich und setzt deine RP-Chats unterwegs fort - mit 1:1 portierter
 Prompt-Engine (byte-identische Prompts zum Desktop).
 
-**Installation:** `app-release.apk` aus den
-[Releases](https://github.com/DooDesch/SillyTavernCompanionApp/releases) laden, auf dem Handy
-öffnen („Unbekannte Quellen" erlauben - die Play-Protect-Warnung ist bei Sideload normal).
+**Installation:** APK aus den
+[Releases](https://github.com/DooDesch/SillyTavernCompanionApp/releases) laden (oder den QR-Code
+oben scannen), auf dem Handy öffnen („Unbekannte Quellen" erlauben - die Play-Protect-Warnung ist
+bei Sideload normal). Ab Version 0.13.1 aktualisiert sich die App direkt in den Einstellungen.
 Voraussetzungen: `config.yaml` mit `listen: true` + Whitelist fürs Handy-Subnetz, ST + Backend
 laufen, Handy im selben WLAN. Die App scannt das Netz und verbindet sich automatisch.
 
