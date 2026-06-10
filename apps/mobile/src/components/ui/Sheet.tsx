@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import Animated, {
   runOnJS,
@@ -102,7 +102,9 @@ export function Sheet({
 
   return (
     <Modal visible transparent statusBarTranslucent animationType="none" onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* An RN Modal is a separate native window on Android - gesture-handler needs its own
+          root inside it, or every GestureDetector in the sheet (handle pan, sliders) is dead. */}
+      <GestureHandlerRootView style={{ flex: 1, justifyContent: 'flex-end' }}>
         <AnimatedPressable
           accessibilityLabel="Close"
           style={[StyleSheet.absoluteFill, backdropStyle, { backgroundColor: colors.scrim }]}
@@ -125,7 +127,7 @@ export function Sheet({
             </View>
           </View>
         </Animated.View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

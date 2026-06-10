@@ -304,7 +304,9 @@ export default function ChatScreen() {
         setStreaming(false);
         const next = [...fullMsgs];
         const cur = next[assistantIndex];
-        if (failed) {
+        // Empty result (also when the USER stopped before the first token, e.g. during prompt
+        // processing): never keep/persist an empty bubble. The alert stays failure-only.
+        if (!gotText) {
           if (mode === 'new') {
             next.splice(assistantIndex, 1); // drop the empty placeholder, keep the user message
           } else if (cur) {
