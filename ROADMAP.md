@@ -10,6 +10,22 @@ Living document - priorities can shift, nothing here is a commitment.
 
 ## Shipped
 
+### 0.14.0
+- [x] **Swipe gesture for variants**: swipe horizontally on the last reply to cycle its
+      swipes/greetings, like the desktop.
+- [x] **Confirmation dialogs** before regenerate, new-variant generation and continue -
+      a misclick next to the swipe controls no longer costs a reply.
+- [x] Lorebook duplicate fix (embedded book vs linked world) + exact-duplicate collapse.
+- [x] Chats tab freshness: new chats appear immediately (save invalidation + focus refetch).
+- [x] Full in-app update loop verified on device: 0.13.1 -> download -> Android installer ->
+      0.14.0, data preserved.
+
+### 0.13.x
+- [x] Chat actions (open, rename, delete) via long-press directly on the Chats tab.
+- [x] Delete/rename updates the Chats tab immediately (shared query cache).
+- [x] Update check fixed for prerelease-only repos (release list instead of /latest).
+- [x] README: content-safe screenshots + QR code to releases; repo description/topics.
+
 ### 0.12.0
 - [x] **In-app updates**: automatic GitHub release check on launch + download/install
       directly from Settings (manual re-check button included).
