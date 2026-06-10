@@ -10,6 +10,13 @@ Living document - priorities can shift, nothing here is a commitment.
 
 ## Shipped
 
+### 0.14.1
+- [x] Continue fix (desktop parity): the partial reply ends the prompt mid-turn
+      (cyclePrompt port, TC + CC incl. nudge/Claude prefill flavors).
+- [x] Scroll lock while streaming: reading position is never yanked back to the bottom.
+- [x] Nested inline markup (quotes/bold/italics/underscore/strike) with composed styles.
+- [x] Per-action confirm dialogs (Continue?/Regenerate?/New variant?).
+
 ### 0.14.0
 - [x] **Swipe gesture for variants**: swipe horizontally on the last reply to cycle its
       swipes/greetings, like the desktop.
