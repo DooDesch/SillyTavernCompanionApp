@@ -10,6 +10,14 @@ Living document - priorities can shift, nothing here is a commitment.
 
 ## Shipped
 
+### 0.12.0
+- [x] **In-app updates**: automatic GitHub release check on launch + download/install
+      directly from Settings (manual re-check button included).
+- [x] **All greetings usable**: alternate greetings appear as swipes on the first message
+      of a new chat (< 1/4 >), like SillyTavern; no generation past the last greeting.
+- [x] **Character definitions redesigned**: collapsible card per field with markdown
+      rendering; example dialogues split into <START> blocks.
+
 ### 0.11.0
 - [x] **Character page: spoiler-gated definitions** - creator notes and tags shown openly,
       all prompt material (description, personality, scenario, greetings, examples, character
