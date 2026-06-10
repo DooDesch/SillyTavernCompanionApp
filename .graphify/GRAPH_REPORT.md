@@ -1,28 +1,28 @@
 # Graph Report - .  (2026-06-10)
 
 ## Corpus Check
-- 172 files · ~90.771 words
+- 173 files · ~91.592 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 712 nodes · 1570 edges · 42 communities detected
+- 714 nodes · 1578 edges · 42 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 540 · imports: 386 · imports_from: 343 · re_exports: 177 · calls: 98 · method: 26
+- Edge kinds: contains: 541 · imports: 389 · imports_from: 347 · re_exports: 177 · calls: 98 · method: 26
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 172 · Candidates: 192
-- Excluded: 0 untracked · 66465 ignored · 3 sensitive · 0 missing committed
+- Included files: 173 · Candidates: 193
+- Excluded: 0 untracked · 66474 ignored · 3 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `504d061`
+- Built from Git commit: `ffd3db4`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
-1. `Icon()` - 17 edges
+1. `Icon()` - 18 edges
 2. `haptics` - 16 edges
 3. `useConnection` - 15 edges
 4. `StClient` - 14 edges
@@ -95,32 +95,32 @@ Cohesion: 0.11
 Nodes (10): Bubble, DOT, GenMode, AuthorsNoteSheet(), AuthorsNoteValue, ROLES, ReadAloudBar(), CHUNK_MAX (+2 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.17
-Nodes (9): PickerOption, PickerSheet(), useBackendStatus(), ConnectionSettingsView, useConnectionProfiles(), useEngineConfig(), parseStSettings(), ProfilesState (+1 more)
-
-### Community 15 - "Community 15"
 Cohesion: 0.22
 Nodes (16): discoverInstances(), discoverKobold(), DiscoverOptions, KoboldDiscoverOptions, localIpv4(), uniq(), usableHint(), getHint() (+8 more)
 
-### Community 16 - "Community 16"
+### Community 15 - "Community 15"
 Cohesion: 0.20
 Nodes (8): StClient, calls, client, fetchImpl(), lastPost, makeResponse(), postCall, Recorded
 
-### Community 17 - "Community 17"
+### Community 16 - "Community 16"
 Cohesion: 0.18
-Nodes (13): Block, COLORS, INLINE, InlineText(), MONO, parseBlocks(), parseInline(), proseToBlocks() (+5 more)
+Nodes (9): PickerOption, PickerSheet(), useBackendStatus(), ConnectionSettingsView, useConnectionProfiles(), useEngineConfig(), parseStSettings(), ChatListMode (+1 more)
+
+### Community 17 - "Community 17"
+Cohesion: 0.14
+Nodes (8): mem, rememberBaseUrl(), secrets, storage, ProfilesState, SavedServer, ServersState, useServers
 
 ### Community 18 - "Community 18"
-Cohesion: 0.20
-Nodes (10): Avatar(), FALLBACK_TINTS, tintFor(), usePrefs, Bucket, chatFileLabel(), ChatFileRow(), RecentChatRow() (+2 more)
+Cohesion: 0.18
+Nodes (13): Block, COLORS, INLINE, InlineText(), MONO, parseBlocks(), parseInline(), proseToBlocks() (+5 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.23
 Nodes (5): Lorebook, useLorebook(), fetchLike(), ConnectionState, useConnection
 
 ### Community 20 - "Community 20"
-Cohesion: 0.18
-Nodes (6): persister, queryClient, useLocale, SavedServer, ServersState, useServers
+Cohesion: 0.22
+Nodes (9): Avatar(), FALLBACK_TINTS, tintFor(), Bucket, chatFileLabel(), ChatFileRow(), RecentChatRow(), relativeTime() (+1 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.26
@@ -131,28 +131,28 @@ Cohesion: 0.26
 Nodes (10): createTextgenBody(), getTextgenServer(), parseBannedTokens(), parseSequenceBreakers(), base, body, opts, r (+2 more)
 
 ### Community 23 - "Community 23"
+Cohesion: 0.31
+Nodes (5): persister, LockGate(), queryClient, PrefsState, usePrefs
+
+### Community 24 - "Community 24"
+Cohesion: 0.24
+Nodes (6): AppLanguage, deviceLanguage(), SUPPORTED_LANGUAGES, LanguagePref, LocaleState, useLocale
+
+### Community 25 - "Community 25"
 Cohesion: 0.22
 Nodes (7): countTokens, delta, GenerateOptions, GenerationChunk, history, events, streamDebug
 
-### Community 24 - "Community 24"
+### Community 26 - "Community 26"
 Cohesion: 0.22
 Nodes (4): EnvObject, escapeRegex(), MacroValue, substituteMacros()
 
-### Community 25 - "Community 25"
+### Community 27 - "Community 27"
 Cohesion: 0.31
 Nodes (7): StCharacter, StCharacterData, StCharacterExtensions, StDepthPrompt, StChatMetadata, StMessageExtra, StVersion
 
-### Community 26 - "Community 26"
-Cohesion: 0.28
-Nodes (5): AppLanguage, deviceLanguage(), SUPPORTED_LANGUAGES, LanguagePref, LocaleState
-
-### Community 27 - "Community 27"
+### Community 28 - "Community 28"
 Cohesion: 0.31
 Nodes (6): ChatDraft, clearChatDraft(), draftKey(), fileStorage, readChatDraft(), writeChatDraft()
-
-### Community 28 - "Community 28"
-Cohesion: 0.25
-Nodes (6): mem, rememberBaseUrl(), secrets, storage, ChatListMode, PrefsState
 
 ### Community 29 - "Community 29"
 Cohesion: 0.28
@@ -225,7 +225,7 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `SmoothPacer` connect `Community 11` to `Community 8`?**
   _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Why does `StClient` connect `Community 16` to `Community 4`, `Community 8`?**
+- **Why does `StClient` connect `Community 15` to `Community 4`, `Community 8`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
 - **Why does `SseParser` connect `Community 6` to `Community 8`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._

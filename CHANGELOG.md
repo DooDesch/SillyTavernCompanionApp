@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.10.0] - 2026-06-10 (Beta)
+
+### Added
+- **Optional app lock**: biometric unlock with system fallback to the device
+  PIN/pattern/password. Locks on launch and after one minute in the background.
+  Off by default; enabling requires a successful authentication so you can't
+  lock yourself out.
+- **Chats tab can show every chat** per character (with chat name, preview and
+  timestamp) instead of only the most recent one - configurable under
+  Settings > Display.
+- **Full generation-settings screen** ("All generation settings" from the quick
+  settings): every sampler and option the SillyTavern frontend offers for the
+  active backend - sampling (incl. dynamic temperature, smoothing, Mirostat),
+  penalties, DRY, XTC, CFG, grammar, banned tokens, KoboldCpp sampler order,
+  token toggles and seed for text completion; the full OpenAI-style set for
+  chat completion. Grouped in collapsible sections with search, long-press
+  reset to SillyTavern defaults, and diff-only sync back to the PC (only
+  fields you actually changed are written).
+
+### Fixed
+- The prompt now includes banned tokens/strings, no-repeat-ngram-size and
+  temperature-last from your SillyTavern settings (previously ignored by the
+  app's prompt engine).
+
 ## [0.9.2] - 2026-06-10 (Beta)
 
 ### Added
