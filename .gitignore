@@ -2,8 +2,9 @@ node_modules/
 dist/
 .expo/
 .expo-shared/
-android/
-ios/
+# Prebuild-generated native projects (NOT the local Expo modules' android/ sources)
+apps/mobile/android/
+apps/mobile/ios/
 *.log
 .DS_Store
 coverage/
