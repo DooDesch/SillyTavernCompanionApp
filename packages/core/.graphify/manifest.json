@@ -1,0 +1,274 @@
+{
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\chat\\integrity.test.ts": {
+    "mtime": 1780941957010.2832,
+    "hash": "acfec4fb823bed6009b9fb06245a86a2"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\chat\\integrity.ts": {
+    "mtime": 1780941952863.959,
+    "hash": "a0d7d596291dc77956f89b9a08d713bf"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\chat\\serialize.test.ts": {
+    "mtime": 1780941951752.375,
+    "hash": "02fc97890e1d64f9f33077e827d22db2"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\chat\\serialize.ts": {
+    "mtime": 1781003710148.0015,
+    "hash": "bd225a9fcde17c15b62620ba6292f355"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\connection\\StClient.test.ts": {
+    "mtime": 1780942333196.3347,
+    "hash": "041ca35b9d7faec617764247302cceb4"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\connection\\StClient.ts": {
+    "mtime": 1780942235219.8235,
+    "hash": "f10dfb2398e93e1e0030abe98739c25b"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\connection\\cookies.test.ts": {
+    "mtime": 1780942296669.2605,
+    "hash": "49a90aa8d364e25043dec738d984c86c"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\connection\\cookies.ts": {
+    "mtime": 1781022427230.8462,
+    "hash": "2783f8fe0b747c095a8a6cb404ea8b31"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\connection\\endpoints.test.ts": {
+    "mtime": 1780942342700.1619,
+    "hash": "a67481510055b3999bdbe2865b627a99"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\connection\\endpoints.ts": {
+    "mtime": 1781022427259.742,
+    "hash": "c96a57d1fcac24c233f8a32fb59f46a5"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\fingerprint.test.ts": {
+    "mtime": 1780942130418.526,
+    "hash": "1f0c9cf4ea0153dc6e11a5e33b01ea82"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\fingerprint.ts": {
+    "mtime": 1780942124190.7893,
+    "hash": "9fe5ebdc85baa253cae491a4eb026dfa"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\ip.test.ts": {
+    "mtime": 1780961255729.869,
+    "hash": "cd2f3af90a89a13de7eef4f05255d1f6"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\ip.ts": {
+    "mtime": 1781022427292.1328,
+    "hash": "5e98d462c97f7ffad2a9abe9b770872e"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\kobold.test.ts": {
+    "mtime": 1780960654036.7046,
+    "hash": "3eb7a1052f1366165d24a3aa6b22de33"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\kobold.ts": {
+    "mtime": 1780960445423.2634,
+    "hash": "78e16a473f529cd1f9e6da39882f603d"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\pool.test.ts": {
+    "mtime": 1780942060968.132,
+    "hash": "102ad9b5c30847b583662e36edc8f2ee"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\pool.ts": {
+    "mtime": 1780942059942.6003,
+    "hash": "251e4e408616155905824afc2143a065"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\subnetScan.test.ts": {
+    "mtime": 1781022427326.349,
+    "hash": "8797027542e24cfacbc00869bd9dd0df"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\subnetScan.ts": {
+    "mtime": 1781022427362.6702,
+    "hash": "d83abbc89975da97bc29ac21bc17d1b0"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\discovery\\types.ts": {
+    "mtime": 1780942117845.8547,
+    "hash": "e12dd969e0405fd4717517eba28bf252"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\index.ts": {
+    "mtime": 1781046448022.9321,
+    "hash": "1a87c7c0e8dc632f708e5ee5d75b149e"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\net\\http.ts": {
+    "mtime": 1780942113641.3184,
+    "hash": "fbc88bbde7b221f201d16901b4a3596b"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\buildPrompt.test.ts": {
+    "mtime": 1780944893367.5308,
+    "hash": "f4b2540ab62b9c9af6f03fce90dccea0"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\buildPrompt.ts": {
+    "mtime": 1781022427423.8408,
+    "hash": "8941e88aee9f78d79f4cf7e260b0da09"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\characterFields.ts": {
+    "mtime": 1780945986724.0835,
+    "hash": "1cf9c7c12573d6d8b5e70c7d8dacab00"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\chatcompletion\\body.ts": {
+    "mtime": 1781091908919.013,
+    "hash": "27247e1a05ffecca8e9c50b77642e41f"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\chatcompletion\\buildMessages.ts": {
+    "mtime": 1781007954227.8547,
+    "hash": "00979b2f4333cb81d3bcdc57611ab78f"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\chatcompletion\\chatcompletion.test.ts": {
+    "mtime": 1780957947946.0586,
+    "hash": "b27900f17bb479ca4ec83e2260994dac"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\chatcompletion\\index.ts": {
+    "mtime": 1780957740793.9521,
+    "hash": "0fa6aad944ffbf5a606d4378eeba6a54"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\chatcompletion\\model.ts": {
+    "mtime": 1780957638973.3608,
+    "hash": "74224c5ff605666a89c242befdb2e8bf"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\chatcompletion\\stream.ts": {
+    "mtime": 1780957656822.3914,
+    "hash": "6614d4d02a1ff546dd9e45dbaf481044"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\chatcompletion\\types.ts": {
+    "mtime": 1781007789429.8213,
+    "hash": "cfd63201c9739f1f3344bf02da4c9e48"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\depthInject.ts": {
+    "mtime": 1781022427453.9177,
+    "hash": "5cada32dd109a534b372adc1a58a51b2"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\examples.ts": {
+    "mtime": 1781022427482.9639,
+    "hash": "f1079dfd21c0a4002523ccaf60513770"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\generate.ts": {
+    "mtime": 1781007781418.9402,
+    "hash": "dd89c7cb18d80a389df885e52abcf843"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\index.ts": {
+    "mtime": 1781005276366.1697,
+    "hash": "08c8d1e8ac4f72eab4c32183345d6ffd"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\instruct.ts": {
+    "mtime": 1780946085385.9333,
+    "hash": "e03512bd3597ce7f4677cc0871529ace"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\m2-parity.test.ts": {
+    "mtime": 1781022427519.15,
+    "hash": "b0135965e9c7fa3dc0e8a3897cef9593"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\macros.ts": {
+    "mtime": 1781022427549.734,
+    "hash": "a21978c85b5d1ff07fb497050252d223"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\profiles.test.ts": {
+    "mtime": 1780957976616.922,
+    "hash": "1d6a441a985dae43f661ef5f69772ab1"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\profiles.ts": {
+    "mtime": 1781022427584.0217,
+    "hash": "5ae440cee587b6d29c6d30d6b628ebf1"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\settings.ts": {
+    "mtime": 1781022427612.7668,
+    "hash": "07775fda4bef04772fc004ef101f53e4"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\stoppingStrings.ts": {
+    "mtime": 1780944668649.8154,
+    "hash": "9c0a038251d3da0440c09603545fd6e8"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\storyString.ts": {
+    "mtime": 1781022427644.4973,
+    "hash": "00b66422f741fcd94aad42c7e789d133"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\substituteParams.ts": {
+    "mtime": 1780944471601.3223,
+    "hash": "72f4471d6576274ff3d6815deec4ccef"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\textgenBody.test.ts": {
+    "mtime": 1781091929696.7273,
+    "hash": "b21accf03d1cae2f1a0d6578719486ca"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\textgenBody.ts": {
+    "mtime": 1781091870131.908,
+    "hash": "371b19992dd56b59c28f3c8ece17ab7c"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\types.ts": {
+    "mtime": 1781022427707.0312,
+    "hash": "bb663b56acbcbc89b40fdfa0dff68975"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\worldinfo\\activate.ts": {
+    "mtime": 1781022427735.4385,
+    "hash": "8aa8fb877450b4d0d17c1e415ec06bee"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\worldinfo\\index.ts": {
+    "mtime": 1781007599703.8074,
+    "hash": "5f4f9ec38da4751c631a41b11596df57"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\worldinfo\\load.ts": {
+    "mtime": 1781007003094.0842,
+    "hash": "aa8ba8c18154197fa6093b2f4c348f8f"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\worldinfo\\matchKeys.ts": {
+    "mtime": 1781022427771.6423,
+    "hash": "a2c857744078b496c663ad5e4ec5533c"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\worldinfo\\types.ts": {
+    "mtime": 1781006698973.053,
+    "hash": "b88a7f678a473f308c66411615fc25d1"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\prompt-engine\\worldinfo\\worldinfo.test.ts": {
+    "mtime": 1781007714213.709,
+    "hash": "d4d78ae28212e0fabff833f3dfd34b42"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\smooth.test.ts": {
+    "mtime": 1781046420799.0745,
+    "hash": "c749ffdcbb8c87917d6061b8e4cdf91c"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\smooth.ts": {
+    "mtime": 1781050472918.9753,
+    "hash": "8e0b57329c1e7e7516910121f18d9bf1"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\sseParser.test.ts": {
+    "mtime": 1780941995373.6675,
+    "hash": "74898dd7120b0b469fda69634aa17a88"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\sseParser.ts": {
+    "mtime": 1780941973501.4355,
+    "hash": "8eabba62add06844a5005a498387431e"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\stream.test.ts": {
+    "mtime": 1780942030932.1357,
+    "hash": "90990efddf315ec80bfab752b4dfc7df"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\stream.ts": {
+    "mtime": 1780942021575.471,
+    "hash": "7945ddf35ef7cf42d2adccf923b0e8dc"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\textgen.test.ts": {
+    "mtime": 1780942013930.3193,
+    "hash": "bed5d9ba304736a4fe4131ceec077afd"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\streaming\\textgen.ts": {
+    "mtime": 1781022427801.6248,
+    "hash": "29b849f0c02865d4ccc63f9f94a2cf18"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\types\\character.ts": {
+    "mtime": 1781022427835.015,
+    "hash": "e32cffce58300a83ca09064647f560ff"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\types\\chat.ts": {
+    "mtime": 1781022427864.9805,
+    "hash": "3af692b861d7d7e65c4c15bcdfff8995"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\types\\index.ts": {
+    "mtime": 1780941930872.5571,
+    "hash": "2243ac6e7ac1776d6a2c706acdd5df4c"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\src\\types\\version.ts": {
+    "mtime": 1780941929641.9702,
+    "hash": "44b0cb46c7355a192cba4caa315a4dfd"
+  },
+  "E:\\Projects\\SillyTavern2026\\SillyTavernCompanionApp\\packages\\core\\vitest.config.ts": {
+    "mtime": 1780941803405.7886,
+    "hash": "055f1f040e0b411dbbb0230037f4358b"
+  }
+}
