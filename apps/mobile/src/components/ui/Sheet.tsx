@@ -82,9 +82,11 @@ export function Sheet({
     });
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
-  // Lift the sheet above the keyboard (keyboard.height is positive when open).
+  // Lift the sheet above the keyboard. keyboard-controller's `height` is NEGATIVE while the
+  // keyboard is open (made for direct translateY use) - subtracting it pushed the sheet DOWN
+  // off-screen, which made typing in any sheet impossible.
   const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value - keyboard.height.value }],
+    transform: [{ translateY: translateY.value + keyboard.height.value }],
   }));
 
   if (!mounted) return null;

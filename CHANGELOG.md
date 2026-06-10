@@ -10,6 +10,11 @@ Android `versionCode` increases by 1 per release (0.9.0 = 2).
 - Keep the screen awake while a reply is being generated (prompt build + token streaming).
   Previously the display timing out could pause the app and abort the stream mid-reply.
 
+### Fixed
+- Bottom sheets (Author's Note, message editing, quick settings, rename) were pushed
+  off-screen when the keyboard opened, making typing impossible. They now lift above
+  the keyboard as intended.
+
 ### Changed
 - Repo-wide style cleanup: em-dashes replaced with plain hyphens.
 
