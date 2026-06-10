@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.14.1] - 2026-06-10 (Beta)
+
+### Fixed
+- **Continue actually continues**: the prompt builder closed the last reply's instruct
+  turn (e.g. with an end-of-turn tag), so the model believed the reply was finished and
+  returned nothing. The partial reply now ends the prompt mid-turn exactly like the
+  desktop, for both text-completion and chat-completion backends (including the
+  continue nudge and Claude prefill flavors).
+- **Reading while streaming**: scrolling up during generation no longer snaps back to
+  the bottom when you lift your finger. The list follows the stream only while you are
+  at the bottom and resumes following when you scroll back down.
+- **Nested formatting renders correctly**: italics inside "quoted speech", bold inside
+  italics, ***bold italics***, plus _underscore italics_, __underline__ and
+  ~~strikethrough~~ - matching the desktop renderer. Styles combine (e.g. bold inside a
+  quote keeps the quote color).
+- The continue confirmation dialog now says "Continue?" / "Continue" instead of the
+  generic "Generate?" wording (regenerate and new-variant dialogs got matching titles).
+
 ## [0.14.0] - 2026-06-10 (Beta)
 
 ### Added

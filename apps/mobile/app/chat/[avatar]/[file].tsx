@@ -1,5 +1,15 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Keyboard, Pressable, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Keyboard,
+  Pressable,
+  TextInput,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
@@ -57,6 +67,25 @@ import { useReducedMotion } from '@/theme/motion';
 import { useBottomInset } from '@/theme/insets';
 
 type GenMode = 'new' | 'regenerate' | 'swipe' | 'continue';
+
+// Desktop-ST scrollLock port: while "following", FlashList pins the bottom with INSTANT
+// jumps (an animated catch-up scroll survives a finger lift and snapped the list back down
+// while reading); once the user scrolls up past the release distance the threshold is
+// removed entirely, so FlashList's internal autoscroll latch can never arm or fire.
+const MVCP_FOLLOW = {
+  autoscrollToBottomThreshold: 0.2,
+  animateAutoScrollToBottom: false,
+  startRenderingFromBottom: true,
+};
+const MVCP_READ = { startRenderingFromBottom: true };
+// Release distance must exceed FlashList's internal latch zone (0.2*viewport) by an
+// ABSOLUTE margin: its checkBounds runs before our onScroll in the same event, so the
+// latch is provably false by the time we unpin. The 48px margin covers the container
+// padding (included in the native contentSize but not in FlashList's content length)
+// at any viewport size, including landscape/keyboard-open.
+const FOLLOW_LATCH_FACTOR = 0.2;
+const FOLLOW_RELEASE_MARGIN_PX = 48;
+const FOLLOW_REENGAGE_PX = 48;
 
 /** Read persisted World-Info timed-effect state from a chat header (a copy, to mutate freely). */
 function readTimedState(h: StChatHeader): TimedWorldInfoState {
@@ -231,6 +260,30 @@ export default function ChatScreen() {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   }, []);
 
+  // Scroll lock (desktop-ST parity): follow the stream only while the user is at the bottom.
+  // Unpin when they scroll up to read; re-pin when they return near the bottom.
+  const [followStream, setFollowStream] = useState(true);
+  const followStreamRef = useRef(true);
+  const setFollow = useCallback((v: boolean) => {
+    if (followStreamRef.current === v) return;
+    followStreamRef.current = v;
+    setFollowStream(v);
+  }, []);
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+      const distance = contentSize.height - layoutMeasurement.height - contentOffset.y;
+      if (followStreamRef.current) {
+        if (distance > layoutMeasurement.height * FOLLOW_LATCH_FACTOR + FOLLOW_RELEASE_MARGIN_PX) {
+          setFollow(false);
+        }
+      } else if (distance < FOLLOW_REENGAGE_PX) {
+        setFollow(true);
+      }
+    },
+    [setFollow],
+  );
+
   const openMenu = useCallback((index: number) => setMenuIndex(index), []);
 
   const persist = useCallback(
@@ -272,8 +325,15 @@ export default function ChatScreen() {
       if (!client || !engine || !character) return;
       const effectiveLorebook = buildEffectiveLorebook();
       const isContinue = mode === 'continue';
-      const prefix = isContinue ? currentSwipeText(contextMsgs[assistantIndex]!) : '';
+      let prefix = isContinue ? currentSwipeText(contextMsgs[assistantIndex]!) : '';
+      // ST spacing fix for chat-completion continues: the nudge makes the model start a
+      // fresh chunk, so join with continue_postfix (default space) to avoid glued words.
+      if (isContinue && engine.mode === 'cc' && prefix && !prefix.endsWith(' ')) {
+        const postfix = typeof engine.oai?.continue_postfix === 'string' ? engine.oai.continue_postfix : ' ';
+        prefix += postfix;
+      }
       setStreaming(true);
+      setFollow(true); // every generation starts following, like desktop ST resets its scroll lock
       // Streamed text renders through `streamingSession` (only the live bubble re-renders per
       // token); the messages array stays untouched until finalize. Seeding with the continue
       // prefix shows the existing reply instantly and animates only the new text.
@@ -336,7 +396,8 @@ export default function ChatScreen() {
         setMessages(next);
         streamingSession.reset();
         void persist(next);
-        scrollToEnd();
+        // Never yank a reading user back down when the generation finishes.
+        if (followStreamRef.current) scrollToEnd();
         if (failed) {
           Alert.alert(
             t('chat.noResponseTitle'),
@@ -345,7 +406,7 @@ export default function ChatScreen() {
         }
       }
     },
-    [client, engine, character, persist, scrollToEnd, buildEffectiveLorebook, authorsNote, header, smoothStreaming, reducedMotion, t],
+    [client, engine, character, persist, scrollToEnd, setFollow, buildEffectiveLorebook, authorsNote, header, smoothStreaming, reducedMotion, t],
   );
 
   const send = useCallback(async () => {
@@ -378,10 +439,10 @@ export default function ChatScreen() {
   // Guard the three generation triggers behind a confirm - they sit next to the
   // heavily-used swipe controls and a misclick costs a full generation (or a reply).
   const confirmGenerate = useCallback(
-    (message: string, action: () => void) => {
-      Alert.alert(t('chat.confirmGenTitle'), message, [
+    (title: string, message: string, confirmLabel: string, action: () => void) => {
+      Alert.alert(title, message, [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: t('chat.confirmGenGo'), onPress: action },
+        { text: confirmLabel, onPress: action },
       ]);
     },
     [t],
@@ -391,7 +452,7 @@ export default function ChatScreen() {
     if (streaming || messages.length === 0) return;
     const lastIdx = messages.length - 1;
     if (messages[lastIdx]?.is_user) return;
-    confirmGenerate(t('chat.confirmRegenerate'), () => {
+    confirmGenerate(t('chat.confirmRegenerateTitle'), t('chat.confirmRegenerate'), t('chat.confirmRegenerateGo'), () => {
       void runGeneration(messages, messages.slice(0, lastIdx), lastIdx, 'regenerate');
     });
   }, [streaming, messages, runGeneration, confirmGenerate, t]);
@@ -409,7 +470,7 @@ export default function ChatScreen() {
         // generate a new swipe from an empty context (matches desktop ST).
         if (lastIdx === 0) return;
         // At the newest swipe → generate a fresh alternative (confirmed: easy to misclick).
-        confirmGenerate(t('chat.confirmNewSwipe'), () => {
+        confirmGenerate(t('chat.confirmNewSwipeTitle'), t('chat.confirmNewSwipe'), t('chat.confirmNewSwipeGo'), () => {
           void runGeneration(messages, messages.slice(0, lastIdx), lastIdx, 'swipe');
         });
         return;
@@ -566,7 +627,7 @@ export default function ChatScreen() {
     const lastIdx = messages.length - 1;
     const m = messages[lastIdx];
     if (!m || m.is_user) return;
-    confirmGenerate(t('chat.confirmContinue'), () => {
+    confirmGenerate(t('chat.confirmContinueTitle'), t('chat.confirmContinue'), t('chat.confirmContinueGo'), () => {
       void runGeneration(messages, messages, lastIdx, 'continue');
     });
   }, [streaming, messages, runGeneration, confirmGenerate, t]);
@@ -743,10 +804,14 @@ export default function ChatScreen() {
         keyExtractor={(m, i) => m._cid ?? String(i)}
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 12 }}
-        // Pin to the bottom while the streaming bubble grows, but stop following when the
-        // user scrolls up to read (ST-web-like). Replaces scroll-to-end on content size
-        // change, which fought the user and fired per streamed token.
-        maintainVisibleContentPosition={{ autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true }}
+        // Pin to the bottom while the streaming bubble grows, but stop following once the
+        // user scrolls up to read. FlashList's internal autoscroll latch has no drag
+        // awareness, so while "reading" the threshold is removed entirely (the latch can
+        // never fire) and pinned auto-scrolls are instant (an animated catch-up scroll
+        // survives the finger lift and caused the snap-back).
+        maintainVisibleContentPosition={followStream ? MVCP_FOLLOW : MVCP_READ}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         renderItem={({ item, index }) => {
           const isLast = index === messages.length - 1;
           const bubble = (
@@ -811,7 +876,11 @@ export default function ChatScreen() {
         <TextInput
           value={input}
           onChangeText={setInput}
-          onFocus={() => setTimeout(scrollToEnd, 250)}
+          onFocus={() =>
+            setTimeout(() => {
+              if (followStreamRef.current) scrollToEnd();
+            }, 250)
+          }
           multiline
           placeholder={t('chat.inputPlaceholder')}
           placeholderTextColor={colors.textSubtle}

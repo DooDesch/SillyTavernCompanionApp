@@ -30,7 +30,11 @@ export interface BuildMessagesInput {
   maxContext: number;
   maxTokens: number;
   countTokens: TokenCounter;
+  type?: 'normal' | 'continue' | 'regenerate' | 'swipe' | 'quiet';
 }
+
+/** ST default_continue_nudge_prompt (openai.js). */
+const DEFAULT_CONTINUE_NUDGE = '[Continue your last message without repeating its original content.]';
 
 const ccRole = (role: number): ChatCompletionMessage['role'] =>
   role === EXTENSION_ROLE.USER ? 'user' : role === EXTENSION_ROLE.ASSISTANT ? 'assistant' : 'system';
@@ -188,7 +192,16 @@ export async function buildChatCompletionMessages(input: BuildMessagesInput): Pr
     historyMessages.unshift(msg);
   }
 
+  // Continue, prefill flavor (ST): displace the partial reply BEFORE the in-chat
+  // injections, so depth splices use the history without it.
+  const isContinue = (input.type ?? 'normal') === 'continue';
+  let continueMessage: ChatCompletionMessage | null = null;
+  if (isContinue && oai.continue_prefill && historyMessages.length > 0) {
+    continueMessage = historyMessages.pop()!;
+  }
+
   // In-chat @depth injections, spliced into the history at `length - depth` (shallow→deep).
+  const injectedSet = new Set<ChatCompletionMessage>();
   const injections = (input.depthInjections ?? []).filter((d) => d.content && d.content.length > 0);
   if (injections.length > 0) {
     const origLen = historyMessages.length;
@@ -203,11 +216,49 @@ export async function buildChatCompletionMessages(input: BuildMessagesInput): Pr
       const segs = byDepth
         .get(depth)!
         .map((inj) => ({ role: ccRole(inj.role ?? EXTENSION_ROLE.SYSTEM), content: subst(inj.content) }));
+      segs.forEach((s) => injectedSet.add(s));
       const idx = Math.max(0, Math.min(historyMessages.length, origLen - depth));
       historyMessages.splice(idx, 0, ...segs);
     }
   }
 
+  // Continue, nudge flavor (ST populateChatHistory): displace the partial reply (the
+  // last non-injected message) so it ends the request followed by the continue nudge.
+  // Skipped entirely for an empty partial, like ST's `cyclePrompt &&` guard.
+  const partialRaw = (history[history.length - 1]?.mes ?? '').trim();
+  if (isContinue && !oai.continue_prefill && partialRaw && historyMessages.length > 0) {
+    for (let i = historyMessages.length - 1; i >= 0; i--) {
+      if (!injectedSet.has(historyMessages[i]!)) {
+        continueMessage = historyMessages.splice(i, 1)[0]!;
+        break;
+      }
+    }
+  }
+
   const messages = [...pre, ...historyMessages, ...post];
+  if (continueMessage) {
+    if (oai.continue_prefill) {
+      // Assistant prefill flavor: the partial reply is the final assistant message
+      // (Claude additionally gets the configured assistant_prefill prepended).
+      const supportsPrefill = oai.chat_completion_source === 'claude';
+      const prefill =
+        continueMessage.role === 'assistant' && supportsPrefill ? subst(oai.assistant_prefill) : '';
+      if (prefill && typeof continueMessage.content === 'string') {
+        const content = [prefill, continueMessage.content].filter(Boolean).join('\n\n');
+        continueMessage = { ...continueMessage, content };
+      }
+      messages.push(continueMessage);
+    } else {
+      // {{lastChatMessage}} mirrors what the displaced message carries (incl. a
+      // names_behavior prefix); the function replacer keeps `$` patterns inert.
+      const partialText =
+        typeof continueMessage.content === 'string' ? continueMessage.content : partialRaw;
+      const nudge = (oai.continue_nudge_prompt || DEFAULT_CONTINUE_NUDGE).replace(
+        /{{lastChatMessage}}/gi,
+        () => partialText.trim(),
+      );
+      messages.push(continueMessage, { role: 'system', content: subst(nudge) });
+    }
+  }
   return oai.squash_system_messages ? squashSystemMessages(messages) : messages;
 }

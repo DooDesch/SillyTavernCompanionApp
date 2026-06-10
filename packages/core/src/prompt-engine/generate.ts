@@ -223,6 +223,7 @@ export async function buildChatCompletionGenerateRequest(
     ...(worldInfoBefore ? { worldInfoBefore } : {}),
     ...(worldInfoAfter ? { worldInfoAfter } : {}),
     ...(depthInjections.length ? { depthInjections } : {}),
+    ...(params.type === 'continue' ? { type: 'continue' as const } : {}),
   });
 
   const body = createChatCompletionBody(params.oai, messages, {

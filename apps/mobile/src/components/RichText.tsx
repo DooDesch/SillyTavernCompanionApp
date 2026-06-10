@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Text, View, type TextStyle } from 'react-native';
+import { parseInline, type InlineSpan } from '@/lib/inlineMarkup';
 import { colors, fonts } from '@/theme/tokens';
 
 /**
@@ -21,14 +22,6 @@ const COLORS = {
 };
 
 const MONO = fonts.mono;
-
-interface Span {
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  code?: boolean;
-  quote?: boolean;
-}
 
 type Block =
   | { type: 'code'; content: string }
@@ -102,43 +95,19 @@ function parseBlocks(text: string): Block[] {
   return blocks;
 }
 
-// Ordered so bold ('**') is tested before italic ('*'); spans may cross newlines within a block.
-const INLINE: { re: RegExp; make: (m: RegExpExecArray) => Span }[] = [
-  { re: /\*\*([^*]+)\*\*/g, make: (m) => ({ text: m[1] ?? '', bold: true }) },
-  { re: /`([^`]+)`/g, make: (m) => ({ text: m[1] ?? '', code: true }) },
-  { re: /\*([^*]+)\*/g, make: (m) => ({ text: m[1] ?? '', italic: true }) },
-  { re: /"([^"]*)"/g, make: (m) => ({ text: `"${m[1] ?? ''}"`, quote: true }) },
-];
-
-function parseInline(text: string): Span[] {
-  const spans: Span[] = [];
-  let i = 0;
-  while (i < text.length) {
-    let best: { idx: number; len: number; span: Span } | null = null;
-    for (const p of INLINE) {
-      p.re.lastIndex = i;
-      const m = p.re.exec(text);
-      if (m && (best === null || m.index < best.idx)) {
-        best = { idx: m.index, len: m[0].length, span: p.make(m) };
-      }
-    }
-    if (!best) {
-      spans.push({ text: text.slice(i) });
-      break;
-    }
-    if (best.idx > i) spans.push({ text: text.slice(i, best.idx) });
-    spans.push(best.span);
-    i = best.idx + best.len;
-  }
-  return spans;
-}
-
-function spanStyle(s: Span): TextStyle {
+// Compositional styling (nesting-capable parser): bold+italic combine, and the quote
+// color wins over the italic color inside quotes (desktop ST: .mes_text q em { color: inherit }).
+function spanStyle(s: InlineSpan): TextStyle {
   if (s.code) return { color: COLORS.code, fontFamily: MONO, fontSize: 13.5 };
-  if (s.quote) return { color: COLORS.quote };
-  if (s.bold) return { color: COLORS.bold, fontFamily: fonts.semibold };
-  if (s.italic) return { color: COLORS.italic, fontFamily: fonts.regular, fontStyle: 'italic' };
-  return { color: COLORS.base };
+  const style: TextStyle = {
+    color: s.quote ? COLORS.quote : s.italic ? COLORS.italic : COLORS.base,
+    fontFamily: s.bold ? fonts.semibold : fonts.regular,
+  };
+  if (s.italic) style.fontStyle = 'italic';
+  if (s.underline && s.strike) style.textDecorationLine = 'underline line-through';
+  else if (s.underline) style.textDecorationLine = 'underline';
+  else if (s.strike) style.textDecorationLine = 'line-through';
+  return style;
 }
 
 function InlineText({ text }: { text: string }) {

@@ -94,6 +94,8 @@ export interface OaiSettings {
   show_thoughts?: boolean;
   use_sysprompt?: boolean;
   assistant_prefill?: string;
+  continue_prefill?: boolean;
+  continue_nudge_prompt?: string;
   continue_postfix?: string;
   seed?: number;
   n?: number;

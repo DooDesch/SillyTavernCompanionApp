@@ -40,7 +40,11 @@ export function createChatCompletionBody(
   if (source === 'claude') {
     body.top_k = oai.top_k_openai;
     body.use_sysprompt = oai.use_sysprompt ?? true;
-    if (opts.type !== 'quiet' && oai.assistant_prefill) {
+    // No body prefill on quiet gens or when continue-prefilling (openai.js): with
+    // continue_prefill the displaced partial reply IS the prefill - sending the body
+    // field too would make the server append it after the partial.
+    const suppressPrefill = opts.type === 'quiet' || (opts.type === 'continue' && oai.continue_prefill);
+    if (!suppressPrefill && oai.assistant_prefill) {
       body.assistant_prefill = substituteParams(oai.assistant_prefill, { identity: opts.identity });
     }
   } else if (source === 'openrouter') {

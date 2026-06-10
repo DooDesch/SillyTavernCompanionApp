@@ -148,6 +148,7 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
   const combinedStoryString = isInstruct ? formatInstructModeStoryString(storyString, ctx) : storyString;
 
   // Format history.
+  const isImpersonate = input.isImpersonate === true;
   const lastUserIndex = history.reduce((acc, m, i) => (m.isUser ? i : acc), -1);
   const formatMessage = (m: HistoryMessage, force: ForceSequence): string => {
     const name = m.isUser ? m.name : m.name || identity.char;
@@ -164,15 +165,27 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
     });
   };
 
+  const lastIndex = history.length - 1;
   const formatted = history.map((m, i) => {
     let force: ForceSequence = FORCE_SEQUENCE.NONE;
     if (i === 0) force = FORCE_SEQUENCE.FIRST;
-    if (i === lastUserIndex && type !== 'quiet') force = FORCE_SEQUENCE.LAST;
+    if (i === lastUserIndex && type !== 'quiet' && !isImpersonate) force = FORCE_SEQUENCE.LAST;
+    // Do not suffix the last message for continuation (ST Generate(): the partial
+    // reply must end the prompt mid-turn so the model keeps writing it).
+    if (i === lastIndex && type === 'continue') {
+      // Something very unlikely to be in a message (ST FORMAT_TOKEN).
+      const FORMAT_TOKEN = '\u0000\ufffc\u0000\ufffd';
+      const s = isInstruct
+        ? formatMessage({ ...m, mes: m.mes.replaceAll(FORMAT_TOKEN, '') + FORMAT_TOKEN }, FORCE_SEQUENCE.LAST)
+        : formatMessage(m, force);
+      return s.includes(FORMAT_TOKEN)
+        ? s.slice(0, s.lastIndexOf(FORMAT_TOKEN))
+        : s.slice(0, s.lastIndexOf(m.mes) + m.mes.length);
+    }
     return formatMessage(m, force);
   });
 
   // Trailing prompt line that elicits the AI response.
-  const isImpersonate = input.isImpersonate === true;
   const finalLine =
     isInstruct && type !== 'continue'
       ? formatInstructModePrompt(ctx, {
@@ -196,7 +209,9 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
   for (let i = formatted.length - 1; i >= 0; i--) {
     const item = formatted[i]!;
     tokenCount += await countTokens(item.replace(/\r/g, ''));
-    if (tokenCount < maxContext) included.unshift(item);
+    // On continue the partial reply must always reach the model (ST counts cyclePrompt
+    // in its baseline and appends it unconditionally), even if it busts the budget alone.
+    if (tokenCount < maxContext || (type === 'continue' && included.length === 0)) included.unshift(item);
     else break;
   }
 
@@ -239,7 +254,26 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
       forceAvatar: false,
     });
   };
-  const injected = injectAtDepth(included, gatherDepthInjections(input, fields, character), formatInject);
+  let depthInjections = gatherDepthInjections(input, fields, character);
+  if (type === 'continue') {
+    // ST doChatInject: on continue, depth 0 behaves as depth 1 so injections land
+    // BEFORE the partial reply - nothing may come between it and the model.
+    depthInjections = depthInjections.map((inj) =>
+      Math.max(0, inj.depth) === 0 ? { ...inj, depth: 1 } : inj,
+    );
+  }
+  const includedCount = included.length;
+  // injectAtDepth returns the input array unchanged when nothing is injected, so
+  // copy before popping the cycle prompt below.
+  const injected = [...injectAtDepth(included, depthInjections, formatInject)];
+
+  // Continue: pull the (suffix-free) partial reply back out and append it after
+  // everything else - ST's cyclePrompt/generatedPromptCache mechanism. Skipped for a
+  // lone greeting (ST only shifts when chat2.length > 1).
+  let cyclePrompt = '';
+  if (type === 'continue' && includedCount > 1) {
+    cyclePrompt = injected.pop() ?? '';
+  }
 
   // mesSendString = examples + history (with @depth) + final line, with the chat_start separator.
   let mesSendString = injected.join('') + finalLine;
@@ -247,7 +281,7 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
     mesSendString = substituteParams(power.context.chat_start + '\n', { identity }) + mesSendString;
   }
 
-  let prompt = `${combinedStoryString}${mesExmString}${mesSendString}`.replace(/\r/g, '');
+  let prompt = `${combinedStoryString}${mesExmString}${mesSendString}${cyclePrompt}`.replace(/\r/g, '');
   if (collapse) prompt = collapseNewlines(prompt);
 
   const stoppingStrings = getStoppingStrings(ctx, power, {
@@ -255,5 +289,5 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
     lastMessageIsUser: history[history.length - 1]?.isUser === true,
   });
 
-  return { prompt, stoppingStrings, includedMessages: included.length };
+  return { prompt, stoppingStrings, includedMessages: includedCount };
 }
