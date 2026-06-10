@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-06-10)
 
 ## Corpus Check
-- 189 files · ~114.520 words
+- 189 files · ~114.625 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 772 nodes · 1684 edges · 45 communities detected
+- 773 nodes · 1685 edges · 45 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 589 · imports: 418 · imports_from: 370 · re_exports: 177 · calls: 104 · method: 26
+- Edge kinds: contains: 590 · imports: 418 · imports_from: 370 · re_exports: 177 · calls: 104 · method: 26
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
 - Included files: 189 · Candidates: 210
-- Excluded: 0 untracked · 71351 ignored · 3 sensitive · 0 missing committed
+- Excluded: 0 untracked · 71360 ignored · 3 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `afa4a5a`
+- Built from Git commit: `9b45190`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `Icon()` - 19 edges
@@ -59,8 +59,8 @@ Cohesion: 0.21
 Nodes (8): persister, ScreenStateModule, ScreenState, addScreenOffListener(), LockGate(), queryClient, PrefsState, usePrefs
 
 ### Community 8 - "Community 8"
-Cohesion: 0.10
-Nodes (12): GenMode, MVCP_FOLLOW, MVCP_READ, Bubble, AuthorsNoteValue, ROLES, AuthorsNoteSheet(), ReadAloudBar() (+4 more)
+Cohesion: 0.09
+Nodes (13): GenMode, MVCP, Bubble, AuthorsNoteValue, ROLES, AuthorsNoteSheet(), ReadAloudBar(), CHUNK_MAX (+5 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.23
@@ -219,7 +219,7 @@ Cohesion: 0.31
 Nodes (7): StDepthPrompt, StCharacterExtensions, StCharacterData, StCharacter, StChatMetadata, StMessageExtra, StVersion
 
 ## Knowledge Gaps
-- **180 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+175 more)
+- **181 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+176 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 43`** (1 nodes): `config`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -242,10 +242,10 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `StCharacter` connect `Community 27` to `Community 10`, `Community 4`, `Community 1`, `Community 33`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **What connects `config`, `TAB_ICON`, `TabBarProps` to the rest of the system?**
-  _180 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _181 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.053750597228858096 - nodes in this community are weakly interconnected._
 - **Should `Community 8` be split into smaller, more focused modules?**
-  _Cohesion score 0.09782608695652174 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.09333333333333334 - nodes in this community are weakly interconnected._
 - **Should `Community 3` be split into smaller, more focused modules?**
   _Cohesion score 0.08708708708708708 - nodes in this community are weakly interconnected._
