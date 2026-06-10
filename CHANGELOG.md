@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.9.1] - 2026-06-10 (Beta)
+
+### Added
+- Keep the screen awake while a reply is being generated (prompt build + token streaming).
+  Previously the display timing out could pause the app and abort the stream mid-reply.
+
+### Changed
+- Repo-wide style cleanup: em-dashes replaced with plain hyphens.
+
 ## [0.9.0] - 2026-06-10 (Beta)
 
 Initial public beta.

@@ -12,7 +12,7 @@ const config: ExpoConfig = {
   name: 'SillyTavern Companion',
   slug: 'sillytavern-companion',
   scheme: 'stcompanion',
-  version: '0.9.0',
+  version: '0.9.1',
   orientation: 'portrait',
   userInterfaceStyle: 'dark',
   // New Architecture is the default (and only) arch on SDK 56 / RN 0.85, so an explicit
@@ -32,7 +32,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'de.tiretask.stcompanion',
-    versionCode: 2,
+    versionCode: 3,
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       monochromeImage: './assets/adaptive-icon-monochrome.png',
