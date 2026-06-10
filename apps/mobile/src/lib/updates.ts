@@ -9,7 +9,9 @@ import * as IntentLauncher from 'expo-intent-launcher';
  * the REQUEST_INSTALL_PACKAGES permission; the system still asks the user to confirm and,
  * on first use, to allow installs from this app.
  */
-const RELEASES_API = 'https://api.github.com/repos/DooDesch/SillyTavernCompanionApp/releases/latest';
+// NOT /releases/latest: that endpoint only knows stable releases and 404s while every
+// release of this app is still marked as a pre-release (beta).
+const RELEASES_API = 'https://api.github.com/repos/DooDesch/SillyTavernCompanionApp/releases?per_page=10';
 export const RELEASES_URL = 'https://github.com/DooDesch/SillyTavernCompanionApp/releases';
 
 export interface UpdateInfo {
@@ -31,7 +33,19 @@ function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/** Returns update info when the latest GitHub release is newer than the running app. */
+interface GithubRelease {
+  tag_name?: string;
+  body?: string;
+  html_url?: string;
+  draft?: boolean;
+  assets?: { name: string; browser_download_url: string; size: number }[];
+}
+
+function releaseVersion(release: GithubRelease): string {
+  return (release.tag_name ?? '').replace(/^v/, '').split('-')[0] ?? '';
+}
+
+/** Returns update info when the newest GitHub release (incl. pre-releases) beats the running app. */
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
   const current = Constants.expoConfig?.version;
   if (!current) return null;
@@ -39,22 +53,22 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
     headers: { Accept: 'application/vnd.github+json' },
   });
   if (!res.ok) return null;
-  const release = (await res.json()) as {
-    tag_name?: string;
-    body?: string;
-    html_url?: string;
-    assets?: { name: string; browser_download_url: string; size: number }[];
-  };
-  const latest = (release.tag_name ?? '').replace(/^v/, '').split('-')[0] ?? '';
-  if (!latest || compareVersions(latest, current) <= 0) return null;
-  const apk = release.assets?.find((a) => a.name.endsWith('.apk'));
+  const releases = (await res.json()) as GithubRelease[];
+  if (!Array.isArray(releases)) return null;
+  const newest = releases
+    .filter((r) => !r.draft && releaseVersion(r))
+    .sort((a, b) => compareVersions(releaseVersion(b), releaseVersion(a)))[0];
+  if (!newest) return null;
+  const latest = releaseVersion(newest);
+  if (compareVersions(latest, current) <= 0) return null;
+  const apk = newest.assets?.find((a) => a.name.endsWith('.apk'));
   if (!apk) return null;
   return {
     version: latest,
     apkUrl: apk.browser_download_url,
     apkSize: apk.size,
-    notes: (release.body ?? '').trim(),
-    htmlUrl: release.html_url ?? RELEASES_URL,
+    notes: (newest.body ?? '').trim(),
+    htmlUrl: newest.html_url ?? RELEASES_URL,
   };
 }
 

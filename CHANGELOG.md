@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.13.1] - 2026-06-10 (Beta)
+
+### Fixed
+- The in-app update check never found anything: it queried GitHub's latest-release
+  endpoint, which ignores pre-releases - and every release of this app is one. The
+  check now picks the newest version from the full release list.
+
 ## [0.13.0] - 2026-06-10 (Beta)
 
 ### Added

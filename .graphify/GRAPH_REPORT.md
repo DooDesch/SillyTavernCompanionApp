@@ -1,30 +1,30 @@
 # Graph Report - .  (2026-06-10)
 
 ## Corpus Check
-- 183 files · ~108.720 words
+- 184 files · ~109.126 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 735 nodes · 1617 edges · 44 communities detected
+- 739 nodes · 1631 edges · 44 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 557 · imports: 399 · imports_from: 356 · re_exports: 177 · calls: 102 · method: 26
+- Edge kinds: contains: 560 · imports: 405 · imports_from: 361 · re_exports: 177 · calls: 102 · method: 26
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 183 · Candidates: 204
-- Excluded: 0 untracked · 71037 ignored · 3 sensitive · 0 missing committed
+- Included files: 184 · Candidates: 205
+- Excluded: 0 untracked · 71044 ignored · 3 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `a91751e`
+- Built from Git commit: `d80badd`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `Icon()` - 19 edges
-2. `haptics` - 16 edges
-3. `useConnection` - 15 edges
+2. `haptics` - 17 edges
+3. `useConnection` - 16 edges
 4. `StClient` - 14 edges
 5. `AppText()` - 13 edges
 6. `Identity` - 12 edges
@@ -104,75 +104,75 @@ Nodes (8): StClient, calls, client, fetchImpl(), lastPost, makeResponse(), postC
 
 ### Community 16 - "Community 16"
 Cohesion: 0.17
-Nodes (10): persister, LockGate(), queryClient, addScreenOffListener(), ScreenState, ScreenStateModule, ChatListMode, PrefsState (+2 more)
+Nodes (11): Avatar(), FALLBACK_TINTS, tintFor(), ChatActionsSheets(), ChatTarget, Bucket, chatFileLabel(), ChatFileRow() (+3 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.19
-Nodes (8): PickerOption, PickerSheet(), useBackendStatus(), checkForUpdate(), compareVersions(), downloadAndInstallUpdate(), UpdateInfo, UpdateState
+Cohesion: 0.17
+Nodes (10): persister, LockGate(), queryClient, addScreenOffListener(), ScreenState, ScreenStateModule, ChatListMode, PrefsState (+2 more)
 
 ### Community 18 - "Community 18"
+Cohesion: 0.19
+Nodes (8): PickerOption, PickerSheet(), useBackendStatus(), ConnectionSettingsView, useConnectionProfiles(), useEngineConfig(), parseStSettings(), useProfiles
+
+### Community 19 - "Community 19"
+Cohesion: 0.14
+Nodes (8): mem, rememberBaseUrl(), secrets, storage, ProfilesState, SavedServer, ServersState, useServers
+
+### Community 20 - "Community 20"
 Cohesion: 0.18
 Nodes (13): Block, COLORS, INLINE, InlineText(), MONO, parseBlocks(), parseInline(), proseToBlocks() (+5 more)
 
-### Community 19 - "Community 19"
+### Community 21 - "Community 21"
 Cohesion: 0.23
 Nodes (5): Lorebook, useLorebook(), fetchLike(), ConnectionState, useConnection
 
-### Community 20 - "Community 20"
-Cohesion: 0.22
-Nodes (9): Avatar(), FALLBACK_TINTS, tintFor(), Bucket, chatFileLabel(), ChatFileRow(), RecentChatRow(), relativeTime() (+1 more)
-
-### Community 21 - "Community 21"
-Cohesion: 0.24
-Nodes (7): ConnectionSettingsView, useConnectionProfiles(), useEngineConfig(), parseStSettings(), secrets, ProfilesState, useProfiles
-
 ### Community 22 - "Community 22"
-Cohesion: 0.17
-Nodes (6): mem, rememberBaseUrl(), storage, SavedServer, ServersState, useServers
-
-### Community 23 - "Community 23"
 Cohesion: 0.26
 Nodes (6): CookieJar, readSetCookie(), SetCookieReadable, splitSetCookieHeader(), headers, jar
 
-### Community 24 - "Community 24"
+### Community 23 - "Community 23"
 Cohesion: 0.26
 Nodes (10): createTextgenBody(), getTextgenServer(), parseBannedTokens(), parseSequenceBreakers(), base, body, opts, r (+2 more)
 
-### Community 25 - "Community 25"
+### Community 24 - "Community 24"
 Cohesion: 0.22
 Nodes (4): EnvObject, escapeRegex(), MacroValue, substituteMacros()
 
-### Community 26 - "Community 26"
+### Community 25 - "Community 25"
 Cohesion: 0.31
 Nodes (7): StCharacter, StCharacterData, StCharacterExtensions, StDepthPrompt, StChatMetadata, StMessageExtra, StVersion
 
-### Community 27 - "Community 27"
+### Community 26 - "Community 26"
 Cohesion: 0.25
 Nodes (5): DOT, ReasoningBlock(), StreamingBubbleContent(), events, streamDebug
 
-### Community 28 - "Community 28"
+### Community 27 - "Community 27"
 Cohesion: 0.28
 Nodes (6): AppLanguage, deviceLanguage(), SUPPORTED_LANGUAGES, LanguagePref, LocaleState, useLocale
 
-### Community 29 - "Community 29"
+### Community 28 - "Community 28"
 Cohesion: 0.31
 Nodes (6): ChatDraft, clearChatDraft(), draftKey(), fileStorage, readChatDraft(), writeChatDraft()
 
-### Community 30 - "Community 30"
+### Community 29 - "Community 29"
 Cohesion: 0.28
 Nodes (7): emit(), finishDrain(), IDLE, listeners, loop(), streamingSession, StreamSnapshot
 
-### Community 31 - "Community 31"
+### Community 30 - "Community 30"
 Cohesion: 0.53
 Nodes (7): enumerateSubnet24(), enumerateSubnetHosts(), intToIpv4(), ipv4ToInt(), netmaskToPrefix(), sameSubnet24(), hosts
 
-### Community 32 - "Community 32"
+### Community 31 - "Community 31"
 Cohesion: 0.22
 Nodes (8): base, char, depth, example, lore, plainPower, story, turn
 
-### Community 33 - "Community 33"
+### Community 32 - "Community 32"
 Cohesion: 0.25
 Nodes (5): countTokens, delta, GenerateOptions, GenerationChunk, history
+
+### Community 33 - "Community 33"
+Cohesion: 0.43
+Nodes (5): checkForUpdate(), compareVersions(), downloadAndInstallUpdate(), UpdateInfo, UpdateState
 
 ### Community 34 - "Community 34"
 Cohesion: 0.48
