@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.11.1] - 2026-06-10 (Beta)
+
+### Fixed
+- The "AI backend not connected" banner no longer truncates its call to action.
+
 ## [0.11.0] - 2026-06-10 (Beta)
 
 ### Added
