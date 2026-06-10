@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { deleteChat, getCharacter, getCharacterChats, renameChat } from '@st/core';
+import { deleteChat, getCharacter, getCharacterChats, renameChat, type StCharacter } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
 import { ImageViewerModal } from '@/components/ImageViewerModal';
@@ -11,6 +11,8 @@ import { nowSendDate } from '@/lib/messages';
 import {
   AppText,
   Button,
+  Card,
+  Chip,
   Field,
   ListRow,
   SectionHeader,
@@ -18,10 +20,39 @@ import {
   SheetActionRow,
   SkeletonList,
 } from '@/components/ui';
+import { Icon } from '@/theme/icons';
+import { colors } from '@/theme/tokens';
 import { haptics } from '@/theme/haptics';
 
 function cleanFile(name: string): string {
   return name.replace(/\.jsonl$/i, '');
+}
+
+/** Raw card fields for display (data block preferred, legacy top-level fallback) - unsubstituted, like ST's editor. */
+function rawField(c: StCharacter, key: 'description' | 'personality' | 'scenario' | 'first_mes' | 'mes_example'): string {
+  return (c.data?.[key] ?? c[key] ?? '').trim();
+}
+
+/** One revealed definition block: label + selectable body. */
+function DefinitionBlock({ label, text, meta }: { label: string; text: string; meta?: string }) {
+  if (!text) return null;
+  return (
+    <View className="mb-4">
+      <View className="mb-1.5 flex-row items-baseline justify-between">
+        <AppText variant="label" color="accent">
+          {label}
+        </AppText>
+        {meta ? (
+          <AppText variant="caption" color="subtle">
+            {meta}
+          </AppText>
+        ) : null}
+      </View>
+      <AppText selectable variant="body" color="muted">
+        {text}
+      </AppText>
+    </View>
+  );
 }
 
 export default function CharacterScreen() {
@@ -44,12 +75,38 @@ export default function CharacterScreen() {
 
   const baseUrl = useConnection((s) => s.instance?.baseUrl);
   const character = charQuery.data;
-  const creator = (character?.data as { creator?: string } | undefined)?.creator?.trim();
+  const creator = character?.data?.creator?.trim();
   const fullImageUri = baseUrl ? `${baseUrl}/thumbnail?type=avatar&file=${encodeURIComponent(avatarUrl)}` : undefined;
   const [menuFile, setMenuFile] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(false);
   const [renaming, setRenaming] = useState<{ file: string; name: string } | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  // Spoiler gate: definitions stay hidden per visit (never persisted), like ST's spoiler-free mode.
+  const [defsRevealed, setDefsRevealed] = useState(false);
+
+  const tags = useMemo(
+    () => (character?.data?.tags ?? character?.tags ?? []).filter((x): x is string => typeof x === 'string' && !!x.trim()).slice(0, 8),
+    [character],
+  );
+  const creatorNotes = character?.data?.creator_notes?.trim();
+  const depthPrompt = character?.data?.extensions?.depth_prompt;
+  const altGreetings = (character?.data?.alternate_greetings ?? []).filter((g) => !!g?.trim());
+  const bookEntryCount = useMemo(() => {
+    const book = character?.data?.character_book as { entries?: unknown } | undefined;
+    const entries = book?.entries;
+    if (Array.isArray(entries)) return entries.length;
+    if (entries && typeof entries === 'object') return Object.keys(entries).length;
+    return 0;
+  }, [character]);
+  const hasDefinitions =
+    !!character &&
+    (!!rawField(character, 'description') ||
+      !!rawField(character, 'personality') ||
+      !!rawField(character, 'scenario') ||
+      !!rawField(character, 'first_mes') ||
+      !!rawField(character, 'mes_example') ||
+      !!depthPrompt?.prompt ||
+      !!character.data?.system_prompt ||
+      !!character.data?.post_history_instructions);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['chats', client?.baseUrl, avatarUrl] });
 
@@ -89,8 +146,6 @@ export default function CharacterScreen() {
     else Alert.alert(t('common.error'), t('character.renameFailed'));
   };
 
-  const description = character?.description?.trim();
-
   return (
     <View className="flex-1 bg-bg">
       <Stack.Screen options={{ title: character?.name ?? t('character.fallbackTitle'), headerShown: true }} />
@@ -108,17 +163,18 @@ export default function CharacterScreen() {
                 {t('character.byCreator', { creator })}
               </AppText>
             ) : null}
-            {description ? (
-              <Pressable onPress={() => setExpanded((e) => !e)} className="mt-4 active:opacity-70">
-                <AppText variant="body" color="muted" numberOfLines={expanded ? undefined : 6} style={{ textAlign: 'center' }}>
-                  {description}
-                </AppText>
-                {description.length > 180 ? (
-                  <AppText variant="label" color="accent" style={{ marginTop: 6, textAlign: 'center' }}>
-                    {expanded ? t('character.readLess') : t('character.readMore')}
-                  </AppText>
-                ) : null}
-              </Pressable>
+            {tags.length > 0 ? (
+              <View className="mt-3 flex-row flex-wrap justify-center gap-1.5">
+                {tags.map((tag) => (
+                  <Chip key={tag} label={tag} />
+                ))}
+              </View>
+            ) : null}
+            {/* Creator notes are MEANT for the player (unlike the definitions) - show them openly. */}
+            {creatorNotes ? (
+              <AppText selectable variant="body" color="muted" style={{ marginTop: 14, textAlign: 'center' }}>
+                {creatorNotes}
+              </AppText>
             ) : null}
           </View>
         ) : (
@@ -163,6 +219,70 @@ export default function CharacterScreen() {
         <AppText variant="caption" color="subtle" style={{ marginTop: 12 }}>
           {t('character.longPressHint')}
         </AppText>
+
+        {/* Character definitions (prompt material) - spoiler-gated like ST's spoiler-free mode. */}
+        {hasDefinitions && character ? (
+          <>
+            <SectionHeader title={t('character.definitions')} />
+            {!defsRevealed ? (
+              <Card className="items-center px-5 py-6">
+                <Icon name="hide" size={26} color={colors.textMuted} />
+                <AppText variant="title" style={{ marginTop: 10 }}>
+                  {t('character.spoilerTitle')}
+                </AppText>
+                <AppText variant="caption" color="muted" style={{ marginTop: 4, textAlign: 'center' }}>
+                  {t('character.spoilerMessage')}
+                </AppText>
+                <View className="mt-4 w-full">
+                  <Button
+                    label={t('character.revealDefinitions')}
+                    variant="secondary"
+                    leftIcon="show"
+                    onPress={() => {
+                      haptics.tap();
+                      setDefsRevealed(true);
+                    }}
+                  />
+                </View>
+              </Card>
+            ) : (
+              <Card className="px-4 py-4">
+                <DefinitionBlock label={t('character.fieldDescription')} text={rawField(character, 'description')} />
+                <DefinitionBlock label={t('character.fieldPersonality')} text={rawField(character, 'personality')} />
+                <DefinitionBlock label={t('character.fieldScenario')} text={rawField(character, 'scenario')} />
+                <DefinitionBlock
+                  label={t('character.fieldFirstMes')}
+                  text={rawField(character, 'first_mes')}
+                  meta={altGreetings.length > 0 ? t('character.altGreetings', { count: altGreetings.length }) : undefined}
+                />
+                <DefinitionBlock label={t('character.fieldMesExample')} text={rawField(character, 'mes_example')} />
+                <DefinitionBlock
+                  label={t('character.fieldDepthPrompt')}
+                  text={depthPrompt?.prompt?.trim() ?? ''}
+                  meta={depthPrompt ? `@${depthPrompt.depth}` : undefined}
+                />
+                <DefinitionBlock label={t('character.fieldSystemPrompt')} text={character.data?.system_prompt?.trim() ?? ''} />
+                <DefinitionBlock
+                  label={t('character.fieldPostHistory')}
+                  text={character.data?.post_history_instructions?.trim() ?? ''}
+                />
+                {bookEntryCount > 0 ? (
+                  <AppText variant="caption" color="subtle">
+                    {t('character.embeddedLorebook', { count: bookEntryCount })}
+                  </AppText>
+                ) : null}
+                <View className="mt-2">
+                  <Button
+                    label={t('character.hideDefinitions')}
+                    variant="ghost"
+                    leftIcon="hide"
+                    onPress={() => setDefsRevealed(false)}
+                  />
+                </View>
+              </Card>
+            )}
+          </>
+        ) : null}
       </ScrollView>
 
       {/* Chat action menu */}
