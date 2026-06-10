@@ -9,6 +9,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import * as Speech from 'expo-speech';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import {
   checkWorldInfo,
   createChatHeader,
@@ -196,6 +197,17 @@ export default function ChatScreen() {
       void Speech.stop();
     };
   }, []);
+
+  // Keep the screen awake for the whole generation window (prompt build + token streaming):
+  // the display timing out lets Android pause the app and abort the SSE stream mid-reply.
+  // `streaming` flips true before the prompt is built, so the lock covers the full request.
+  useEffect(() => {
+    if (!streaming) return;
+    void activateKeepAwakeAsync('generation').catch(() => {});
+    return () => {
+      void deactivateKeepAwake('generation').catch(() => {});
+    };
+  }, [streaming]);
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
