@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { router } from 'expo-router';
 import type { EngineConfig, StClient } from '@st/core';
 import { syncOai, syncRoot, syncTextgen } from '@/lib/sync';
 import { usePrefs } from '@/stores/prefsStore';
-import { Sheet, AppText, Button, SliderRow, StepperRow } from './ui';
+import { Sheet, SheetActionRow, AppText, Button, SliderRow, StepperRow } from './ui';
 import { colors } from '@/theme/tokens';
 
 const CONTEXT_PRESETS = [2048, 4096, 8192, 16384, 32768, 65536, 131072];
@@ -137,7 +138,17 @@ export function QuickSettingsSheet({
         <AppText variant="caption" color="subtle" style={{ marginTop: 4 }}>
           {t('quickSettings.savedNotice')}
         </AppText>
-        <View className="mt-4 flex-row gap-2">
+        <View className="-mx-2 mt-2 border-t border-border pt-1">
+          <SheetActionRow
+            icon="tune"
+            label={t('quickSettings.allSettings')}
+            onPress={() => {
+              onClose();
+              router.push('/settings/generation');
+            }}
+          />
+        </View>
+        <View className="mt-2 flex-row gap-2">
           <View className="flex-1">
             <Button label={t('common.cancel')} variant="secondary" onPress={onClose} />
           </View>

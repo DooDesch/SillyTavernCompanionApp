@@ -40,6 +40,10 @@ export interface TextgenSettings {
   ban_eos_token?: boolean;
   skip_special_tokens?: boolean;
   add_bos_token?: boolean;
+  temperature_last?: boolean;
+  no_repeat_ngram_size?: number;
+  banned_tokens?: string;
+  send_banned_tokens?: boolean;
   grammar_string?: string;
   min_length?: number;
   guidance_scale?: number;
@@ -72,6 +76,46 @@ function parseSequenceBreakers(raw: string | undefined): string[] | undefined {
 
 export function getTextgenServer(settings: TextgenSettings): string {
   return settings.server_urls?.[settings.type] ?? '';
+}
+
+/**
+ * Port of ST's getCustomTokenBans (textgen-settings.js): one entry per line of
+ * `banned_tokens`; `[1,2,3]` lines are raw token ids, `"quoted"` lines are banned
+ * strings. DEVIATION: ST tokenizes bare-text lines client-side - the app has no local
+ * tokenizer, so bare text is sent as a banned string instead (KoboldCpp bans the
+ * sequence either way). Only applies when `send_banned_tokens` is true.
+ */
+export function parseBannedTokens(settings: TextgenSettings): {
+  custom_token_bans?: string;
+  banned_strings?: string[];
+} {
+  if (settings.send_banned_tokens !== true || !settings.banned_tokens) return {};
+  const ids: number[] = [];
+  const strings: string[] = [];
+  for (const raw of settings.banned_tokens.split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('[') && line.endsWith(']')) {
+      try {
+        const tokens: unknown = JSON.parse(line);
+        if (Array.isArray(tokens) && tokens.every((t) => Number.isInteger(t))) {
+          ids.push(...(tokens as number[]));
+          continue;
+        }
+      } catch {
+        // fall through to string handling
+      }
+      strings.push(line);
+    } else if (line.startsWith('"') && line.endsWith('"') && line.length >= 2) {
+      strings.push(line.slice(1, -1));
+    } else {
+      strings.push(line);
+    }
+  }
+  return {
+    ...(ids.length ? { custom_token_bans: [...new Set(ids)].join(',') } : {}),
+    ...(strings.length ? { banned_strings: strings } : {}),
+  };
 }
 
 export function createTextgenBody(settings: TextgenSettings, opts: TextgenBodyOptions): Record<string, unknown> {
@@ -127,6 +171,9 @@ export function createTextgenBody(settings: TextgenSettings, opts: TextgenBodyOp
     ban_eos_token: settings.ban_eos_token,
     skip_special_tokens: settings.skip_special_tokens,
     add_bos_token: settings.add_bos_token,
+    temperature_last: settings.temperature_last,
+    no_repeat_ngram_size: settings.no_repeat_ngram_size,
+    ...parseBannedTokens(settings),
     grammar: settings.grammar_string || undefined,
     truncation_length: opts.maxContext,
     stop: opts.stoppingStrings,

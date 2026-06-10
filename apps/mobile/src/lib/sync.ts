@@ -70,3 +70,27 @@ export function syncOai(client: StClient, patch: Record<string, unknown>): Promi
 export function syncRoot(client: StClient, patch: Record<string, unknown>): Promise<boolean> {
   return safe(() => saveSettings(client, (s) => void Object.assign(s, patch)));
 }
+
+/**
+ * Combined generation-settings save: ONE read-modify-write for textgen + oai + root patches
+ * (the full settings screen would otherwise do three sequential whole-file writes).
+ */
+export function syncGeneration(
+  client: StClient,
+  patches: { textgen?: Record<string, unknown>; oai?: Record<string, unknown>; root?: Record<string, unknown> },
+): Promise<boolean> {
+  return safe(() =>
+    saveSettings(client, (s) => {
+      if (patches.textgen && Object.keys(patches.textgen).length) {
+        s.textgenerationwebui_settings = {
+          ...((s.textgenerationwebui_settings as Record<string, unknown>) ?? {}),
+          ...patches.textgen,
+        };
+      }
+      if (patches.oai && Object.keys(patches.oai).length) {
+        s.oai_settings = { ...((s.oai_settings as Record<string, unknown>) ?? {}), ...patches.oai };
+      }
+      if (patches.root && Object.keys(patches.root).length) Object.assign(s, patches.root);
+    }),
+  );
+}

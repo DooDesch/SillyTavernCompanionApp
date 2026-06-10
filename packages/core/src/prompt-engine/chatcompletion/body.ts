@@ -35,6 +35,7 @@ export function createChatCompletionBody(
   };
   if (oai.reasoning_effort) body.reasoning_effort = oai.reasoning_effort;
   if (typeof oai.seed === 'number' && oai.seed >= 0) body.seed = oai.seed;
+  if (typeof oai.n === 'number' && oai.n > 1) body.n = oai.n;
 
   if (source === 'claude') {
     body.top_k = oai.top_k_openai;
