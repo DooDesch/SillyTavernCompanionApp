@@ -103,6 +103,13 @@ cd android
 Version bumps: `version` in `apps/mobile/app.config.ts` (+ root/core/mobile `package.json`) and
 `android.versionCode` +1 per release.
 
+**Automated releases:** pushing a tag `vX.Y.Z` builds the signed APK in CI and attaches it to a
+GitHub release (`.github/workflows/release.yml`; requires the `ANDROID_KEYSTORE_BASE64` +
+`STC_UPLOAD_*` repo secrets). A `workflow_dispatch` run builds without releasing (dry run).
+
+**Note:** release builds are arm64-only with R8 minification. For an x86_64 emulator debug
+build, override the ABI per invocation: `.\gradlew.bat :app:assembleDebug "-PreactNativeArchitectures=x86_64"`.
+
 ## Known gaps & roadmap
 
 See [ROADMAP.md](ROADMAP.md). Deliberately deferred: group chats, stateful variable macros

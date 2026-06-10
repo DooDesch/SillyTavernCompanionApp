@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  # Dry run: builds and uploads the APK as a workflow artifact, creates NO release.
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify tag matches app version
+        if: github.ref_type == 'tag'
+        working-directory: apps/mobile
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"; TAG_VERSION="${TAG_VERSION%%-*}"
+          APP_VERSION=$(npx expo config --json --type public | jq -r '.version')
+          if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
+            echo "::error::tag version $TAG_VERSION does not match app.config.ts version $APP_VERSION"
+            exit 1
+          fi
+
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is missing"
+            exit 1
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "STC_UPLOAD_STORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+
+      - name: Prebuild (generate android/)
+        working-directory: apps/mobile
+        run: pnpm prebuild --platform android
+
+      - name: Build signed release APK
+        working-directory: apps/mobile/android
+        env:
+          STC_UPLOAD_STORE_PASSWORD: ${{ secrets.STC_UPLOAD_STORE_PASSWORD }}
+          STC_UPLOAD_KEY_ALIAS: ${{ secrets.STC_UPLOAD_KEY_ALIAS }}
+          STC_UPLOAD_KEY_PASSWORD: ${{ secrets.STC_UPLOAD_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease
+
+      # The signing plugin falls back to the debug keystore by design (local dev convenience),
+      # so a missing/broken secret must hard-fail HERE - a debug-signed "release" never ships.
+      - name: Guard - APK must be signed with the release upload key
+        run: |
+          APK=apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          CERTS=$("$BT/apksigner" verify --print-certs "$APK")
+          echo "$CERTS"
+          echo "$CERTS" | grep -qi 'cc35a4276381a88ac475be689b334185050799ec933b321bd8341c00a8368f95' \
+            || { echo "::error::APK is not signed with the release key (debug fallback?)"; exit 1; }
+
+      - name: Upload R8 mapping (deobfuscation)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-${{ github.ref_name }}
+          path: apps/mobile/android/app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+
+      - name: Dry-run artifact (manual runs only)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SillyTavernCompanion-dryrun
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Extract CHANGELOG section
+        if: github.ref_type == 'tag'
+        run: |
+          V="${GITHUB_REF_NAME#v}"; V="${V%%-*}"
+          awk -v ver="$V" 'index($0, "## [" ver "]") == 1 { found=1; next }
+                           found && /^## \[/ { exit }
+                           found { print }' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          [ -s "$RUNNER_TEMP/notes.md" ] || echo "_No CHANGELOG section found._" > "$RUNNER_TEMP/notes.md"
+
+      - name: Stage release asset
+        if: github.ref_type == 'tag'
+        run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "SillyTavernCompanion-${GITHUB_REF_NAME}.apk"
+
+      - name: Create GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SillyTavernCompanion-${{ github.ref_name }}.apk
+          body_path: ${{ runner.temp }}/notes.md
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') || contains(github.ref_name, '-') }}

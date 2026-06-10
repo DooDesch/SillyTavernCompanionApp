@@ -1,5 +1,19 @@
 import type { ExpoConfig } from 'expo/config';
 
+// R8 keep rules for native libs WITHOUT consumer proguard files (verified: keyboard-controller
+// 1.21.6 ships none; gesture-handler/screens/safe-area-context are belt-and-braces and can be
+// dropped once a minified build has soaked). expo-* modules are covered by expo-modules-core's
+// comprehensive consumer rules.
+const EXTRA_PROGUARD_RULES = `
+-keep class com.reactnativekeyboardcontroller.** { *; }
+-keep class com.swmansion.gesturehandler.** { *; }
+-keep class com.swmansion.rnscreens.** { *; }
+-keep class com.th3rdwave.safeareacontext.** { *; }
+-dontwarn org.bouncycastle.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
+`;
+
 /**
  * Native configuration. The two non-negotiable bits for a LAN companion app:
  *  - Local-network access (iOS prompts for it on any access to a private IP, e.g. the subnet scan)
@@ -71,6 +85,13 @@ const config: ExpoConfig = {
           // Allow http:// to the LAN. A network_security_config.xml scoped to RFC1918 would be
           // tighter; usesCleartextTraffic is the pragmatic v1 default.
           usesCleartextTraffic: true,
+          // arm64-only: drops x86/x86_64 (39.4 MB) and armeabi-v7a (13.1 MB) native libs.
+          // 32-bit-only phones are ~2014-era; re-add 'armeabi-v7a' here if needed (~+13 MB).
+          // Emulator debug builds: gradlew ... "-PreactNativeArchitectures=x86_64"
+          buildArchs: ['arm64-v8a'],
+          enableMinifyInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+          extraProguardRules: EXTRA_PROGUARD_RULES,
         },
       },
     ],
