@@ -173,7 +173,13 @@ function RichTextImpl({ text }: { text: string }) {
               </View>
             );
           default:
-            return <InlineText key={i} text={b.content} />;
+            // Desktop parity: paragraphs separate with 10px (.mes_text p), none after the
+            // last - otherwise blank-line breaks visible during streaming vanish on finalize.
+            return (
+              <View key={i} style={{ marginBottom: i === blocks.length - 1 ? 0 : 10 }}>
+                <InlineText text={b.content} />
+              </View>
+            );
         }
       })}
     </View>
