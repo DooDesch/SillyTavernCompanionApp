@@ -16,7 +16,7 @@ Initial public beta.
   branching, read-aloud (device TTS), reasoning ("thoughts") blocks, image attachments for
   vision models (chat-completion).
 - Faithful prompt engine (`@st/core`, 106 tests): macros, character fields, story string,
-  instruct mode, examples, @depth injections, Author's Note, World Info (selective logic,
+  instruct mode, examples, `@depth` injections, Author's Note, World Info (selective logic,
   inclusion groups, min activations, sticky/cooldown/delay), tokenizer-accurate budgeting;
   golden-master verified byte-exact against desktop SillyTavern.
 - Backends: text completion (KoboldCpp, …) and chat completion (Claude, OpenAI, Gemini,

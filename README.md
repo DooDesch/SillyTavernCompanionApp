@@ -11,9 +11,6 @@ engine, so generations build the **same prompt as the desktop**.
 
 *(Deutsche Kurzfassung [unten](#deutsch).)*
 
-| Chats | Chat view | Settings |
-|---|---|---|
-| *(screenshot)* | *(screenshot)* | *(screenshot)* |
 
 ## Features
 
@@ -22,7 +19,7 @@ engine, so generations build the **same prompt as the desktop**.
 - **Chat** — full history, send, **word-by-word streaming** (smooth streaming like the desktop),
   swipes (‹ › + generate new), regenerate, continue, stop, edit/delete/hide messages, branching.
 - **Faithful prompt engine** — macros, character fields, story string, instruct mode, World Info
-  (incl. inclusion groups, timed effects), Author's Note, examples, @depth injections, tokenizer-accurate
+  (incl. inclusion groups, timed effects), Author's Note, examples, `@depth` injections, tokenizer-accurate
   budgeting. A golden-master test keeps it byte-identical to SillyTavern's output.
 - **Both backend paths** — text completion (KoboldCpp etc.) and chat completion (Claude, OpenAI,
   Gemini, …) through your existing SillyTavern connection profiles.

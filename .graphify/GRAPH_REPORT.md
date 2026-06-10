@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-06-09)
 
 ## Corpus Check
-- 143 files · ~70.027 words
+- 160 files · ~82.687 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 662 nodes · 1468 edges · 30 communities detected
+- 664 nodes · 1469 edges · 31 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 500 · imports: 355 · imports_from: 320 · re_exports: 174 · calls: 93 · method: 26
+- Edge kinds: contains: 501 · imports: 355 · imports_from: 320 · re_exports: 174 · calls: 93 · method: 26
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 143 · Candidates: 162
-- Excluded: 0 untracked · 68787 ignored · 3 sensitive · 0 missing committed
+- Included files: 160 · Candidates: 180
+- Excluded: 13 untracked · 68437 ignored · 3 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `483a30c`
+- Built from Git commit: `d1de5c0`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `Icon()` - 16 edges
@@ -158,12 +158,18 @@ Nodes (2): { defineConfig }, expoConfig
 Cohesion: 1.00
 Nodes (1): config
 
+### Community 30 - "Community 30"
+Cohesion: 1.00
+Nodes (1): { withAppBuildGradle }
+
 ## Knowledge Gaps
-- **140 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+135 more)
+- **141 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+136 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 28`** (2 nodes): `{ defineConfig }`, `expoConfig`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 29`** (1 nodes): `config`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 30`** (1 nodes): `{ withAppBuildGradle }`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
@@ -176,7 +182,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `SseParser` connect `Community 4` to `Community 9`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **What connects `config`, `TAB_ICON`, `TabBarProps` to the rest of the system?**
-  _140 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _141 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.05054211843202669 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
