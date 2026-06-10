@@ -11,6 +11,10 @@ engine, so generations build the **same prompt as the desktop**.
 
 *(Deutsche Kurzfassung [unten](#deutsch).)*
 
+| Find your instance | Character (spoiler-safe) | Chat | Full sampler control |
+|---|---|---|---|
+| ![Discovery](docs/media/discovery.png) | ![Character page](docs/media/character.png) | ![Chat](docs/media/chat.png) | ![Generation settings](docs/media/gensettings.png) |
+
 
 ## Features
 

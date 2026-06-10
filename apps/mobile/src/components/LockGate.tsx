@@ -2,17 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Keyboard, Modal, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { addScreenOffListener } from '../../modules/screen-state';
 import { usePrefs } from '@/stores/prefsStore';
 import { AppText, Button } from '@/components/ui';
 import { Icon } from '@/theme/icons';
 import { colors } from '@/theme/tokens';
 
-/** Re-lock when the app spent longer than this in the background. */
-const RELOCK_AFTER_MS = 60_000;
-
 /**
  * Optional app lock: biometric prompt with system fallback to the device credential
- * (PIN/pattern/password). Locks on cold start and when returning after >60s in background.
+ * (PIN/pattern/password). Locks on cold start and WHEN THE PHONE LOCKS (screen off,
+ * via the local screen-state module) - that's the default. Optionally also after a
+ * configurable time in the background (appLockTimer + appLockMinutes).
  *
  * Rendered inside an RN Modal - a Modal is its own native window, so the lock stacks ABOVE
  * any open bottom sheet (which also lives in a Modal); a plain absolute View would sit under
@@ -21,6 +21,8 @@ const RELOCK_AFTER_MS = 60_000;
 export function LockGate() {
   const { t } = useTranslation();
   const appLock = usePrefs((s) => s.appLock);
+  const appLockTimer = usePrefs((s) => s.appLockTimer);
+  const appLockMinutes = usePrefs((s) => s.appLockMinutes);
   const hydrated = usePrefs((s) => s.hydrated);
   const [locked, setLocked] = useState<boolean | null>(null); // null until prefs known
   // The device-credential fallback opens a separate activity, which backgrounds the app -
@@ -61,14 +63,27 @@ export function LockGate() {
     }
   }, [t]);
 
-  // Relock on return from background (>60s), tracked only while the lock is enabled.
+  // DEFAULT relock: the phone locked (display off). Fires even in the foreground (power
+  // button) - phone locked means app locked. The auth prompt itself never turns the screen
+  // off, so no authBusy guard is needed here.
   useEffect(() => {
     if (!appLock) return;
+    return addScreenOffListener(() => {
+      Keyboard.dismiss();
+      backgroundedAt.current = null;
+      setLocked(true);
+    });
+  }, [appLock]);
+
+  // OPTIONAL relock: more than appLockMinutes in the background (app switching).
+  useEffect(() => {
+    if (!appLock || !appLockTimer) return;
+    const relockAfterMs = Math.max(1, appLockMinutes) * 60_000;
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'background' && !authBusy.current) {
         backgroundedAt.current = Date.now();
       } else if (state === 'active') {
-        if (backgroundedAt.current && Date.now() - backgroundedAt.current > RELOCK_AFTER_MS) {
+        if (backgroundedAt.current && Date.now() - backgroundedAt.current > relockAfterMs) {
           Keyboard.dismiss();
           setLocked(true);
         }
@@ -76,7 +91,7 @@ export function LockGate() {
       }
     });
     return () => sub.remove();
-  }, [appLock]);
+  }, [appLock, appLockTimer, appLockMinutes]);
 
   // Auto-prompt when the lock screen appears, deferred a tick: prompting synchronously on
   // the foreground transition races the activity on older Android versions.

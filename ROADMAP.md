@@ -4,13 +4,21 @@ Living document - priorities can shift, nothing here is a commitment.
 
 ## Open
 
-- [ ] Author's Note sheet: remove the last bits of visual dead space on devices with
-      large bottom insets (largely fixed in 0.9.2; verify across more devices).
-- [ ] Read-aloud: optional Android MediaSession notification with system media controls
-      (lockscreen/quick-settings) for long reads.
-- [ ] Slider fine-tuning: optional haptic ticks and full-width value scrubbing.
+- [ ] Read-aloud: a true Android MediaSession (system media player UI) would need a custom
+      native module - the 0.11.0 sticky notification with stop action covers the practical
+      case; revisit if richer controls are wanted.
 
 ## Shipped
+
+### 0.11.0
+- [x] **Character page: spoiler-gated definitions** - creator notes and tags shown openly,
+      all prompt material (description, personality, scenario, greetings, examples, character
+      note, system prompt) hidden behind an explicit reveal, like ST's spoiler-free mode.
+- [x] **Read-aloud notification** with stop action (lockscreen/notification shade).
+- [x] **App lock v2**: locks whenever the phone locks (screen off, default); optional
+      auto-lock after a configurable time in the background (slider, 1-30 min).
+- [x] Author's Note sheet dead-space fix verified on device (0.9.2 change).
+- [x] Slider behavior confirmed good as-is (no further fine-tuning planned).
 
 ### 0.10.0
 - [x] **Optional app lock** - biometric unlock with device-credential (PIN/pattern/password)

@@ -16,7 +16,7 @@ import { useBackendStatus } from '@/hooks/useBackendStatus';
 import { discoverKobold } from '@/lib/discovery';
 import { syncPersonaToPc, syncSelectedProfileToPc } from '@/lib/sync';
 import { PickerSheet, type PickerOption } from '@/components/PickerSheet';
-import { Screen, Header, Section, Card, Button, AppText, Badge, IconButton } from '@/components/ui';
+import { Screen, Header, Section, Card, Button, AppText, Badge, IconButton, SliderRow } from '@/components/ui';
 import { Icon, type IconName } from '@/theme/icons';
 import { colors } from '@/theme/tokens';
 
@@ -95,6 +95,10 @@ export default function SettingsScreen() {
   const setChatList = usePrefs((s) => s.setChatList);
   const appLock = usePrefs((s) => s.appLock);
   const setAppLock = usePrefs((s) => s.setAppLock);
+  const appLockTimer = usePrefs((s) => s.appLockTimer);
+  const setAppLockTimer = usePrefs((s) => s.setAppLockTimer);
+  const appLockMinutes = usePrefs((s) => s.appLockMinutes);
+  const setAppLockMinutes = usePrefs((s) => s.setAppLockMinutes);
   const [lockAvailable, setLockAvailable] = useState(false);
   const [scanning, setScanning] = useState(false);
 
@@ -370,6 +374,36 @@ export default function SettingsScreen() {
               thumbColor={colors.onAccent}
             />
           </Card>
+          {appLock ? (
+            <Card className="mt-2 px-4 py-3.5">
+              <View className="flex-row items-center gap-3">
+                <View className="flex-1">
+                  <AppText variant="title">{t('settings.appLockTimer')}</AppText>
+                  <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+                    {t('settings.appLockTimerSubtitle')}
+                  </AppText>
+                </View>
+                <Switch
+                  value={appLockTimer}
+                  onValueChange={setAppLockTimer}
+                  trackColor={{ true: colors.accent, false: colors.surface3 }}
+                  thumbColor={colors.onAccent}
+                />
+              </View>
+              {appLockTimer ? (
+                <View className="mt-3">
+                  <SliderRow
+                    label={t('settings.appLockMinutes')}
+                    value={appLockMinutes}
+                    min={1}
+                    max={30}
+                    step={1}
+                    onChange={setAppLockMinutes}
+                  />
+                </View>
+              ) : null}
+            </Card>
+          ) : null}
         </Section>
 
         {/* Language */}

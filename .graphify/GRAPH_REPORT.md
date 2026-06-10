@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-06-10)
 
 ## Corpus Check
-- 173 files · ~92.059 words
+- 174 files · ~92.462 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 716 nodes · 1583 edges · 42 communities detected
+- 720 nodes · 1591 edges · 43 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 543 · imports: 390 · imports_from: 348 · re_exports: 177 · calls: 99 · method: 26
+- Edge kinds: contains: 546 · imports: 392 · imports_from: 350 · re_exports: 177 · calls: 100 · method: 26
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 173 · Candidates: 193
-- Excluded: 0 untracked · 69782 ignored · 3 sensitive · 0 missing committed
+- Included files: 174 · Candidates: 194
+- Excluded: 0 untracked · 70484 ignored · 3 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `5d583ce`
+- Built from Git commit: `ca92973`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `Icon()` - 19 edges
@@ -135,20 +135,20 @@ Cohesion: 0.31
 Nodes (5): persister, LockGate(), queryClient, PrefsState, usePrefs
 
 ### Community 24 - "Community 24"
-Cohesion: 0.24
-Nodes (6): AppLanguage, deviceLanguage(), SUPPORTED_LANGUAGES, LanguagePref, LocaleState, useLocale
-
-### Community 25 - "Community 25"
-Cohesion: 0.22
-Nodes (7): countTokens, delta, GenerateOptions, GenerationChunk, history, events, streamDebug
-
-### Community 26 - "Community 26"
 Cohesion: 0.22
 Nodes (4): EnvObject, escapeRegex(), MacroValue, substituteMacros()
 
-### Community 27 - "Community 27"
+### Community 25 - "Community 25"
 Cohesion: 0.31
 Nodes (7): StCharacter, StCharacterData, StCharacterExtensions, StDepthPrompt, StChatMetadata, StMessageExtra, StVersion
+
+### Community 26 - "Community 26"
+Cohesion: 0.25
+Nodes (5): DOT, ReasoningBlock(), StreamingBubbleContent(), events, streamDebug
+
+### Community 27 - "Community 27"
+Cohesion: 0.28
+Nodes (6): AppLanguage, deviceLanguage(), SUPPORTED_LANGUAGES, LanguagePref, LocaleState, useLocale
 
 ### Community 28 - "Community 28"
 Cohesion: 0.31
@@ -167,12 +167,12 @@ Cohesion: 0.22
 Nodes (8): base, char, depth, example, lore, plainPower, story, turn
 
 ### Community 32 - "Community 32"
-Cohesion: 0.48
-Nodes (6): applyName(), ExampleMessage, formatInstructModeExamples(), getExampleBlocks(), parseExampleIntoIndividual(), parseMesExamples()
+Cohesion: 0.25
+Nodes (5): countTokens, delta, GenerateOptions, GenerationChunk, history
 
 ### Community 33 - "Community 33"
-Cohesion: 0.33
-Nodes (3): DOT, ReasoningBlock(), StreamingBubbleContent()
+Cohesion: 0.48
+Nodes (6): applyName(), ExampleMessage, formatInstructModeExamples(), getExampleBlocks(), parseExampleIntoIndividual(), parseMesExamples()
 
 ### Community 34 - "Community 34"
 Cohesion: 0.60
@@ -192,17 +192,21 @@ Nodes (2): entryUid(), LoreSheet()
 
 ### Community 38 - "Community 38"
 Cohesion: 0.67
-Nodes (2): { defineConfig }, expoConfig
+Nodes (3): ensureSetup(), hideTtsNotification(), showTtsNotification()
 
 ### Community 39 - "Community 39"
 Cohesion: 0.67
-Nodes (2): PROPS, { withGradleProperties }
+Nodes (2): { defineConfig }, expoConfig
 
 ### Community 40 - "Community 40"
+Cohesion: 0.67
+Nodes (2): PROPS, { withGradleProperties }
+
+### Community 41 - "Community 41"
 Cohesion: 1.00
 Nodes (1): config
 
-### Community 41 - "Community 41"
+### Community 42 - "Community 42"
 Cohesion: 1.00
 Nodes (1): { withAppBuildGradle }
 
@@ -211,13 +215,13 @@ Nodes (1): { withAppBuildGradle }
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 37`** (2 nodes): `entryUid()`, `LoreSheet()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 38`** (2 nodes): `{ defineConfig }`, `expoConfig`
+- **Thin community `Community 39`** (2 nodes): `{ defineConfig }`, `expoConfig`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 39`** (2 nodes): `PROPS`, `{ withGradleProperties }`
+- **Thin community `Community 40`** (2 nodes): `PROPS`, `{ withGradleProperties }`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 40`** (1 nodes): `config`
+- **Thin community `Community 41`** (1 nodes): `config`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (1 nodes): `{ withAppBuildGradle }`
+- **Thin community `Community 42`** (1 nodes): `{ withAppBuildGradle }`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions

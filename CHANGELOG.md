@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.11.0] - 2026-06-10 (Beta)
+
+### Added
+- **Character page redesign with spoiler protection**: creator notes and tags are shown
+  openly (they are written for the player), while all prompt material - description,
+  personality, scenario, first message (incl. alternate-greeting count), example
+  dialogues, character note, system prompt, embedded lorebook - sits behind an explicit
+  "Show definitions" reveal, like SillyTavern's spoiler-free mode. No more accidental
+  self-spoilers when opening a character.
+- **Read-aloud notification**: while text-to-speech runs, a notification with a Stop
+  button is available from the lockscreen/notification shade.
+- **App lock v2**: the lock now engages whenever the phone locks (screen off) - the new
+  default. Optionally, auto-lock after a configurable time in the background can be
+  enabled additionally (slider, 1-30 minutes).
+
+### Changed
+- Versions/screenshots refreshed in the README.
+
 ## [0.10.0] - 2026-06-10 (Beta)
 
 ### Added
