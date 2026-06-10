@@ -16,11 +16,14 @@ export function StepperRow({
   label,
   value,
   values,
+  min = 1,
   onChange,
 }: {
   label: string;
   value: number | null;
   values: number[];
+  /** Lower clamp for typed values (seed needs -1; context size keeps the default 1). */
+  min?: number;
   onChange: (v: number) => void;
 }) {
   const { t } = useTranslation();
@@ -41,7 +44,7 @@ export function StepperRow({
     setEditing(null);
     const n = parseNum(s);
     if (n == null) return;
-    onChange(Math.max(1, Math.round(n)));
+    onChange(Math.max(min, Math.round(n)));
   };
 
   const fmt = (v: number) => (v >= 1024 && v % 1024 === 0 ? `${v / 1024}k` : String(v));

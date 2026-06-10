@@ -217,6 +217,7 @@ export default function GenerationSettingsScreen() {
               label={label}
               value={typeof v === 'number' ? v : null}
               values={field.presets ?? []}
+              min={field.hardMin ?? field.min ?? 1}
               onChange={(n) => setValue(field.key, n)}
             />
           </View>

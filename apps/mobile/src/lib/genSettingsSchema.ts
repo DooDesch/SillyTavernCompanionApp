@@ -70,8 +70,8 @@ export const GEN_FIELDS: GenField[] = [
   { key: 'openai_max_tokens', target: 'oai', mode: 'cc', section: 'tokens', type: 'slider', min: 16, max: 4096, step: 16, hardMax: 131072, def: 300 },
   { key: 'openai_max_context', target: 'oai', mode: 'cc', section: 'tokens', type: 'stepper', presets: CTX_PRESETS, def: 4095 },
   { key: 'stream_openai', target: 'oai', mode: 'cc', section: 'tokens', type: 'toggle', def: true },
-  { key: 'seed', target: 'textgen', mode: 'tc', section: 'tokens', type: 'stepper', presets: [-1], def: -1, hint: true },
-  { key: 'seed_oai', target: 'oai', mode: 'cc', section: 'tokens', type: 'stepper', presets: [-1], def: -1, hint: true },
+  { key: 'seed', target: 'textgen', mode: 'tc', section: 'tokens', type: 'stepper', presets: [-1], hardMin: -1, def: -1, hint: true },
+  { key: 'seed_oai', target: 'oai', mode: 'cc', section: 'tokens', type: 'stepper', presets: [-1], hardMin: -1, def: -1, hint: true },
 
   // ---- Sampling (TC) ----
   { key: 'temp', target: 'textgen', mode: 'tc', section: 'sampling', type: 'slider', min: 0, max: 5, step: 0.01, decimals: 2, def: 0.7 },
