@@ -33,15 +33,15 @@ module.exports = function withReleaseSigning(config) {
 
     const signingConfigsAnchor = /(signingConfigs\s*\{\s*\n\s*debug\s*\{[\s\S]*?\n\s*\})/;
     if (!signingConfigsAnchor.test(contents)) {
-      throw new Error('withReleaseSigning: signingConfigs.debug block not found — Expo template changed');
+      throw new Error('withReleaseSigning: signingConfigs.debug block not found - Expo template changed');
     }
     contents = contents.replace(signingConfigsAnchor, `$1${RELEASE_SIGNING_CONFIG}`);
 
-    // `signingConfig signingConfigs.debug` also appears in the debug buildType — anchor on
+    // `signingConfig signingConfigs.debug` also appears in the debug buildType - anchor on
     // Expo's "// Caution!" comment so only the release buildType's line is replaced.
     const releaseAnchor = /(\/\/ Caution![\s\S]{0,200}?)signingConfig signingConfigs\.debug/;
     if (!releaseAnchor.test(contents)) {
-      throw new Error('withReleaseSigning: release signingConfig line not found — Expo template changed');
+      throw new Error('withReleaseSigning: release signingConfig line not found - Expo template changed');
     }
     // Outer parens are required: `signingConfig (expr) ? a : b` would be parsed by Groovy as
     // the method call `signingConfig(expr)` followed by a ternary on its return value.

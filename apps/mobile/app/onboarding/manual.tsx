@@ -96,7 +96,7 @@ export default function ManualScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           textContentType="username"
-          placeholder="—"
+          placeholder="-"
         />
         <Field
           label={t('onboarding.password')}
@@ -105,7 +105,7 @@ export default function ManualScreen() {
           password
           autoCapitalize="none"
           textContentType="password"
-          placeholder="—"
+          placeholder="-"
           error={error ?? undefined}
         />
 

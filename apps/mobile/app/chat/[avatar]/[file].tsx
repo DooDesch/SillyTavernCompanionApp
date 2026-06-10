@@ -229,7 +229,7 @@ export default function ChatScreen() {
   );
 
   // `fullMsgs` is the complete on-screen array at generation start (context + placeholder).
-  // Finalize/persist are computed from it directly — NEVER from a setMessages-updater closure:
+  // Finalize/persist are computed from it directly - NEVER from a setMessages-updater closure:
   // React only runs updaters at render time, so a captured variable can still be empty when
   // persist() reads it (that silently skipped saves, and once caused a chat wipe). Message
   // actions are disabled while streaming, so `fullMsgs` cannot go stale.
@@ -671,7 +671,7 @@ export default function ChatScreen() {
             charAvatar={avatarUrl}
             plain={streaming && index === messages.length - 1}
             index={index}
-            // Message actions are disabled while generating (like desktop ST) — finalize
+            // Message actions are disabled while generating (like desktop ST) - finalize
             // computes from the generation-start array, so it must not change mid-stream.
             onLongPress={streaming ? undefined : openMenu}
           />

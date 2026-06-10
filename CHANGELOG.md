@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
-## [0.9.0] — 2026-06-10 (Beta)
+## [0.9.0] - 2026-06-10 (Beta)
 
 Initial public beta.
 

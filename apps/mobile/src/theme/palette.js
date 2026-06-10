@@ -3,7 +3,7 @@
 // src/theme/tokens.ts (runtime values for non-className APIs).
 //
 // Refined Dark (Cinema): deep near-black, one violet accent, fine borders, subtle depth.
-// Dark-only for now — a light theme later is an additive change (a second value set),
+// Dark-only for now - a light theme later is an additive change (a second value set),
 // because every screen references semantic names, never raw hex.
 
 const palette = {

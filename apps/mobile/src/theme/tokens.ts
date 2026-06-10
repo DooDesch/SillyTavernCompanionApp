@@ -21,7 +21,7 @@ export const iconSize = { sm: 18, md: 22, lg: 26 } as const;
 /** Generous hit area so visually-small controls still meet the 44pt touch target. */
 export const hitSlop = { top: 10, bottom: 10, left: 10, right: 10 } as const;
 
-/** Inter weight families (RN custom fonts are one family per weight — no synthetic bold). */
+/** Inter weight families (RN custom fonts are one family per weight - no synthetic bold). */
 export const fonts = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',

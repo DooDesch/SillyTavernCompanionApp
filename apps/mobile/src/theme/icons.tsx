@@ -3,7 +3,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors, iconSize } from './tokens';
 
 /**
- * Central semantic-name -> Feather-glyph map. Screens reference these names only —
+ * Central semantic-name -> Feather-glyph map. Screens reference these names only -
  * never emoji, never a raw Feather string. Feather is a stroke-based set already
  * bundled with @expo/vector-icons (no new dependency, refined/consistent stroke).
  */

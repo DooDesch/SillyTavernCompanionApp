@@ -1,5 +1,5 @@
 /**
- * Smooth-streaming pacer — a faithful port of SillyTavern's smooth streaming
+ * Smooth-streaming pacer - a faithful port of SillyTavern's smooth streaming
  * (`public/scripts/sse-stream.js`): incoming SSE events are re-revealed character
  * by character with a per-character delay, so the UI streams word-by-word even
  * when the backend delivers large batches.
@@ -7,7 +7,7 @@
  * Platform-independent by design: no timers live here. The caller injects a clock
  * (`now`) and drives `tick()` from its own scheduler; `tick()` reveals every
  * character that has become "due" since the last call (batch reveal), so a slow
- * caller never changes the perceived speed — only the granularity of updates.
+ * caller never changes the perceived speed - only the granularity of updates.
  */
 
 /**

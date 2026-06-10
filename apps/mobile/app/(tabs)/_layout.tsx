@@ -27,7 +27,7 @@ type TabBarProps = {
 };
 
 /**
- * Custom tab bar — react-navigation's default bar wasn't applying the bottom safe-area inset on
+ * Custom tab bar - react-navigation's default bar wasn't applying the bottom safe-area inset on
  * this setup, so the labels collided with the system nav bar. We render it ourselves and pad by a
  * reliable bottom inset.
  */

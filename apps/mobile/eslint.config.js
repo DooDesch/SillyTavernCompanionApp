@@ -10,7 +10,7 @@ module.exports = defineConfig([
   {
     rules: {
       // The React Compiler "immutability" rule flags `sharedValue.value = ...`, but mutating a
-      // Reanimated shared value via `.value` is its intended API — a false positive on this stack.
+      // Reanimated shared value via `.value` is its intended API - a false positive on this stack.
       'react-hooks/immutability': 'off',
       // We use setState-in-effect only for idiomatic prop->state sync (sheet form resets) and
       // mount gating (Sheet enter/exit animation). These are intentional and safe.

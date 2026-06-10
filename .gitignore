@@ -13,7 +13,7 @@ web-build/
 
 # Graphify knowledge graph (https://github.com/rhanka/graphify)
 # Commit only the portable, repo-relative artifacts; ignore all local lifecycle
-# state (branch.json/worktree.json/needs_update/cache/, manifest.json, etc. —
+# state (branch.json/worktree.json/needs_update/cache/, manifest.json, etc. -
 # these may contain absolute paths and must never be committed).
 .graphify/*
 !.graphify/graph.json
@@ -22,10 +22,10 @@ web-build/
 !.graphify/flows.json
 !.graphify/wiki/
 
-# Release signing — NEVER commit; back up keystore + passwords out-of-band
+# Release signing - NEVER commit; back up keystore + passwords out-of-band
 apps/mobile/credentials/
 *.keystore
 *.jks
 
-# Device screenshots — may contain private chat content, never commit
+# Device screenshots - may contain private chat content, never commit
 docs/screenshots/

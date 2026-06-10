@@ -1,4 +1,4 @@
-## i18n (Deutsch + Englisch) — MUST be kept in sync
+## i18n (Deutsch + Englisch) - MUST be kept in sync
 
 The app is fully internationalized with **i18next + react-i18next** (device language auto-detected via
 `expo-localization`, manual override in Settings). There are NO hardcoded user-facing strings.
@@ -9,8 +9,8 @@ The app is fully internationalized with **i18next + react-i18next** (device lang
 - In components: `const { t } = useTranslation();` then `t('ns.key')`. Outside components (e.g. a plain
   `.ts` showing an `Alert`): `import i18n from '@/i18n'; i18n.t('ns.key')`.
 - Dynamic values use interpolation: `t('ns.key', { name })` with `"{{name}}"` in the JSON value.
-- **Maintenance rule — non-negotiable:** every new user-facing string MUST be added as a key to **BOTH**
-  `de.json` and `en.json` (same key path) and referenced via `t()` — never hardcode UI text. Keep the two
+- **Maintenance rule - non-negotiable:** every new user-facing string MUST be added as a key to **BOTH**
+  `de.json` and `en.json` (same key path) and referenced via `t()` - never hardcode UI text. Keep the two
   files structurally identical (same keys). Reuse `common.*` for shared words (cancel/save/delete/close/…).
   Do NOT translate: code identifiers, log/console strings, API field names, icons/emoji/glyphs, classNames.
 

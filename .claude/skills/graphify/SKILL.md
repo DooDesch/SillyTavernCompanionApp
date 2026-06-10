@@ -268,7 +268,7 @@ Hyperedges: if 3 or more nodes clearly participate together in a shared concept,
 - All classes that implement a common protocol or interface
 - All functions in an authentication flow (even if they don't all call each other)
 - All concepts from a paper section that form one coherent idea
-Use sparingly — only when the group relationship adds information beyond the pairwise edges. Maximum 3 hyperedges per chunk.
+Use sparingly - only when the group relationship adds information beyond the pairwise edges. Maximum 3 hyperedges per chunk.
 
 If a file has YAML frontmatter (--- ... ---), copy source_url, captured_at, author,
   contributor onto every node from that file.
@@ -468,7 +468,7 @@ Replace INPUT_PATH with the actual path.
 
 ### Step 6 - Generate Obsidian vault (opt-in) + HTML
 
-**Generate HTML always** (unless `--no-viz`). **Obsidian vault only if `--obsidian` was explicitly given** — skip it otherwise, it generates one file per node.
+**Generate HTML always** (unless `--no-viz`). **Obsidian vault only if `--obsidian` was explicitly given** - skip it otherwise, it generates one file per node.
 
 Wiki descriptions are opt-in and two-step. First generate sidecars, then pass their index into wiki or Obsidian rendering:
 
@@ -1300,7 +1300,7 @@ graphify claude uninstall  # remove the section
 If vertical scrolling breaks in PowerShell after running graphify, this is caused by ANSI escape sequences from the `graspologic` library. Graphify v0.3.10+ suppresses this output, but if you still see the issue:
 
 1. **Upgrade graphify**: `npm install -g @sentropic/graphify`
-2. **Use Windows Terminal** instead of the legacy PowerShell console — Windows Terminal handles ANSI codes correctly
+2. **Use Windows Terminal** instead of the legacy PowerShell console - Windows Terminal handles ANSI codes correctly
 3. **Reset your terminal**: close and reopen PowerShell
 4. **Skip graspologic**: uninstall it (`pip uninstall graspologic`) and graphify will fall back to NetworkX's built-in Louvain algorithm, which produces no ANSI output
 

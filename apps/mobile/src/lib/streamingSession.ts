@@ -5,12 +5,12 @@ import { SmoothPacer, SMOOTH_SPEED_DEFAULT } from '@st/core';
  * Render-layer streaming state, deliberately OUTSIDE the React tree (and outside zustand):
  * the chat screen's `messages` array stays untouched while tokens stream in, and only the
  * single `StreamingBubbleContent` subscriber re-renders per update. This is what makes
- * word-by-word streaming possible on slow devices — updating the messages array per SSE
+ * word-by-word streaming possible on slow devices - updating the messages array per SSE
  * event re-rendered the whole FlashList and saturated the JS thread.
  *
  * Pacing (ST's "smooth streaming") is purely visual: the network loop always owns the full
  * accumulated text, and `end()`/`flushNow()` guarantee the snapshot carries the complete
- * text before generation finalizes. A singleton is safe — the chat screen's `streaming`
+ * text before generation finalizes. A singleton is safe - the chat screen's `streaming`
  * flag already serializes generations.
  */
 export interface StreamSnapshot {

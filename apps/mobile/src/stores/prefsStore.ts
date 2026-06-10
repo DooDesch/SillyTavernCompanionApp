@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { secrets } from '@/lib/storage';
 
 /**
- * Device-local UI preferences (NOT synced to the desktop's power_user — pacing is a
+ * Device-local UI preferences (NOT synced to the desktop's power_user - pacing is a
  * phone-rendering concern). Persisted best-effort via secure-store; keys must match
  * /^[\w.-]+$/ (dots, never colons).
  */

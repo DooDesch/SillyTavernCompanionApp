@@ -6,7 +6,7 @@
 
 A native Android companion app for **[SillyTavern](https://github.com/SillyTavern/SillyTavern)**:
 it finds your running SillyTavern instance on the local Wi-Fi, connects with zero server-side
-setup, and lets you continue your RP chats from the couch — with a faithfully ported prompt
+setup, and lets you continue your RP chats from the couch - with a faithfully ported prompt
 engine, so generations build the **same prompt as the desktop**.
 
 *(Deutsche Kurzfassung [unten](#deutsch).)*
@@ -14,26 +14,26 @@ engine, so generations build the **same prompt as the desktop**.
 
 ## Features
 
-- **Zero-install discovery** — subnet scan + `/version` fingerprint, manual IP pairing as fallback.
+- **Zero-install discovery** - subnet scan + `/version` fingerprint, manual IP pairing as fallback.
   No plugin or change required on the SillyTavern side.
-- **Chat** — full history, send, **word-by-word streaming** (smooth streaming like the desktop),
+- **Chat** - full history, send, **word-by-word streaming** (smooth streaming like the desktop),
   swipes (‹ › + generate new), regenerate, continue, stop, edit/delete/hide messages, branching.
-- **Faithful prompt engine** — macros, character fields, story string, instruct mode, World Info
+- **Faithful prompt engine** - macros, character fields, story string, instruct mode, World Info
   (incl. inclusion groups, timed effects), Author's Note, examples, `@depth` injections, tokenizer-accurate
   budgeting. A golden-master test keeps it byte-identical to SillyTavern's output.
-- **Both backend paths** — text completion (KoboldCpp etc.) and chat completion (Claude, OpenAI,
+- **Both backend paths** - text completion (KoboldCpp etc.) and chat completion (Claude, OpenAI,
   Gemini, …) through your existing SillyTavern connection profiles.
-- **Two-way sync** — chats save back to the PC (with conflict detection), persona/profile/sampler
+- **Two-way sync** - chats save back to the PC (with conflict detection), persona/profile/sampler
   tweaks sync into SillyTavern's settings.
-- **RP comfort** — personas, lorebook panel with live "active" indicators, quick generation settings,
+- **RP comfort** - personas, lorebook panel with live "active" indicators, quick generation settings,
   impersonate, image attachments (vision models), device TTS, reasoning ("thoughts") blocks.
-- **Offline-friendly** — cached characters/chats, crash drafts with restore.
+- **Offline-friendly** - cached characters/chats, crash drafts with restore.
 - Fully bilingual UI (English/German), dark "cinema" design.
 
 ## Installation (users)
 
 1. Download `app-release.apk` from the [latest release](https://github.com/DooDesch/SillyTavernCompanionApp/releases).
-2. Open it on your Android phone (Android 7+). Allow *"install from unknown sources"* when asked —
+2. Open it on your Android phone (Android 7+). Allow *"install from unknown sources"* when asked -
    the APK is signed but not distributed through Google Play, so Play Protect will warn about an
    unknown developer. That is expected.
 3. Make sure SillyTavern is reachable from your phone:
@@ -41,7 +41,7 @@ engine, so generations build the **same prompt as the desktop**.
      (e.g. `whitelist: ["192.168.178.*"]`).
    - SillyTavern and your backend (KoboldCpp / cloud profile) are running.
    - Phone and PC are on the same network.
-4. Open the app — it scans your Wi-Fi and finds the instance automatically.
+4. Open the app - it scans your Wi-Fi and finds the instance automatically.
 
 > The app speaks plain HTTP to your LAN (that is how SillyTavern serves by default. Don't expose
 > SillyTavern to the internet without auth/TLS).
@@ -50,7 +50,7 @@ engine, so generations build the **same prompt as the desktop**.
 
 ```
 SillyTavernCompanionApp/                 pnpm monorepo
-├─ packages/core/   @st/core — pure TS, Node-testable (106 vitest tests)
+├─ packages/core/   @st/core - pure TS, Node-testable (106 vitest tests)
 │  └─ src/
 │     ├─ discovery/ connection/ chat/ streaming/   (scan, StClient+CSRF, JSONL, SSE, smooth pacer)
 │     └─ prompt-engine/   port of ST's Generate() pipeline:
@@ -110,7 +110,7 @@ full preset/template editors (heavy configuration stays on the desktop by design
 
 ## License & attribution
 
-This project is licensed under the **GNU AGPL-3.0** — see [LICENSE](LICENSE).
+This project is licensed under the **GNU AGPL-3.0** - see [LICENSE](LICENSE).
 
 The prompt engine in `packages/core/src/prompt-engine` is a TypeScript port of client-side
 prompt-building code from [SillyTavern](https://github.com/SillyTavern/SillyTavern) (AGPL-3.0).
@@ -122,12 +122,12 @@ project.
 ## Deutsch
 
 Native Android-App für **SillyTavern**: findet deine laufende ST-Instanz im WLAN (ohne
-Server-Änderung), verbindet sich und setzt deine RP-Chats unterwegs fort — mit 1:1 portierter
+Server-Änderung), verbindet sich und setzt deine RP-Chats unterwegs fort - mit 1:1 portierter
 Prompt-Engine (byte-identische Prompts zum Desktop).
 
 **Installation:** `app-release.apk` aus den
 [Releases](https://github.com/DooDesch/SillyTavernCompanionApp/releases) laden, auf dem Handy
-öffnen („Unbekannte Quellen" erlauben — die Play-Protect-Warnung ist bei Sideload normal).
+öffnen („Unbekannte Quellen" erlauben - die Play-Protect-Warnung ist bei Sideload normal).
 Voraussetzungen: `config.yaml` mit `listen: true` + Whitelist fürs Handy-Subnetz, ST + Backend
 laufen, Handy im selben WLAN. Die App scannt das Netz und verbindet sich automatisch.
 

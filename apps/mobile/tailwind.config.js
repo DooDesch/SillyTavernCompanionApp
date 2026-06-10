@@ -28,7 +28,7 @@ module.exports = {
         'user-bubble': palette.userBubble,
         'char-bubble': palette.charBubble,
 
-        // Legacy aliases — keep old class names working during the migration.
+        // Legacy aliases - keep old class names working during the migration.
         surface2: palette.surface2,
         muted: palette.textMuted,
         primary: palette.accent,

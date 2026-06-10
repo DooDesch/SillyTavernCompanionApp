@@ -11,7 +11,7 @@ import { useReducedMotion } from '@/theme/motion';
 
 /**
  * The live content of the currently-streaming bubble. Subscribes to `streamingSession`
- * directly so per-token updates re-render ONLY this component — the chat's FlashList and
+ * directly so per-token updates re-render ONLY this component - the chat's FlashList and
  * every other bubble stay untouched while text streams in.
  */
 export function StreamingBubbleContent() {

@@ -154,7 +154,7 @@ export default function SettingsScreen() {
   };
 
   const backendConnected = backend.data?.connected;
-  const appVersion = Constants.expoConfig?.version ?? '—';
+  const appVersion = Constants.expoConfig?.version ?? '-';
 
   return (
     <Screen edges={['top']}>

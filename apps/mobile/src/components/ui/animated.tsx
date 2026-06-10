@@ -5,7 +5,7 @@ import { usePressScale } from '@/theme/motion';
 
 /**
  * A press-scaled Pressable. The scale transform lives on an `Animated.View` wrapper, while
- * `className` stays on a real (NativeWind-interop'd) `Pressable` child — putting an animated
+ * `className` stays on a real (NativeWind-interop'd) `Pressable` child - putting an animated
  * `style` AND className on one `Animated.createAnimatedComponent(Pressable)` makes NativeWind
  * drop the className-derived styles, so we keep them on separate nodes.
  */
