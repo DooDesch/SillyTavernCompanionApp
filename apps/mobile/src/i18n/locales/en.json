@@ -106,6 +106,7 @@
     "readingAloud": "Reading aloud…",
     "reasoning": "Thoughts",
     "regenerate": "Regenerate",
+    "stopReading": "Stop",
     "thinking": "Thinking",
     "unhide": "Show again",
     "unsavedMessage": "There are unsaved changes from an earlier session. Restore them?",

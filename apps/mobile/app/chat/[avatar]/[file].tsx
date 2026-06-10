@@ -39,6 +39,7 @@ import { syncPersonaToPc } from '@/lib/sync';
 import { ensureIds, makeAssistantMessage, makeUserMessage, nowSendDate } from '@/lib/messages';
 import { clearChatDraft, readChatDraft, writeChatDraft } from '@/lib/persist';
 import { chunkForSpeech, plainForSpeech } from '@/lib/tts';
+import { showTtsNotification, hideTtsNotification } from '@/lib/ttsNotification';
 import { RichText } from '@/components/RichText';
 import { ReadAloudBar } from '@/components/ReadAloudBar';
 import { StreamingBubbleContent, ReasoningBlock } from '@/components/StreamingText';
@@ -199,6 +200,7 @@ export default function ChatScreen() {
   useEffect(() => {
     return () => {
       void Speech.stop();
+      hideTtsNotification();
     };
   }, []);
 
@@ -568,6 +570,7 @@ export default function ChatScreen() {
     speakSessionRef.current++;
     void Speech.stop();
     setSpeaking(null);
+    hideTtsNotification();
   }, []);
 
   const speakMessage = useCallback(
@@ -582,7 +585,10 @@ export default function ChatScreen() {
         return;
       }
       const clear = () => {
-        if (speakSessionRef.current === session) setSpeaking(null);
+        if (speakSessionRef.current === session) {
+          setSpeaking(null);
+          hideTtsNotification();
+        }
       };
       const chunks = chunkForSpeech(plain);
       chunks.forEach((c, i) =>
@@ -594,8 +600,9 @@ export default function ChatScreen() {
       );
       // Capture the name now - the bar must never dereference messages[index] later.
       setSpeaking({ index, name: m.name });
+      void showTtsNotification(m.name, stopSpeaking);
     },
-    [messages],
+    [messages, stopSpeaking],
   );
 
   const branchFrom = useCallback(
