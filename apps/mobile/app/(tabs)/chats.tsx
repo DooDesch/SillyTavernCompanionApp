@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
@@ -9,7 +9,9 @@ import i18n from '@/i18n';
 import { useConnection } from '@/stores/connectionStore';
 import { usePrefs } from '@/stores/prefsStore';
 import { Avatar } from '@/components/Avatar';
+import { ChatActionsSheets, type ChatTarget } from '@/components/ChatActionsSheets';
 import { Screen, Header, ListRow, SkeletonList, EmptyState, Button, AppText } from '@/components/ui';
+import { haptics } from '@/theme/haptics';
 
 function relativeTime(ms?: number): string {
   if (!ms || !Number.isFinite(ms)) return '';
@@ -48,7 +50,13 @@ type Row =
   | { kind: 'chatrow'; key: string; character: StCharacter; chat: ChatFileInfo; ts: number };
 
 /** A recent-chat entry: shows the last-message preview for the character's current chat. */
-function RecentChatRow({ character }: { character: StCharacter }) {
+function RecentChatRow({
+  character,
+  onLongPress,
+}: {
+  character: StCharacter;
+  onLongPress: (target: ChatTarget) => void;
+}) {
   const { t } = useTranslation();
   const client = useConnection((s) => s.client);
 
@@ -79,12 +87,25 @@ function RecentChatRow({ character }: { character: StCharacter }) {
       onPress={() =>
         router.push({ pathname: '/chat/[avatar]/[file]', params: { avatar: character.avatar, file: fileId } })
       }
+      onLongPress={() => {
+        if (!fileId) return;
+        haptics.impact();
+        onLongPress({ avatar: character.avatar, file: fileId });
+      }}
     />
   );
 }
 
 /** One chat file as its own row ('all' mode): character + chat label + preview. */
-function ChatFileRow({ character, chat }: { character: StCharacter; chat: ChatFileInfo }) {
+function ChatFileRow({
+  character,
+  chat,
+  onLongPress,
+}: {
+  character: StCharacter;
+  chat: ChatFileInfo;
+  onLongPress: (target: ChatTarget) => void;
+}) {
   const { t } = useTranslation();
   const fileId = chat.file_id ?? chat.file_name?.replace(/\.jsonl$/i, '') ?? '';
   const preview = (chat.mes ?? '').replace(/\s+/g, ' ').trim();
@@ -97,6 +118,11 @@ function ChatFileRow({ character, chat }: { character: StCharacter; chat: ChatFi
       onPress={() =>
         router.push({ pathname: '/chat/[avatar]/[file]', params: { avatar: character.avatar, file: fileId } })
       }
+      onLongPress={() => {
+        if (!fileId) return;
+        haptics.impact();
+        onLongPress({ avatar: character.avatar, file: fileId });
+      }}
     />
   );
 }
@@ -107,6 +133,7 @@ export default function ChatsScreen() {
   const queryClient = useQueryClient();
   const chatList = usePrefs((s) => s.chatList);
   const host = useConnection((s) => s.instance?.baseUrl)?.replace(/^https?:\/\//, '');
+  const [chatMenu, setChatMenu] = useState<ChatTarget | null>(null);
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['characters', client?.baseUrl],
@@ -220,16 +247,17 @@ export default function ChatsScreen() {
               </AppText>
             ) : item.kind === 'chatrow' ? (
               <View className="mb-2">
-                <ChatFileRow character={item.character} chat={item.chat} />
+                <ChatFileRow character={item.character} chat={item.chat} onLongPress={setChatMenu} />
               </View>
             ) : (
               <View className="mb-2">
-                <RecentChatRow character={item.character} />
+                <RecentChatRow character={item.character} onLongPress={setChatMenu} />
               </View>
             )
           }
         />
       )}
+      <ChatActionsSheets target={chatMenu} onClose={() => setChatMenu(null)} />
     </Screen>
   );
 }

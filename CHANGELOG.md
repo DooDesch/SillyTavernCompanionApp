@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.13.0] - 2026-06-10 (Beta)
+
+### Added
+- Chat actions (open, rename, delete) via long-press directly on the Chats tab -
+  previously only available on the character page.
+
+### Fixed
+- Deleting or renaming a chat now updates the Chats tab immediately (the two screens
+  used different caches; deletions only showed up after a manual reload).
+
 ## [0.12.0] - 2026-06-10 (Beta)
 
 ### Added

@@ -1,26 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { deleteChat, getCharacter, getCharacterChats, renameChat, type StCharacter } from '@st/core';
+import { getCharacter, getCharacterChats, type StCharacter } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
 import { RichText } from '@/components/RichText';
 import { ImageViewerModal } from '@/components/ImageViewerModal';
+import { ChatActionsSheets, type ChatTarget } from '@/components/ChatActionsSheets';
 import { nowSendDate } from '@/lib/messages';
-import {
-  AppText,
-  Button,
-  Card,
-  Chip,
-  Field,
-  ListRow,
-  SectionHeader,
-  Sheet,
-  SheetActionRow,
-  SkeletonList,
-} from '@/components/ui';
+import { AppText, Button, Card, Chip, ListRow, SectionHeader, SkeletonList } from '@/components/ui';
 import { Icon } from '@/theme/icons';
 import { colors } from '@/theme/tokens';
 import { haptics } from '@/theme/haptics';
@@ -107,26 +97,26 @@ export default function CharacterScreen() {
   const { avatar } = useLocalSearchParams<{ avatar: string }>();
   const client = useConnection((s) => s.client);
   const avatarUrl = String(avatar);
-  const queryClient = useQueryClient();
 
   const charQuery = useQuery({
     queryKey: ['character', client?.baseUrl, avatarUrl],
     queryFn: () => getCharacter(client!, avatarUrl),
     enabled: !!client,
   });
+  // Same key family as the chats tab, so mutations invalidate both screens at once.
   const chatsQuery = useQuery({
-    queryKey: ['chats', client?.baseUrl, avatarUrl],
+    queryKey: ['charchats', client?.baseUrl, avatarUrl],
     queryFn: () => getCharacterChats(client!, avatarUrl),
     enabled: !!client,
+    staleTime: 60_000,
   });
 
   const baseUrl = useConnection((s) => s.instance?.baseUrl);
   const character = charQuery.data;
   const creator = character?.data?.creator?.trim();
   const fullImageUri = baseUrl ? `${baseUrl}/thumbnail?type=avatar&file=${encodeURIComponent(avatarUrl)}` : undefined;
-  const [menuFile, setMenuFile] = useState<string | null>(null);
+  const [chatMenu, setChatMenu] = useState<ChatTarget | null>(null);
   const [showImage, setShowImage] = useState(false);
-  const [renaming, setRenaming] = useState<{ file: string; name: string } | null>(null);
   // Spoiler gate: definitions stay hidden per visit (never persisted), like ST's spoiler-free mode.
   const [defsRevealed, setDefsRevealed] = useState(false);
 
@@ -155,8 +145,6 @@ export default function CharacterScreen() {
       !!character.data?.system_prompt ||
       !!character.data?.post_history_instructions);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['chats', client?.baseUrl, avatarUrl] });
-
   const openChat = (file: string) => {
     router.push({ pathname: '/chat/[avatar]/[file]', params: { avatar: avatarUrl, file } });
   };
@@ -164,33 +152,6 @@ export default function CharacterScreen() {
   const newChat = () => {
     const name = `${character?.name ?? 'Chat'} - ${nowSendDate()}`;
     router.push({ pathname: '/chat/[avatar]/[file]', params: { avatar: avatarUrl, file: name, fresh: '1' } });
-  };
-
-  const doDelete = (file: string) => {
-    Alert.alert(t('character.deleteTitle'), t('character.deleteConfirm', { name: cleanFile(file) }), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          if (!client) return;
-          const ok = await deleteChat(client, { avatarUrl, chatFile: file });
-          if (ok) refresh();
-          else Alert.alert(t('common.error'), t('character.deleteFailed'));
-        },
-      },
-    ]);
-  };
-
-  const doRename = async () => {
-    if (!client || !renaming) return;
-    const target = renaming.name.trim();
-    const original = renaming.file;
-    setRenaming(null);
-    if (!target || cleanFile(target) === cleanFile(original)) return;
-    const ok = await renameChat(client, { avatarUrl, originalFile: original, renamedFile: target });
-    if (ok) refresh();
-    else Alert.alert(t('common.error'), t('character.renameFailed'));
   };
 
   return (
@@ -251,7 +212,7 @@ export default function CharacterScreen() {
                   onPress={() => openChat(file)}
                   onLongPress={() => {
                     haptics.impact();
-                    setMenuFile(chat.file_name);
+                    setChatMenu({ avatar: avatarUrl, file: chat.file_name });
                   }}
                 />
               );
@@ -335,58 +296,7 @@ export default function CharacterScreen() {
         ) : null}
       </ScrollView>
 
-      {/* Chat action menu */}
-      <Sheet visible={menuFile != null} onClose={() => setMenuFile(null)}>
-        <SheetActionRow
-          icon="chats"
-          label={t('character.open')}
-          onPress={() => {
-            const f = menuFile;
-            setMenuFile(null);
-            if (f) openChat(cleanFile(f));
-          }}
-        />
-        <SheetActionRow
-          icon="edit"
-          label={t('character.rename')}
-          onPress={() => {
-            const f = menuFile;
-            setMenuFile(null);
-            if (f) setRenaming({ file: f, name: cleanFile(f) });
-          }}
-        />
-        <SheetActionRow
-          icon="delete"
-          label={t('common.delete')}
-          destructive
-          onPress={() => {
-            const f = menuFile;
-            setMenuFile(null);
-            if (f) doDelete(f);
-          }}
-        />
-      </Sheet>
-
-      {/* Rename */}
-      <Sheet visible={renaming != null} onClose={() => setRenaming(null)} title={t('character.renameTitle')}>
-        <View className="px-2 pb-2 pt-1">
-          <Field
-            value={renaming?.name ?? ''}
-            onChangeText={(text) => setRenaming((r) => (r ? { ...r, name: text } : r))}
-            autoFocus
-            autoCapitalize="none"
-          />
-          <View className="mt-3 flex-row gap-2">
-            <View className="flex-1">
-              <Button label={t('common.cancel')} variant="secondary" onPress={() => setRenaming(null)} />
-            </View>
-            <View className="flex-1">
-              <Button label={t('common.save')} onPress={doRename} />
-            </View>
-          </View>
-        </View>
-      </Sheet>
-
+      <ChatActionsSheets target={chatMenu} onClose={() => setChatMenu(null)} />
       <ImageViewerModal visible={showImage} uri={fullImageUri} onClose={() => setShowImage(false)} />
     </View>
   );

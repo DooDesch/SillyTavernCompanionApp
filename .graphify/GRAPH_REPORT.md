@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-06-10)
 
 ## Corpus Check
-- 190 files · ~107.653 words
+- 183 files · ~108.720 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 727 nodes · 1597 edges · 44 communities detected
+- 735 nodes · 1617 edges · 44 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 550 · imports: 393 · imports_from: 351 · re_exports: 177 · calls: 100 · method: 26
+- Edge kinds: contains: 557 · imports: 399 · imports_from: 356 · re_exports: 177 · calls: 102 · method: 26
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 190 · Candidates: 335
-- Excluded: 0 untracked · 70623 ignored · 3 sensitive · 0 missing committed
+- Included files: 183 · Candidates: 204
+- Excluded: 0 untracked · 71037 ignored · 3 sensitive · 0 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `00b4068`
+- Built from Git commit: `a91751e`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `Icon()` - 19 edges
@@ -39,8 +39,8 @@
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.06
-Nodes (54): CharacterScreen(), rawField(), ImageViewerModal(), CharacterCard, TAB_ICON, TabBarProps, haptics, Icon() (+46 more)
+Cohesion: 0.05
+Nodes (55): CharacterScreen(), rawField(), splitExamples(), ImageViewerModal(), CharacterCard, TAB_ICON, TabBarProps, haptics (+47 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.10
@@ -103,112 +103,112 @@ Cohesion: 0.20
 Nodes (8): StClient, calls, client, fetchImpl(), lastPost, makeResponse(), postCall, Recorded
 
 ### Community 16 - "Community 16"
-Cohesion: 0.18
-Nodes (9): PickerOption, PickerSheet(), useBackendStatus(), ConnectionSettingsView, useConnectionProfiles(), useEngineConfig(), parseStSettings(), ChatListMode (+1 more)
+Cohesion: 0.17
+Nodes (10): persister, LockGate(), queryClient, addScreenOffListener(), ScreenState, ScreenStateModule, ChatListMode, PrefsState (+2 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.14
-Nodes (8): mem, rememberBaseUrl(), secrets, storage, ProfilesState, SavedServer, ServersState, useServers
+Cohesion: 0.19
+Nodes (8): PickerOption, PickerSheet(), useBackendStatus(), checkForUpdate(), compareVersions(), downloadAndInstallUpdate(), UpdateInfo, UpdateState
 
 ### Community 18 - "Community 18"
 Cohesion: 0.18
 Nodes (13): Block, COLORS, INLINE, InlineText(), MONO, parseBlocks(), parseInline(), proseToBlocks() (+5 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.21
-Nodes (8): persister, LockGate(), queryClient, addScreenOffListener(), ScreenState, ScreenStateModule, PrefsState, usePrefs
-
-### Community 20 - "Community 20"
 Cohesion: 0.23
 Nodes (5): Lorebook, useLorebook(), fetchLike(), ConnectionState, useConnection
 
-### Community 21 - "Community 21"
+### Community 20 - "Community 20"
 Cohesion: 0.22
 Nodes (9): Avatar(), FALLBACK_TINTS, tintFor(), Bucket, chatFileLabel(), ChatFileRow(), RecentChatRow(), relativeTime() (+1 more)
 
+### Community 21 - "Community 21"
+Cohesion: 0.24
+Nodes (7): ConnectionSettingsView, useConnectionProfiles(), useEngineConfig(), parseStSettings(), secrets, ProfilesState, useProfiles
+
 ### Community 22 - "Community 22"
-Cohesion: 0.26
-Nodes (6): CookieJar, readSetCookie(), SetCookieReadable, splitSetCookieHeader(), headers, jar
+Cohesion: 0.17
+Nodes (6): mem, rememberBaseUrl(), storage, SavedServer, ServersState, useServers
 
 ### Community 23 - "Community 23"
 Cohesion: 0.26
-Nodes (10): createTextgenBody(), getTextgenServer(), parseBannedTokens(), parseSequenceBreakers(), base, body, opts, r (+2 more)
+Nodes (6): CookieJar, readSetCookie(), SetCookieReadable, splitSetCookieHeader(), headers, jar
 
 ### Community 24 - "Community 24"
+Cohesion: 0.26
+Nodes (10): createTextgenBody(), getTextgenServer(), parseBannedTokens(), parseSequenceBreakers(), base, body, opts, r (+2 more)
+
+### Community 25 - "Community 25"
 Cohesion: 0.22
 Nodes (4): EnvObject, escapeRegex(), MacroValue, substituteMacros()
 
-### Community 25 - "Community 25"
+### Community 26 - "Community 26"
 Cohesion: 0.31
 Nodes (7): StCharacter, StCharacterData, StCharacterExtensions, StDepthPrompt, StChatMetadata, StMessageExtra, StVersion
 
-### Community 26 - "Community 26"
+### Community 27 - "Community 27"
 Cohesion: 0.25
 Nodes (5): DOT, ReasoningBlock(), StreamingBubbleContent(), events, streamDebug
 
-### Community 27 - "Community 27"
+### Community 28 - "Community 28"
 Cohesion: 0.28
 Nodes (6): AppLanguage, deviceLanguage(), SUPPORTED_LANGUAGES, LanguagePref, LocaleState, useLocale
 
-### Community 28 - "Community 28"
+### Community 29 - "Community 29"
 Cohesion: 0.31
 Nodes (6): ChatDraft, clearChatDraft(), draftKey(), fileStorage, readChatDraft(), writeChatDraft()
 
-### Community 29 - "Community 29"
+### Community 30 - "Community 30"
 Cohesion: 0.28
 Nodes (7): emit(), finishDrain(), IDLE, listeners, loop(), streamingSession, StreamSnapshot
 
-### Community 30 - "Community 30"
+### Community 31 - "Community 31"
 Cohesion: 0.53
 Nodes (7): enumerateSubnet24(), enumerateSubnetHosts(), intToIpv4(), ipv4ToInt(), netmaskToPrefix(), sameSubnet24(), hosts
 
-### Community 31 - "Community 31"
+### Community 32 - "Community 32"
 Cohesion: 0.22
 Nodes (8): base, char, depth, example, lore, plainPower, story, turn
 
-### Community 32 - "Community 32"
+### Community 33 - "Community 33"
 Cohesion: 0.25
 Nodes (5): countTokens, delta, GenerateOptions, GenerationChunk, history
 
-### Community 33 - "Community 33"
+### Community 34 - "Community 34"
 Cohesion: 0.48
 Nodes (6): applyName(), ExampleMessage, formatInstructModeExamples(), getExampleBlocks(), parseExampleIntoIndividual(), parseMesExamples()
 
-### Community 34 - "Community 34"
+### Community 35 - "Community 35"
 Cohesion: 0.60
 Nodes (5): ensureIds(), makeAssistantMessage(), makeUserMessage(), newMessageId(), nowSendDate()
 
-### Community 35 - "Community 35"
+### Community 36 - "Community 36"
 Cohesion: 0.50
 Nodes (3): { palette, radii }, palette, radii
 
-### Community 36 - "Community 36"
+### Community 37 - "Community 37"
 Cohesion: 0.50
 Nodes (3): config, { getDefaultConfig }, { withNativeWind }
 
-### Community 37 - "Community 37"
+### Community 38 - "Community 38"
 Cohesion: 0.50
 Nodes (2): entryUid(), LoreSheet()
 
-### Community 38 - "Community 38"
+### Community 39 - "Community 39"
 Cohesion: 0.67
 Nodes (3): ensureSetup(), hideTtsNotification(), showTtsNotification()
 
-### Community 39 - "Community 39"
+### Community 40 - "Community 40"
 Cohesion: 0.67
 Nodes (2): { defineConfig }, expoConfig
 
-### Community 40 - "Community 40"
+### Community 41 - "Community 41"
 Cohesion: 0.67
 Nodes (2): PROPS, { withGradleProperties }
 
-### Community 41 - "Community 41"
-Cohesion: 1.00
-Nodes (1): config
-
 ### Community 42 - "Community 42"
 Cohesion: 1.00
-Nodes (1): BuildConfig
+Nodes (1): config
 
 ### Community 43 - "Community 43"
 Cohesion: 1.00
@@ -217,15 +217,13 @@ Nodes (1): { withAppBuildGradle }
 ## Knowledge Gaps
 - **158 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+153 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 37`** (2 nodes): `entryUid()`, `LoreSheet()`
+- **Thin community `Community 38`** (2 nodes): `entryUid()`, `LoreSheet()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 39`** (2 nodes): `{ defineConfig }`, `expoConfig`
+- **Thin community `Community 40`** (2 nodes): `{ defineConfig }`, `expoConfig`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 40`** (2 nodes): `PROPS`, `{ withGradleProperties }`
+- **Thin community `Community 41`** (2 nodes): `PROPS`, `{ withGradleProperties }`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (1 nodes): `config`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (1 nodes): `BuildConfig`
+- **Thin community `Community 42`** (1 nodes): `config`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 43`** (1 nodes): `{ withAppBuildGradle }`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -234,15 +232,15 @@ Nodes (1): { withAppBuildGradle }
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `SmoothPacer` connect `Community 11` to `Community 8`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Why does `StClient` connect `Community 15` to `Community 4`, `Community 8`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Why does `StClient` connect `Community 15` to `Community 4`, `Community 8`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `SseParser` connect `Community 6` to `Community 8`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **What connects `config`, `TAB_ICON`, `TabBarProps` to the rest of the system?**
   _158 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.05543071161048689 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.053750597228858096 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
