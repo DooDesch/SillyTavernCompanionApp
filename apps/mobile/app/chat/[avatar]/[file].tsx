@@ -68,24 +68,19 @@ import { useBottomInset } from '@/theme/insets';
 
 type GenMode = 'new' | 'regenerate' | 'swipe' | 'continue';
 
-// Desktop-ST scrollLock port: while "following", FlashList pins the bottom with INSTANT
-// jumps (an animated catch-up scroll survives a finger lift and snapped the list back down
-// while reading); once the user scrolls up past the release distance the threshold is
-// removed entirely, so FlashList's internal autoscroll latch can never arm or fire.
-const MVCP_FOLLOW = {
-  autoscrollToBottomThreshold: 0.2,
-  animateAutoScrollToBottom: false,
-  startRenderingFromBottom: true,
-};
-const MVCP_READ = { startRenderingFromBottom: true };
-// Release distance must exceed FlashList's internal latch zone (0.2*viewport) by an
-// ABSOLUTE margin: its checkBounds runs before our onScroll in the same event, so the
-// latch is provably false by the time we unpin. The 48px margin covers the container
-// padding (included in the native contentSize but not in FlashList's content length)
-// at any viewport size, including landscape/keyboard-open.
-const FOLLOW_LATCH_FACTOR = 0.2;
-const FOLLOW_RELEASE_MARGIN_PX = 48;
-const FOLLOW_REENGAGE_PX = 48;
+// Desktop-ST scroll lock, fully app-controlled: FlashList's internal autoscroll stays OFF
+// (no autoscrollToBottomThreshold - its release zone was ~25% of the viewport, so small
+// scroll-ups to re-read the last paragraph kept getting yanked back down every commit).
+// Instead the app pins the list itself once per streaming tick, pauses while the user's
+// finger is down, unpins on the smallest deliberate upward gesture and re-pins when the
+// user returns to the bottom - both only during user interaction (drag/momentum), so
+// programmatic scrolls can never flip the lock.
+const MVCP = { startRenderingFromBottom: true };
+// Desktop ST unpins at 5px; 24px rides out touch jitter while still releasing on the
+// smallest deliberate peek upward. Re-pin only once the user is truly back at the bottom
+// (below the unpin zone, so the two can never flap against each other).
+const UNPIN_DISTANCE_PX = 24;
+const REPIN_DISTANCE_PX = 12;
 
 /** Read persisted World-Info timed-effect state from a chat header (a copy, to mutate freely). */
 function readTimedState(h: StChatHeader): TimedWorldInfoState {
@@ -261,28 +256,32 @@ export default function ChatScreen() {
   }, []);
 
   // Scroll lock (desktop-ST parity): follow the stream only while the user is at the bottom.
-  // Unpin when they scroll up to read; re-pin when they return near the bottom.
-  const [followStream, setFollowStream] = useState(true);
+  // Unpin on the smallest deliberate upward gesture; re-pin when they return to the bottom.
+  // Pure refs - the lock never needs a re-render.
   const followStreamRef = useRef(true);
-  const setFollow = useCallback((v: boolean) => {
-    if (followStreamRef.current === v) return;
-    followStreamRef.current = v;
-    setFollowStream(v);
+  const interactingRef = useRef(false);
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!interactingRef.current) return; // only user gestures may flip the lock
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const distance = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    if (followStreamRef.current) {
+      if (distance > UNPIN_DISTANCE_PX) followStreamRef.current = false;
+    } else if (distance < REPIN_DISTANCE_PX) {
+      followStreamRef.current = true;
+    }
   }, []);
-  const handleScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-      const distance = contentSize.height - layoutMeasurement.height - contentOffset.y;
-      if (followStreamRef.current) {
-        if (distance > layoutMeasurement.height * FOLLOW_LATCH_FACTOR + FOLLOW_RELEASE_MARGIN_PX) {
-          setFollow(false);
-        }
-      } else if (distance < FOLLOW_REENGAGE_PX) {
-        setFollow(true);
+
+  // Follow the stream: one instant scrollToEnd per streaming tick (desktop ST scrolls per
+  // token the same way), paused while the user's finger is down.
+  useEffect(() => {
+    if (!streaming) return;
+    followStreamRef.current = true;
+    return streamingSession.subscribe(() => {
+      if (followStreamRef.current && !interactingRef.current) {
+        listRef.current?.scrollToEnd({ animated: false });
       }
-    },
-    [setFollow],
-  );
+    });
+  }, [streaming]);
 
   const openMenu = useCallback((index: number) => setMenuIndex(index), []);
 
@@ -333,7 +332,7 @@ export default function ChatScreen() {
         prefix += postfix;
       }
       setStreaming(true);
-      setFollow(true); // every generation starts following, like desktop ST resets its scroll lock
+      followStreamRef.current = true; // every generation starts following, like desktop ST
       // Streamed text renders through `streamingSession` (only the live bubble re-renders per
       // token); the messages array stays untouched until finalize. Seeding with the continue
       // prefix shows the existing reply instantly and animates only the new text.
@@ -406,7 +405,7 @@ export default function ChatScreen() {
         }
       }
     },
-    [client, engine, character, persist, scrollToEnd, setFollow, buildEffectiveLorebook, authorsNote, header, smoothStreaming, reducedMotion, t],
+    [client, engine, character, persist, scrollToEnd, buildEffectiveLorebook, authorsNote, header, smoothStreaming, reducedMotion, t],
   );
 
   const send = useCallback(async () => {
@@ -804,14 +803,23 @@ export default function ChatScreen() {
         keyExtractor={(m, i) => m._cid ?? String(i)}
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 12 }}
-        // Pin to the bottom while the streaming bubble grows, but stop following once the
-        // user scrolls up to read. FlashList's internal autoscroll latch has no drag
-        // awareness, so while "reading" the threshold is removed entirely (the latch can
-        // never fire) and pinned auto-scrolls are instant (an animated catch-up scroll
-        // survives the finger lift and caused the snap-back).
-        maintainVisibleContentPosition={followStream ? MVCP_FOLLOW : MVCP_READ}
+        // MVCP anchors the reading position while content changes; the app does all
+        // bottom-pinning itself (see the streamingSession subscription above).
+        maintainVisibleContentPosition={MVCP}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        onScrollBeginDrag={() => {
+          interactingRef.current = true;
+        }}
+        onScrollEndDrag={() => {
+          interactingRef.current = false;
+        }}
+        onMomentumScrollBegin={() => {
+          interactingRef.current = true;
+        }}
+        onMomentumScrollEnd={() => {
+          interactingRef.current = false;
+        }}
         renderItem={({ item, index }) => {
           const isLast = index === messages.length - 1;
           const bubble = (
