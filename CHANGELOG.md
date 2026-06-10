@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.12.0] - 2026-06-10 (Beta)
+
+### Added
+- **In-app updates**: the app checks GitHub for a new release on launch and offers
+  to download and install it directly from Settings - no more manual GitHub visits.
+  A manual "Check for updates" button lives at the bottom of Settings.
+- **All greetings usable**: starting a new chat now exposes every alternate greeting
+  as swipes on the first message (e.g. < 1/4 >), exactly like SillyTavern. Swiping
+  past the last greeting no longer triggers a pointless generation.
+
+### Changed
+- **Character definitions redesigned**: each field is its own collapsible card with
+  markdown rendering; example dialogues are split into their <START> blocks and
+  greetings are browsable individually. Much closer to the desktop editor.
+
 ## [0.11.1] - 2026-06-10 (Beta)
 
 ### Fixed

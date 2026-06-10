@@ -23,6 +23,7 @@ import { useProfiles } from '@/stores/profilesStore';
 import { useServers } from '@/stores/serversStore';
 import { useLocale } from '@/stores/localeStore';
 import { usePrefs } from '@/stores/prefsStore';
+import { useUpdates } from '@/stores/updateStore';
 import { colors } from '@/theme/tokens';
 
 const persister = createAsyncStoragePersister({ storage: fileStorage, throttleTime: 1000 });
@@ -43,6 +44,7 @@ export default function RootLayout() {
     void useServers.getState().hydrate();
     void useLocale.getState().hydrate();
     void usePrefs.getState().hydrate();
+    void useUpdates.getState().check();
   }, []);
 
   useEffect(() => {

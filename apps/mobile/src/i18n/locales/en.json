@@ -343,6 +343,13 @@
     "syncToPcSubtitle": "Write persona/profile/sampler changes made on the phone back to SillyTavern.",
     "tapToConnect": "Tap to connect",
     "textCompletion": "Text completion",
+    "updateAvailable": "Update available: v{{version}}",
+    "updateCheck": "Check for updates",
+    "updateChecking": "Checking…",
+    "updateDownloading": "Downloading… {{percent}}%",
+    "updateFailed": "Update failed. Download it manually from GitHub.",
+    "updateInstall": "Download & install",
+    "updateSubtitle": "Download and install directly ({{size}} MB). Android asks for confirmation.",
     "versionLabel": "Version {{version}}"
   },
   "sheets": {

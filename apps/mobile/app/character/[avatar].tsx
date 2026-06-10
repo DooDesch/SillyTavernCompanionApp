@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { deleteChat, getCharacter, getCharacterChats, renameChat, type StCharacter } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
 import { Avatar } from '@/components/Avatar';
+import { RichText } from '@/components/RichText';
 import { ImageViewerModal } from '@/components/ImageViewerModal';
 import { nowSendDate } from '@/lib/messages';
 import {
@@ -33,13 +34,47 @@ function rawField(c: StCharacter, key: 'description' | 'personality' | 'scenario
   return (c.data?.[key] ?? c[key] ?? '').trim();
 }
 
-/** One revealed definition block: label + selectable body. */
-function DefinitionBlock({ label, text, meta }: { label: string; text: string; meta?: string }) {
-  if (!text) return null;
+/** Split ST example dialogues into their <START> blocks for separate rendering. */
+function splitExamples(text: string): string[] {
+  return text
+    .split(/<START>/i)
+    .map((b) => b.trim())
+    .filter(Boolean);
+}
+
+/**
+ * One definition field as its own collapsible card (accent label + meta + chevron header,
+ * markdown-rendered body) - mirrors the desktop editor's one-drawer-per-field layout.
+ */
+function DefinitionCard({
+  label,
+  text,
+  meta,
+  blocks,
+  defaultOpen = false,
+}: {
+  label: string;
+  text?: string;
+  meta?: string;
+  /** Pre-split content blocks (example dialogues); takes precedence over `text`. */
+  blocks?: string[];
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const content = blocks ?? (text ? [text] : []);
+  if (content.length === 0) return null;
   return (
-    <View className="mb-4">
-      <View className="mb-1.5 flex-row items-baseline justify-between">
-        <AppText variant="label" color="accent">
+    <View className="mb-2 overflow-hidden rounded-card border border-border bg-surface">
+      <Pressable
+        onPress={() => {
+          haptics.selection();
+          setOpen((o) => !o);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        className="flex-row items-center gap-2 px-4 py-3 active:bg-surface-2"
+      >
+        <AppText variant="title" color="accent" style={{ flex: 1 }}>
           {label}
         </AppText>
         {meta ? (
@@ -47,10 +82,22 @@ function DefinitionBlock({ label, text, meta }: { label: string; text: string; m
             {meta}
           </AppText>
         ) : null}
-      </View>
-      <AppText selectable variant="body" color="muted">
-        {text}
-      </AppText>
+        <Icon name={open ? 'chevronUp' : 'chevronDown'} size={16} color={colors.textSubtle} />
+      </Pressable>
+      {open ? (
+        <View className="border-t border-border px-4 py-3">
+          {content.map((block, i) => (
+            <View key={i} className={i > 0 ? 'mt-3 border-t border-border pt-3' : undefined}>
+              {content.length > 1 ? (
+                <AppText variant="caption" color="subtle" style={{ marginBottom: 4 }}>
+                  {i + 1}/{content.length}
+                </AppText>
+              ) : null}
+              <RichText text={block} />
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -246,28 +293,31 @@ export default function CharacterScreen() {
                 </View>
               </Card>
             ) : (
-              <Card className="px-4 py-4">
-                <DefinitionBlock label={t('character.fieldDescription')} text={rawField(character, 'description')} />
-                <DefinitionBlock label={t('character.fieldPersonality')} text={rawField(character, 'personality')} />
-                <DefinitionBlock label={t('character.fieldScenario')} text={rawField(character, 'scenario')} />
-                <DefinitionBlock
+              <View>
+                <DefinitionCard label={t('character.fieldDescription')} text={rawField(character, 'description')} defaultOpen />
+                <DefinitionCard label={t('character.fieldPersonality')} text={rawField(character, 'personality')} />
+                <DefinitionCard label={t('character.fieldScenario')} text={rawField(character, 'scenario')} />
+                <DefinitionCard
                   label={t('character.fieldFirstMes')}
-                  text={rawField(character, 'first_mes')}
+                  blocks={[rawField(character, 'first_mes'), ...altGreetings].filter(Boolean)}
                   meta={altGreetings.length > 0 ? t('character.altGreetings', { count: altGreetings.length }) : undefined}
                 />
-                <DefinitionBlock label={t('character.fieldMesExample')} text={rawField(character, 'mes_example')} />
-                <DefinitionBlock
+                <DefinitionCard
+                  label={t('character.fieldMesExample')}
+                  blocks={splitExamples(rawField(character, 'mes_example'))}
+                />
+                <DefinitionCard
                   label={t('character.fieldDepthPrompt')}
                   text={depthPrompt?.prompt?.trim() ?? ''}
                   meta={depthPrompt ? `@${depthPrompt.depth}` : undefined}
                 />
-                <DefinitionBlock label={t('character.fieldSystemPrompt')} text={character.data?.system_prompt?.trim() ?? ''} />
-                <DefinitionBlock
+                <DefinitionCard label={t('character.fieldSystemPrompt')} text={character.data?.system_prompt?.trim() ?? ''} />
+                <DefinitionCard
                   label={t('character.fieldPostHistory')}
                   text={character.data?.post_history_instructions?.trim() ?? ''}
                 />
                 {bookEntryCount > 0 ? (
-                  <AppText variant="caption" color="subtle">
+                  <AppText variant="caption" color="subtle" style={{ marginLeft: 4, marginTop: 2 }}>
                     {t('character.embeddedLorebook', { count: bookEntryCount })}
                   </AppText>
                 ) : null}
@@ -279,7 +329,7 @@ export default function CharacterScreen() {
                     onPress={() => setDefsRevealed(false)}
                   />
                 </View>
-              </Card>
+              </View>
             )}
           </>
         ) : null}

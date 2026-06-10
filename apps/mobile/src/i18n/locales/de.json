@@ -343,6 +343,13 @@
     "syncToPcSubtitle": "Persona-/Profil-/Sampler-Änderungen am Handy zurück an SillyTavern schreiben.",
     "tapToConnect": "Tippen zum Verbinden",
     "textCompletion": "Text-Completion",
+    "updateAvailable": "Update verfügbar: v{{version}}",
+    "updateCheck": "Nach Updates suchen",
+    "updateChecking": "Suche…",
+    "updateDownloading": "Lädt… {{percent}} %",
+    "updateFailed": "Update fehlgeschlagen. Lade es manuell von GitHub.",
+    "updateInstall": "Herunterladen & installieren",
+    "updateSubtitle": "Direkt herunterladen und installieren ({{size}} MB). Android fragt zur Bestätigung.",
     "versionLabel": "Version {{version}}"
   },
   "sheets": {

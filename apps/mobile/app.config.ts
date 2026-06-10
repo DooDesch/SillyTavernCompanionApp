@@ -26,7 +26,7 @@ const config: ExpoConfig = {
   name: 'SillyTavern Companion',
   slug: 'sillytavern-companion',
   scheme: 'stcompanion',
-  version: '0.11.1',
+  version: '0.12.0',
   orientation: 'portrait',
   userInterfaceStyle: 'dark',
   // New Architecture is the default (and only) arch on SDK 56 / RN 0.85, so an explicit
@@ -46,13 +46,15 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'de.tiretask.stcompanion',
-    versionCode: 7,
+    versionCode: 8,
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       monochromeImage: './assets/adaptive-icon-monochrome.png',
       backgroundColor: '#0B0B0F',
     },
-    permissions: ['android.permission.INTERNET'],
+    // REQUEST_INSTALL_PACKAGES: in-app self-update hands the downloaded release APK
+    // to the system installer (user still confirms every install).
+    permissions: ['android.permission.INTERNET', 'android.permission.REQUEST_INSTALL_PACKAGES'],
   },
   plugins: [
     'expo-router',

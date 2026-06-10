@@ -1,6 +1,6 @@
 {
   "name": "mobile",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -26,6 +26,7 @@
     "expo-font": "~56.0.5",
     "expo-haptics": "~56.0.3",
     "expo-image-picker": "~56.0.16",
+    "expo-intent-launcher": "~56.0.4",
     "expo-keep-awake": "~56.0.3",
     "expo-linking": "~56.0.13",
     "expo-local-authentication": "~56.0.4",

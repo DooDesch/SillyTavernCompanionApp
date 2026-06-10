@@ -10,6 +10,8 @@ import { useProfiles } from '@/stores/profilesStore';
 import { useServers } from '@/stores/serversStore';
 import { useLocale, type LanguagePref } from '@/stores/localeStore';
 import { usePrefs, type ChatListMode } from '@/stores/prefsStore';
+import { useUpdates } from '@/stores/updateStore';
+import { downloadAndInstallUpdate } from '@/lib/updates';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
 import { useEngineConfig } from '@/hooks/useEngineConfig';
 import { useBackendStatus } from '@/hooks/useBackendStatus';
@@ -101,6 +103,22 @@ export default function SettingsScreen() {
   const setAppLockMinutes = usePrefs((s) => s.setAppLockMinutes);
   const [lockAvailable, setLockAvailable] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const update = useUpdates((s) => s.available);
+  const updateChecking = useUpdates((s) => s.checking);
+  const recheckUpdate = useUpdates((s) => s.check);
+  const [updateProgress, setUpdateProgress] = useState<number | null>(null);
+
+  const installUpdate = async () => {
+    if (!update || updateProgress != null) return;
+    setUpdateProgress(0);
+    try {
+      await downloadAndInstallUpdate(update, setUpdateProgress);
+    } catch {
+      Alert.alert(t('common.error'), t('settings.updateFailed'));
+    } finally {
+      setUpdateProgress(null);
+    }
+  };
 
   useEffect(() => {
     void (async () => {
@@ -211,6 +229,30 @@ export default function SettingsScreen() {
     <Screen edges={['top']}>
       <Header title={t('tabs.settings')} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 }}>
+        {/* Update available (automatic check on launch) */}
+        {update ? (
+          <Card className="mt-2 border-accent px-4 py-4">
+            <AppText variant="title" color="accent">
+              {t('settings.updateAvailable', { version: update.version })}
+            </AppText>
+            <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+              {t('settings.updateSubtitle', { size: Math.round(update.apkSize / 1024 / 1024) })}
+            </AppText>
+            <View className="mt-3">
+              <Button
+                label={
+                  updateProgress != null
+                    ? t('settings.updateDownloading', { percent: Math.round(updateProgress * 100) })
+                    : t('settings.updateInstall')
+                }
+                leftIcon="arrowDown"
+                loading={updateProgress != null}
+                onPress={() => void installUpdate()}
+              />
+            </View>
+          </Card>
+        ) : null}
+
         {/* Connection */}
         <Section title={t('settings.sillyTavern')} icon="server">
           <Card className="flex-row items-center gap-3 px-4 py-3.5">
@@ -414,6 +456,17 @@ export default function SettingsScreen() {
         <AppText variant="caption" color="subtle" style={{ marginTop: 24, textAlign: 'center' }}>
           {t('settings.versionLabel', { version: appVersion })}
         </AppText>
+        {!update ? (
+          <View className="mt-2 items-center">
+            <Button
+              label={updateChecking ? t('settings.updateChecking') : t('settings.updateCheck')}
+              variant="ghost"
+              fullWidth={false}
+              loading={updateChecking}
+              onPress={() => void recheckUpdate()}
+            />
+          </View>
+        ) : null}
         <AppText variant="caption" color="subtle" style={{ marginTop: 8 }}>
           {t('settings.roadmapNote')}
         </AppText>

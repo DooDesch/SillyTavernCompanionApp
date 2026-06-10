@@ -154,9 +154,20 @@ export default function ChatScreen() {
         createDate: nowSendDate(),
       });
       if (isFresh) {
-        const greeting = character.first_mes?.trim()
-          ? [makeAssistantMessage(character.name, character.first_mes)]
-          : [];
+        // ST parity (getFirstMessage): alternate greetings become swipes on the greeting
+        // message; with an empty first_mes the first alternate takes its place.
+        const alternates = (character.data?.alternate_greetings ?? []).filter((g) => !!g?.trim());
+        const firstMes = character.first_mes?.trim() ?? '';
+        const swipes = [firstMes, ...alternates].filter((g) => !!g);
+        const greeting: StChatMessage[] = [];
+        if (swipes.length > 0) {
+          const msg = makeAssistantMessage(character.name, swipes[0]!);
+          if (swipes.length > 1) {
+            msg.swipes = swipes;
+            msg.swipe_id = 0;
+          }
+          greeting.push(msg);
+        }
         if (!cancelled) {
           timedStateRef.current = emptyTimedState();
           setHeader(newHeader);
@@ -376,6 +387,9 @@ export default function ChatScreen() {
       const swipes = m.swipes ?? [m.mes];
       const sid = m.swipe_id ?? 0;
       if (dir === 1 && sid >= swipes.length - 1) {
+        // The greeting has no preceding user input - only cycle its greetings, never
+        // generate a new swipe from an empty context (matches desktop ST).
+        if (lastIdx === 0) return;
         // At the newest swipe → generate a fresh alternative.
         void runGeneration(messages, messages.slice(0, lastIdx), lastIdx, 'swipe');
         return;
