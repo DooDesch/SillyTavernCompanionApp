@@ -23,6 +23,7 @@ export type { TextgenSettings, TextgenBodyOptions } from './textgenBody';
 export {
   buildTextgenGenerateRequest,
   buildChatCompletionGenerateRequest,
+  buildKoboldGenerateRequest,
   historyFromMessages,
   currentSwipeText,
   TEXT_COMPLETION_GENERATE_PATH,
@@ -32,7 +33,45 @@ export type {
   TextgenGenerateRequest,
   ChatCompletionGenerateParams,
   ChatCompletionGenerateRequest,
+  KoboldGenerateParams,
+  KoboldGenerateRequest,
 } from './generate';
+
+// KoboldAI Classic (main_api 'kobold')
+export {
+  computeKaiFlags,
+  createKoboldGenerationData,
+  normalizeKaiSettings,
+  versionCompare,
+  KAI_DEFAULT_SETTINGS,
+  KOBOLD_GENERATE_PATH,
+} from './kobold';
+export type { KaiFlags, KaiSettings, KoboldGenerationDataOptions } from './kobold';
+
+// AI Horde (main_api 'koboldhorde')
+export {
+  adjustHordeParams,
+  createHordePayload,
+  normalizeHordeSettings,
+  runHordeTask,
+  HordeAbortError,
+  HordeError,
+  HORDE_CHECK_INTERVAL_MS,
+  HORDE_DEFAULT_SETTINGS,
+  HORDE_MAX_RETRIES,
+  HORDE_MIN_LENGTH,
+} from './horde';
+export type {
+  HordeFailure,
+  HordeModel,
+  HordePostResponse,
+  HordeProgress,
+  HordeSettings,
+  HordeTaskDeps,
+  HordeTaskOptions,
+  HordeTaskResult,
+  HordeWorker,
+} from './horde';
 
 // Chat completion (cloud backends)
 export * from './chatcompletion/index';

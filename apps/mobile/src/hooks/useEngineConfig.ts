@@ -42,6 +42,19 @@ export function useEngineConfig(charName: string): {
 
     let config = extractEngineConfig(parsed, charName);
 
+    // KoboldAI Classic named presets live in the RESPONSE root (raw JSON-string arrays),
+    // not inside the parsed `settings` string - attach them for buildKoboldGenerateRequest.
+    const root = data as Record<string, unknown>;
+    if (root.koboldai_settings || root.koboldai_setting_names) {
+      config = {
+        ...config,
+        koboldPresets: {
+          koboldai_settings: root.koboldai_settings,
+          koboldai_setting_names: root.koboldai_setting_names,
+        },
+      };
+    }
+
     const { profiles, selectedId } = extractConnectionProfiles(parsed);
     const activeId = activeProfileId ?? selectedId;
     const profile = profiles.find((p) => p.id === activeId);

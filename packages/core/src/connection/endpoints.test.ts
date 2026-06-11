@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { StClient } from './StClient';
-import { getChat, saveChat, getAllCharacters } from './endpoints';
+import { getChat, saveChat, getAllCharacters, getKoboldStatus, getHordeStatus } from './endpoints';
 import type { FetchLike, FetchResponseLike } from '../net/http';
 import type { StChat } from '../types/chat';
 
@@ -55,5 +55,40 @@ describe('endpoints', () => {
     const chars = await getAllCharacters(client);
     expect(chars).toHaveLength(1);
     expect(chars[0]?.avatar).toBe('Seraphina.png');
+  });
+
+  it('maps the kobold status (model + versions) like desktop getStatusKobold', async () => {
+    const client = clientReturning({
+      '/api/backends/kobold/status': res(200, {
+        model: 'koboldcpp/MythoMax-13B',
+        koboldUnitedVersion: '1.2.5',
+        koboldCppVersion: 'KoboldCpp',
+      }),
+    });
+    const status = await getKoboldStatus(client, 'http://192.168.178.94:5001/api');
+    expect(status).toEqual({
+      connected: true,
+      model: 'koboldcpp/MythoMax-13B',
+      koboldUnitedVersion: '1.2.5',
+      koboldCppVersion: 'KoboldCpp',
+    });
+  });
+
+  it('reports kobold as disconnected for no_connection or a missing united version', async () => {
+    const noModel = clientReturning({
+      '/api/backends/kobold/status': res(200, { model: 'no_connection', koboldUnitedVersion: '1.2.5' }),
+    });
+    expect((await getKoboldStatus(noModel, 'http://x/api')).connected).toBe(false);
+    const noVersion = clientReturning({
+      '/api/backends/kobold/status': res(200, { model: 'some-model' }),
+    });
+    expect((await getKoboldStatus(noVersion, 'http://x/api')).connected).toBe(false);
+  });
+
+  it('maps the horde heartbeat to connected', async () => {
+    const up = clientReturning({ '/api/horde/status': res(200, { ok: true }) });
+    expect(await getHordeStatus(up)).toEqual({ connected: true });
+    const down = clientReturning({ '/api/horde/status': res(200, { ok: false }) });
+    expect(await getHordeStatus(down)).toEqual({ connected: false });
   });
 });

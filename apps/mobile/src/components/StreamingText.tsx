@@ -23,6 +23,11 @@ export function StreamingBubbleContent() {
   return (
     <>
       {s.reasoning ? <ReasoningBlock text={s.reasoning} /> : null}
+      {showDots && s.statusText ? (
+        <AppText variant="caption" color="muted" style={{ fontStyle: 'italic', marginBottom: 2 }}>
+          {s.statusText}
+        </AppText>
+      ) : null}
       {showDots ? <TypingDots thinking={!!s.reasoning} /> : <AppText variant="body">{s.text}</AppText>}
     </>
   );
