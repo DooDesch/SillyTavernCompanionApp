@@ -4,6 +4,38 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [0.15.0] - 2026-06-11 (Beta)
+
+### Added
+- **KoboldAI Classic backend** (1:1 like the desktop): version-gated samplers, GUI
+  preset, streaming and abort - selectable through connection profiles.
+- **AI Horde backend** (1:1 like the desktop): async queue with a live queue-position
+  status line in the chat bubble, cancel support, worker-based parameter clamping and
+  anonymous mode.
+- **NovelAI backend** (1:1 like the desktop): Clio/Kayra/Erato bodies incl. bad-word
+  permutations, logit bias, prefix selection, tier-based context/response clamps and
+  streaming. Verified against desktop request fixtures (no live key).
+- **Advanced Formatting**: new settings page to select AND edit Context templates,
+  Instruct templates and the System prompt on the phone - schema-driven editors,
+  save-as-copy, delete, synced to the PC's template files.
+- **Persona management**: create, edit and delete personas (description, prompt
+  position incl. in-chat depth/role, default persona, avatar upload from the gallery).
+- **Chat Completion parity**: the full desktop request surface - all provider blocks
+  (Azure, Custom, Mistral, DeepSeek, xAI and more), proxy settings, logit bias presets,
+  custom stop strings, "start reply with", o1/o3/gpt-5 special handling, and
+  impersonation on chat-completion backends.
+
+### Fixed
+- Sampler presets referenced by connection profiles were silently never applied (the
+  server delivers them as raw JSON strings; they now parse correctly).
+- Saved basic-auth credentials were never persisted (invalid secure-store keys).
+- Impersonation stop strings now match the desktop (the reply stops when the model
+  starts speaking as the character).
+- Prompt budgets now reserve the response length like the desktop, so long replies can
+  no longer push the character card out of the context window.
+- Persona prompt positions (in-chat @ depth, top/bottom of Author's Note) now take
+  effect in generations; previously they were silently ignored.
+
 ## [0.14.3] - 2026-06-10 (Beta)
 
 ### Fixed
