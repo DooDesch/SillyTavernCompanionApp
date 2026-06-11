@@ -1,4 +1,11 @@
-import { saveSettings, type StClient } from '@st/core';
+import {
+  deletePersonaFromSettings,
+  saveSettings,
+  setDefaultPersona,
+  upsertPersona,
+  type PersonaFields,
+  type StClient,
+} from '@st/core';
 
 /**
  * Two-way sync helpers: write app-side changes back to the desktop via `saveSettings` (which does a
@@ -24,6 +31,21 @@ async function safe(run: () => Promise<Record<string, unknown> | null>): Promise
 /** Write the active persona (root `user_avatar`) back to the desktop. */
 export function syncPersonaToPc(client: StClient, avatar: string): Promise<boolean> {
   return safe(() => saveSettings(client, (s) => void (s.user_avatar = avatar)));
+}
+
+/** Create or update a persona (power_user.personas + persona_descriptions, merge-only). */
+export function syncPersonaUpsert(client: StClient, avatarId: string, fields: PersonaFields): Promise<boolean> {
+  return safe(() => saveSettings(client, (s) => upsertPersona(s, avatarId, fields)));
+}
+
+/** Remove a persona from the settings (clears default_persona when it matched). */
+export function syncPersonaDelete(client: StClient, avatarId: string): Promise<boolean> {
+  return safe(() => saveSettings(client, (s) => deletePersonaFromSettings(s, avatarId)));
+}
+
+/** Set (or clear with null) the default persona for new chats. */
+export function syncDefaultPersona(client: StClient, avatarId: string | null): Promise<boolean> {
+  return safe(() => saveSettings(client, (s) => setDefaultPersona(s, avatarId)));
 }
 
 /** Write the selected connection-profile id into whichever connectionManager container exists. */

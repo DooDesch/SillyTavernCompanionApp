@@ -39,6 +39,8 @@ export {
   getWorldInfo,
 } from './connection/endpoints';
 export type { ChatFileInfo, SaveChatResult, BackendStatus } from './connection/endpoints';
+export { getUserAvatars, deleteUserAvatar, uploadUserAvatar } from './connection/avatars';
+export type { FormDataLike, AvatarCrop } from './connection/avatars';
 
 // Discovery
 export type { DiscoveredInstance, DiscoveryProvider, DiscoverySource } from './discovery/types';

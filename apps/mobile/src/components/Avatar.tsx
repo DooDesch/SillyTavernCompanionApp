@@ -18,15 +18,23 @@ export function Avatar({
   name,
   size = 48,
   ring = false,
+  type = 'avatar',
+  cacheKey,
 }: {
   avatar: string;
   name: string;
   size?: number;
   ring?: boolean;
+  /** Thumbnail kind: 'avatar' = character, 'persona' = user avatar (User Avatars dir). */
+  type?: 'avatar' | 'persona';
+  /** Bump to bust the image cache after replacing the underlying file. */
+  cacheKey?: string | number;
 }) {
   const baseUrl = useConnection((s) => s.instance?.baseUrl);
   const [failed, setFailed] = useState(false);
-  const uri = baseUrl ? `${baseUrl}/thumbnail?type=avatar&file=${encodeURIComponent(avatar)}` : undefined;
+  const uri = baseUrl
+    ? `${baseUrl}/thumbnail?type=${type}&file=${encodeURIComponent(avatar)}${cacheKey != null ? `&v=${encodeURIComponent(String(cacheKey))}` : ''}`
+    : undefined;
   const radius = size / 2;
   const ringStyle = ring ? { borderWidth: 2, borderColor: '#7C5CFF' } : null;
 

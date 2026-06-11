@@ -39,6 +39,18 @@ export * from './chatcompletion/index';
 export { extractEngineConfig, estimateTokens, extractPersonas, applyPersonaToConfig } from './settings';
 export type { EngineConfig, Persona, PersonaList } from './settings';
 
+// Persona management (settings.json mutators - run inside the saveSettings callback)
+export {
+  upsertPersona,
+  deletePersonaFromSettings,
+  setDefaultPersona,
+  PERSONA_POSITIONS,
+  PERSONA_SELECTABLE_POSITIONS,
+  PERSONA_DEFAULT_DEPTH,
+  PERSONA_DEFAULT_ROLE,
+} from './personas';
+export type { PersonaFields } from './personas';
+
 // Tokenizer endpoint resolution (faithful token budgeting via the ST server tokenizers)
 export { resolveTokenizer, tokenizerSlugFromModel, TOKENIZER } from './tokenizer';
 export type { ResolvedTokenizer } from './tokenizer';

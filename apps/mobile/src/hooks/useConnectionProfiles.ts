@@ -17,6 +17,8 @@ export interface ConnectionSettingsView {
   setActiveProfile: (id?: string) => void;
   personas: Persona[];
   activePersonaAvatar?: string;
+  /** power_user.default_persona (used by the desktop for new chats). */
+  defaultPersonaAvatar?: string;
   setActivePersona: (avatar?: string) => void;
   koboldOverride?: string;
   setKoboldOverride: (url?: string) => void;
@@ -40,14 +42,26 @@ export function useConnectionProfiles(): ConnectionSettingsView {
     staleTime: 5 * 60_000,
   });
 
-  const { profiles, selectedId, personas, activeAvatar } = useMemo(() => {
+  const { profiles, selectedId, personas, activeAvatar, defaultPersona } = useMemo(() => {
     const parsed = parseStSettings(data);
     if (!parsed) {
-      return { profiles: [], selectedId: undefined, personas: [], activeAvatar: undefined };
+      return {
+        profiles: [],
+        selectedId: undefined,
+        personas: [],
+        activeAvatar: undefined,
+        defaultPersona: undefined,
+      };
     }
     const cp = extractConnectionProfiles(parsed);
     const pl = extractPersonas(parsed);
-    return { profiles: cp.profiles, selectedId: cp.selectedId, personas: pl.personas, activeAvatar: pl.activeAvatar };
+    return {
+      profiles: cp.profiles,
+      selectedId: cp.selectedId,
+      personas: pl.personas,
+      activeAvatar: pl.activeAvatar,
+      defaultPersona: pl.defaultPersona,
+    };
   }, [data]);
 
   return {
@@ -56,6 +70,7 @@ export function useConnectionProfiles(): ConnectionSettingsView {
     setActiveProfile,
     personas,
     activePersonaAvatar: activePersonaAvatar ?? activeAvatar,
+    defaultPersonaAvatar: defaultPersona,
     setActivePersona,
     koboldOverride,
     setKoboldOverride,

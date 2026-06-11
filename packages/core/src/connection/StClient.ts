@@ -89,6 +89,28 @@ export class StClient {
     return this.postOnce<T>(path, body, true);
   }
 
+  /**
+   * POST a multipart form (e.g. `/api/avatars/upload`). Sends the same CSRF/cookie/basic-auth
+   * headers as `post` but deliberately NO `Content-Type` - the fetch implementation must set
+   * `multipart/form-data` with its own boundary. The body is passed through unchanged.
+   */
+  async postForm<T = unknown>(path: string, form: object): Promise<StResponse<T>> {
+    return this.postFormOnce<T>(path, form, true);
+  }
+
+  private async postFormOnce<T>(path: string, form: object, allowRetry: boolean): Promise<StResponse<T>> {
+    const headers = await this.authHeaders();
+    delete headers['Content-Type'];
+    const res = await this.fetchImpl(this.url(path), { method: 'POST', headers, body: form });
+    this.cookies.ingestFromHeaders(res.headers);
+
+    if (res.status === 403 && allowRetry) {
+      await this.ensureCsrf(true);
+      return this.postFormOnce<T>(path, form, false);
+    }
+    return this.toResponse<T>(res);
+  }
+
   private async postOnce<T>(path: string, body: unknown, allowRetry: boolean): Promise<StResponse<T>> {
     const headers = await this.authHeaders();
     const res = await this.fetchImpl(this.url(path), {

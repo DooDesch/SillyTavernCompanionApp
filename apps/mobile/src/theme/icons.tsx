@@ -49,6 +49,8 @@ export const ICONS = {
   plusCircle: 'plus-circle',
   zap: 'zap',
   sparkles: 'star',
+  star: 'star',
+  camera: 'camera',
   globe: 'globe',
   trash: 'trash-2',
 } as const;

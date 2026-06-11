@@ -91,27 +91,52 @@ export interface Persona {
   avatar: string;
   name: string;
   description: string;
+  /** persona_description_positions value (defaults to IN_PROMPT = 0). */
+  position: number;
+  /** In-chat injection depth (only meaningful for position AT_DEPTH = 4). */
+  depth: number;
+  /** extension_prompt_roles value: 0 system, 1 user, 2 assistant. */
+  role: number;
+  /** Display-only persona title. */
+  title: string;
 }
 
 export interface PersonaList {
   personas: Persona[];
   activeAvatar?: string;
+  /** power_user.default_persona - the persona used for new chats. */
+  defaultPersona?: string;
 }
 
-/** Extract the user personas (power_user.personas + persona_descriptions) and the active one. */
+/** Extract the user personas (power_user.personas + persona_descriptions), active + default. */
 export function extractPersonas(parsed: Record<string, unknown>): PersonaList {
   const pu = (parsed.power_user ?? {}) as {
     personas?: Record<string, string>;
-    persona_descriptions?: Record<string, { description?: string }>;
+    persona_descriptions?: Record<
+      string,
+      { description?: string; position?: number; depth?: number; role?: number; title?: string }
+    >;
+    default_persona?: unknown;
   };
   const names = pu.personas ?? {};
   const descriptions = pu.persona_descriptions ?? {};
-  const personas: Persona[] = Object.entries(names).map(([avatar, name]) => ({
-    avatar,
-    name: String(name),
-    description: descriptions[avatar]?.description ?? '',
-  }));
-  return { personas, activeAvatar: parsed.user_avatar ? String(parsed.user_avatar) : undefined };
+  const personas: Persona[] = Object.entries(names).map(([avatar, name]) => {
+    const d = descriptions[avatar];
+    return {
+      avatar,
+      name: String(name),
+      description: d?.description ?? '',
+      position: typeof d?.position === 'number' ? d.position : 0,
+      depth: typeof d?.depth === 'number' ? d.depth : 2,
+      role: typeof d?.role === 'number' ? d.role : 0,
+      title: typeof d?.title === 'string' ? d.title : '',
+    };
+  });
+  return {
+    personas,
+    activeAvatar: parsed.user_avatar ? String(parsed.user_avatar) : undefined,
+    defaultPersona: typeof pu.default_persona === 'string' ? pu.default_persona : undefined,
+  };
 }
 
 /** Apply a chosen persona to an engine config (overrides name1 + persona description). */
