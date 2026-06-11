@@ -120,6 +120,7 @@
     "noPhotoAccessTitle": "No access",
     "noResponseMessage": "No message was generated. Is the AI backend (KoboldCpp/Cloud) reachable and connected in SillyTavern?",
     "noResponseTitle": "No response",
+    "novelNoKey": "No NovelAI API key configured in SillyTavern.",
     "readAloud": "Read aloud",
     "readingAloud": "Reading aloud…",
     "reasoning": "Thoughts",

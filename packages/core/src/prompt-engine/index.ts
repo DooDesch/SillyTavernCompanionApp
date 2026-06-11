@@ -24,6 +24,7 @@ export {
   buildTextgenGenerateRequest,
   buildChatCompletionGenerateRequest,
   buildKoboldGenerateRequest,
+  buildNovelGenerateRequest,
   historyFromMessages,
   currentSwipeText,
   TEXT_COMPLETION_GENERATE_PATH,
@@ -35,6 +36,8 @@ export type {
   ChatCompletionGenerateRequest,
   KoboldGenerateParams,
   KoboldGenerateRequest,
+  NovelGenerateParams,
+  NovelGenerateRequest,
 } from './generate';
 
 // KoboldAI Classic (main_api 'kobold')
@@ -72,6 +75,36 @@ export type {
   HordeTaskResult,
   HordeWorker,
 } from './horde';
+
+
+// NovelAI (nai-settings.js port; the ST server stays the proxy)
+export {
+  adjustNovelInstructionPrompt,
+  calculateNovelLogitBias,
+  clearNovelBadWordsCache,
+  createNovelGenerationData,
+  getBadWordPermutations,
+  getKayraMaxContextTokens,
+  getNovelBadWordsIds,
+  getNovelMaxContext,
+  getNovelMaxResponseTokens,
+  getNovelTierName,
+  getNovelTokenizerSlug,
+  normalizeNaiSettings,
+  selectPrefix,
+  NAI_DEFAULT_ORDER,
+  NAI_DEFAULT_PREAMBLE,
+  NAI_TIERS,
+  NOVELAI_GENERATE_PATH,
+} from './novelai';
+export type {
+  CreateNovelGenerationDataParams,
+  NaiLogitBiasEntry,
+  NaiSettings,
+  NovelEncode,
+  NovelLogitBias,
+  NovelTokenizerSlug,
+} from './novelai';
 
 // Chat completion (cloud backends)
 export * from './chatcompletion/index';

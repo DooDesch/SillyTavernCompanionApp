@@ -3,6 +3,7 @@ import {
   adjustHordeParams,
   buildChatCompletionGenerateRequest,
   buildKoboldGenerateRequest,
+  buildNovelGenerateRequest,
   buildTextgenGenerateRequest,
   computeKaiFlags,
   createHordePayload,
@@ -10,10 +11,13 @@ import {
   getHordeModels,
   getHordeWorkers,
   getKoboldStatus,
+  getNovelStatus,
+  getNovelTokenizerSlug,
   historyFromMessages,
   normalizeHordeSettings,
   parseChatCompletionData,
   parseKoboldData,
+  parseNovelData,
   parseTextgenData,
   resolveTokenizer,
   runHordeTask,
@@ -24,6 +28,7 @@ import {
   type HistoryMessage,
   type HordeProgress,
   type HordeTaskResult,
+  type NovelEncode,
   type StCharacter,
   type StChatMessage,
   type StClient,
@@ -32,12 +37,19 @@ import {
   type WorldInfoSettings,
 } from '@st/core';
 import i18n from '@/i18n';
-import { openSseStream } from './streamTransport';
+import { openSseStream, SseHttpError } from './streamTransport';
 import { streamDebug } from './streamDebug';
 import { makeTokenCounter } from './tokenizer';
 
 /** Build the prompt-budget token counter for the active backend (faithful to the desktop tokenizer). */
 function tokenCounterFor(client: StClient, engine: EngineConfig) {
+  if (engine.mainApi === 'novel') {
+    // NovelAI tokenizes by model (clio=nerdstash, kayra=nerdstash_v2, erato=llama3). The
+    // /api/tokenizers/{slug}/encode routes return { ids, count } - makeTokenCounter reads
+    // `count`; unknown legacy models fall back to the estimate (null url).
+    const slug = getNovelTokenizerSlug(String((engine.nai as { model_novel?: unknown }).model_novel ?? ''));
+    return makeTokenCounter(client, slug ? `/api/tokenizers/${slug}/encode` : null);
+  }
   if (engine.mode === 'cc') {
     const model = getChatCompletionModel(engine.oai);
     return makeTokenCounter(client, `/api/tokenizers/openai/count?model=${encodeURIComponent(model)}`);
@@ -87,6 +99,118 @@ export class GenerationUserError extends Error {
   }
 }
 
+/** A generation failure carrying an i18n key (subclass so one catch handles both). */
+export class FriendlyGenerationError extends GenerationUserError {
+  constructor(readonly i18nKey: string) {
+    super(i18n.t(i18nKey));
+    this.name = 'FriendlyGenerationError';
+  }
+}
+
+/**
+ * NovelAI subscription data cache (desktop keeps `novel_data` from the status check). The tier
+ * drives the kayra context clamp and the kayra/erato response-length clamp. Refreshed lazily;
+ * without a NOVEL secret the status is 400 and the tier stays unknown (safe defaults apply).
+ */
+let novelTier: number | undefined;
+let novelTierFetchedAt = 0;
+const NOVEL_TIER_TTL_MS = 5 * 60_000;
+
+async function getNovelTierCached(client: StClient): Promise<number | undefined> {
+  if (Date.now() - novelTierFetchedAt < NOVEL_TIER_TTL_MS) return novelTier;
+  const status = await getNovelStatus(client);
+  novelTierFetchedAt = Date.now();
+  novelTier = status.connected ? status.tier : undefined;
+  return novelTier;
+}
+
+/**
+ * NovelAI flow: ST proxies to api/text.novelai.net (src/endpoints/novelai.js). Streaming uses
+ * {token} SSE frames; non-streaming parses `{ output }` (script.js extractMessageFromData).
+ * The server replies 400 when no NOVEL secret is configured -> friendly translated error.
+ */
+async function* streamNovelGeneration(
+  client: StClient,
+  engine: EngineConfig,
+  character: StCharacter,
+  history: HistoryMessage[],
+  headers: Record<string, string>,
+  countTokens: ReturnType<typeof tokenCounterFor>,
+  opts: GenerateOptions,
+): AsyncGenerator<GenerationChunk, GenerationChunk, void> {
+  // The body's stop strings / bad words / logit biases are tokenized SERVER-SIDE via the
+  // /api/tokenizers/{slug}/encode routes (desktop runs the same tokenizers client-side).
+  const encode: NovelEncode = async (slug, text) => {
+    const res = await client.post<{ ids?: number[] }>(`/api/tokenizers/${slug}/encode`, { text });
+    return Array.isArray(res.data?.ids) ? res.data.ids : [];
+  };
+  const tier = await getNovelTierCached(client);
+
+  const req = await buildNovelGenerateRequest({
+    character,
+    power: engine.power,
+    nai: engine.nai,
+    novelaiSettings: engine.novelaiSettings,
+    novelaiSettingNames: engine.novelaiSettingNames,
+    identity: engine.identity,
+    history,
+    maxContext: engine.maxContext,
+    maxTokens: engine.maxTokens,
+    countTokens,
+    encode,
+    ...(tier !== undefined ? { tier } : {}),
+    ...(opts.type ? { type: opts.type } : {}),
+    ...(opts.chatMetadata ? { chatMetadata: opts.chatMetadata } : {}),
+    ...(opts.lorebook ? { lorebook: opts.lorebook } : {}),
+    ...(opts.authorsNote ? { authorsNote: opts.authorsNote } : {}),
+    ...(opts.isImpersonate ? { isImpersonate: opts.isImpersonate } : {}),
+  });
+
+  let text = '';
+  if (req.streaming) {
+    // Desktop generateNovelWithStreaming sets generate_data.streaming = nai.streaming_novel.
+    const body = { ...req.body, streaming: true };
+    try {
+      for await (const evt of openSseStream({
+        url: client.url(req.url),
+        headers,
+        body,
+        ...(opts.signal ? { signal: opts.signal } : {}),
+      })) {
+        const delta = parseNovelData(evt.data);
+        if (!delta) continue;
+        if (delta.done) break;
+        text += delta.text;
+        streamDebug.mark('sse', text.length);
+        yield { text, reasoning: '' };
+      }
+    } catch (err) {
+      if (err instanceof SseHttpError && err.status === 400) {
+        throw new FriendlyGenerationError('chat.novelNoKey');
+      }
+      throw err;
+    }
+    return { text, reasoning: '' };
+  }
+
+  // Non-streaming: single POST, the reply carries { output } (or { error } / { message }).
+  const res = await client.post<{ output?: unknown; error?: { message?: string } | boolean; message?: string }>(
+    req.url,
+    req.body,
+  );
+  if (res.status === 400) {
+    throw new FriendlyGenerationError('chat.novelNoKey');
+  }
+  if (!res.ok) {
+    const message =
+      (typeof res.data?.error === 'object' && res.data.error?.message) || res.data?.message || undefined;
+    throw new Error(message || i18n.t('errors.generationFailed', { status: res.status }));
+  }
+  text = typeof res.data?.output === 'string' ? res.data.output : '';
+  if (text) yield { text, reasoning: '' };
+  return { text, reasoning: '' };
+}
+
 /**
  * Stream a generation, routing to the active backend:
  *  - text completion (KoboldCpp etc.) → /api/backends/text-completions/generate
@@ -110,6 +234,8 @@ export async function* streamGeneration(
     case 'textgenerationwebui':
     case 'openai':
       break;
+    case 'novel':
+      return yield* streamNovelGeneration(client, engine, character, history, headers, countTokens, opts);
     case 'kobold':
       return yield* streamKobold(client, engine, character, history, countTokens, headers, opts);
     case 'koboldhorde':

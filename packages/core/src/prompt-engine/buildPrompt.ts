@@ -50,6 +50,17 @@ export interface BuildPromptInput {
   authorsNote?: DepthInjection;
   /** Generate as the user's next turn (instruct uses the input sequence; no example budget change). */
   isImpersonate?: boolean;
+  /**
+   * Prepended to the chat block, before the chat_start separator - ST's `addChatsPreamble`
+   * slot (script.js:5128-5131: separator first, then this prefix; the NovelAI preamble).
+   */
+  mesSendPrefix?: string;
+  /**
+   * Appended after the final in-context line with a guaranteed preceding newline - ST's
+   * `modifyLastPromptLine` force_name2/impersonate name slot (script.js:5010-5029). Lands
+   * BEFORE the continue cycle prompt, exactly like desktop. Pass '' to only ensure the newline.
+   */
+  lastLineAppend?: string;
   type?: 'normal' | 'continue' | 'regenerate' | 'swipe' | 'quiet';
 }
 
@@ -203,7 +214,13 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
   const pinnedExamples = power.pin_examples && exampleBlocks.length ? exampleBlocks.join('') : '';
 
   // Budget: fill newest → oldest until the context is full (pinned examples reserve budget up front).
-  const baseTokens = await countTokens(`${combinedStoryString}${pinnedExamples}${finalLine}`.replace(/\r/g, ''));
+  // The chat-block prefix and the forced last line count against the budget like desktop
+  // (getMessagesTokenCount includes chatString + modifyLastPromptLine('')).
+  const budgetExtras =
+    (input.mesSendPrefix ?? '') + (input.lastLineAppend !== undefined ? `\n${input.lastLineAppend}` : '');
+  const baseTokens = await countTokens(
+    `${combinedStoryString}${pinnedExamples}${finalLine}${budgetExtras}`.replace(/\r/g, ''),
+  );
   let tokenCount = baseTokens;
   const included: string[] = [];
   for (let i = formatted.length - 1; i >= 0; i--) {
@@ -277,8 +294,22 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
 
   // mesSendString = examples + history (with @depth) + final line, with the chat_start separator.
   let mesSendString = injected.join('') + finalLine;
+
+  // Forced last line (ST modifyLastPromptLine: ensure a newline, then append - only when
+  // any chat line made it into the context, like desktop's `if (mesSend.length)` guard).
+  if (input.lastLineAppend !== undefined && injected.length > 0) {
+    if (!mesSendString.endsWith('\n')) {
+      mesSendString += '\n';
+    }
+    mesSendString += input.lastLineAppend;
+  }
+
   if (power.context.chat_start) {
     mesSendString = substituteParams(power.context.chat_start + '\n', { identity }) + mesSendString;
+  }
+  // ST addChatsPreamble runs AFTER addChatsSeparator, so the prefix lands before chat_start.
+  if (input.mesSendPrefix !== undefined) {
+    mesSendString = input.mesSendPrefix + mesSendString;
   }
 
   let prompt = `${combinedStoryString}${mesExmString}${mesSendString}${cyclePrompt}`.replace(/\r/g, '');

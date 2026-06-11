@@ -5,6 +5,7 @@ import type { StVersion } from '../types/version';
 import type { HordeModel, HordeWorker } from '../prompt-engine/horde';
 import { chatFromArray, chatToArray } from '../chat/serialize';
 import { isIntegrityConflict } from '../chat/integrity';
+import { getNovelTierName } from '../prompt-engine/novelai';
 
 /**
  * Typed wrappers over the SillyTavern private API. Request body field names mirror the server
@@ -190,6 +191,32 @@ export async function getChatCompletionStatus(client: StClient, source: string):
   try {
     const res = await client.post('/api/backends/chat-completions/status', { chat_completion_source: source });
     return { connected: res.ok };
+  } catch {
+    return { connected: false };
+  }
+}
+
+export interface NovelStatus extends BackendStatus {
+  /** NovelAI subscription tier (0 Paper, 1 Tablet, 2 Scroll, 3 Opus). */
+  tier?: number;
+}
+
+/**
+ * Check the NovelAI connection via ST's `/api/novelai/status` (proxies /user/subscription).
+ * The server replies 400 when no NOVEL secret is stored and `{ error: true }` for a bad key -
+ * both mean `connected: false`. On success the subscription tier name is exposed as `model`
+ * (desktop shows the tier as the "model" readout). Never throws.
+ */
+export async function getNovelStatus(client: StClient): Promise<NovelStatus> {
+  try {
+    const res = await client.post<{ tier?: unknown; error?: unknown }>('/api/novelai/status', {});
+    if (!res.ok || !res.data || res.data.error) return { connected: false };
+    const tier = typeof res.data.tier === 'number' ? res.data.tier : undefined;
+    return {
+      connected: true,
+      model: getNovelTierName(tier),
+      ...(tier !== undefined ? { tier } : {}),
+    };
   } catch {
     return { connected: false };
   }

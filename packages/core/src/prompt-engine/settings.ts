@@ -43,6 +43,13 @@ export interface EngineConfig {
    * only sees the parsed `settings` string, which does not contain them.
    */
   koboldPresets?: { koboldai_settings?: unknown; koboldai_setting_names?: unknown };
+  /**
+   * NovelAI preset collection from the /api/settings/get RESPONSE ROOT (not the parsed
+   * settings string): an array of RAW JSON strings plus the parallel names array. Populated
+   * by the app layer; resolved via presetsByName for the nai order fallback.
+   */
+  novelaiSettings?: unknown;
+  novelaiSettingNames?: unknown;
 }
 
 interface RawSettings {

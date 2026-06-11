@@ -3,6 +3,7 @@ import {
   getChatCompletionStatus,
   getHordeStatus,
   getKoboldStatus,
+  getNovelStatus,
   getTextCompletionStatus,
   getTextgenServer,
   type BackendStatus,
@@ -11,8 +12,8 @@ import {
 import { useConnection } from '@/stores/connectionStore';
 
 /**
- * Polls whether the AI backend (KoboldCpp for text-completion, the cloud provider for chat-
- * completion, KoboldAI Classic, or the AI Horde) is actually reachable - the same status
+ * Polls whether the AI backend (KoboldCpp for text-completion, KoboldAI Classic, the AI Horde,
+ * NovelAI, or the cloud provider for chat-completion) is actually reachable - the same status
  * SillyTavern shows. Lets the UI warn the user BEFORE they generate into the void (instead
  * of only reacting to an empty response).
  */
@@ -36,9 +37,11 @@ export function useBackendStatus(engine: EngineConfig | null) {
       ? `kobold:${kaiServer}`
       : mainApi === 'koboldhorde'
         ? `horde:${hordeModels}`
-        : isCc
-          ? `cc:${source}`
-          : `tc:${apiType}:${apiServer}`;
+        : mainApi === 'novel'
+          ? 'novel'
+          : isCc
+            ? `cc:${source}`
+            : `tc:${apiType}:${apiServer}`;
 
   return useQuery<BackendStatus>({
     queryKey: ['backendStatus', client?.baseUrl, branchKey],
@@ -52,6 +55,8 @@ export function useBackendStatus(engine: EngineConfig | null) {
         // Desktop shows "Connected"; the selected models are the closest thing to a model name.
         return status.connected && hordeModels ? { ...status, model: hordeModels } : status;
       }
+      // getNovelStatus exposes the subscription tier name as `model` (the desktop readout).
+      if (mainApi === 'novel') return getNovelStatus(client);
       return isCc
         ? getChatCompletionStatus(client, source)
         : getTextCompletionStatus(client, { apiServer, apiType });

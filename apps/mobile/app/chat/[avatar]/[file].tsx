@@ -514,13 +514,16 @@ export default function ChatScreen() {
       })) {
         setInput(acc.text);
       }
-    } catch {
-      // aborted / network - keep whatever drafted
+    } catch (err) {
+      // aborted / network - keep whatever drafted; friendly errors still inform the user
+      if (err instanceof GenerationUserError) {
+        Alert.alert(t('chat.noResponseTitle'), err.message);
+      }
     } finally {
       abortRef.current = null;
       setStreaming(false);
     }
-  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote]);
+  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote, t]);
 
   // Persist a header change (e.g. Author's Note) back to the server.
   const saveHeader = useCallback(

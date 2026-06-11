@@ -42,8 +42,9 @@ export function useEngineConfig(charName: string): {
 
     let config = extractEngineConfig(parsed, charName);
 
-    // KoboldAI Classic named presets live in the RESPONSE root (raw JSON-string arrays),
-    // not inside the parsed `settings` string - attach them for buildKoboldGenerateRequest.
+    // Named preset collections live in the RESPONSE root (raw JSON-string arrays + parallel
+    // names), not inside the parsed `settings` string - attach them for the per-backend
+    // request builders (kobold preset resolution, nai order fallback).
     const root = data as Record<string, unknown>;
     if (root.koboldai_settings || root.koboldai_setting_names) {
       config = {
@@ -52,6 +53,13 @@ export function useEngineConfig(charName: string): {
           koboldai_settings: root.koboldai_settings,
           koboldai_setting_names: root.koboldai_setting_names,
         },
+      };
+    }
+    if (root.novelai_settings !== undefined || root.novelai_setting_names !== undefined) {
+      config = {
+        ...config,
+        novelaiSettings: root.novelai_settings,
+        novelaiSettingNames: root.novelai_setting_names,
       };
     }
 

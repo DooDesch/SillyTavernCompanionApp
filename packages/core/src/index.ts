@@ -33,6 +33,7 @@ export {
   getHordeStatus,
   getHordeModels,
   getHordeWorkers,
+  getNovelStatus,
   getAllCharacters,
   getCharacter,
   getCharacterChats,
@@ -47,6 +48,7 @@ export type {
   SaveChatResult,
   BackendStatus,
   KoboldBackendStatus,
+  NovelStatus,
 } from './connection/endpoints';
 export { savePreset, deletePreset, restorePreset } from './connection/presets';
 export type { PresetApiId, PresetRef, RestorePresetResult } from './connection/presets';
@@ -91,6 +93,8 @@ export { parseTextgenData } from './streaming/textgen';
 export type { TextgenDelta } from './streaming/textgen';
 export { parseKoboldData, parseTokenFrame } from './streaming/kobold';
 export type { TokenFrameDelta } from './streaming/kobold';
+export { parseNovelData } from './streaming/novelai';
+export type { NovelDelta } from './streaming/novelai';
 export { iterateSseStream } from './streaming/stream';
 export type { GenerateStreamRequest, StreamToken, StreamTransport } from './streaming/stream';
 export { SmoothPacer, smoothDelayMs, SMOOTH_SPEED_DEFAULT } from './streaming/smooth';
