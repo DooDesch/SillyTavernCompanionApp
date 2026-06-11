@@ -498,9 +498,9 @@ export default function ChatScreen() {
     abortRef.current?.abort();
   }, []);
 
-  // Impersonate: draft the user's next turn into the input box (text-completion only).
+  // Impersonate: draft the user's next turn into the input box (desktop supports both APIs).
   const impersonate = useCallback(async () => {
-    if (streaming || !client || !engine || !character || engine.mode === 'cc') return;
+    if (streaming || !client || !engine || !character) return;
     const effectiveLorebook = buildEffectiveLorebook();
     setStreaming(true);
     const ac = new AbortController();
@@ -954,16 +954,15 @@ export default function ChatScreen() {
               void pickImage();
             }}
           />
-        ) : (
-          <SheetActionRow
-            icon="impersonate"
-            label={t('chat.impersonate')}
-            onPress={() => {
-              setPlusMenu(false);
-              void impersonate();
-            }}
-          />
-        )}
+        ) : null}
+        <SheetActionRow
+          icon="impersonate"
+          label={t('chat.impersonate')}
+          onPress={() => {
+            setPlusMenu(false);
+            void impersonate();
+          }}
+        />
       </Sheet>
 
       <Sheet visible={menuIndex != null} onClose={closeMenu} title={t('a11y.messageActions')}>

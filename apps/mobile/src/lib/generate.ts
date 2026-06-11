@@ -251,6 +251,16 @@ export async function* streamGeneration(
   let body: unknown;
 
   if (isChat) {
+    // Tokenizer for logit-bias presets (desktop resolves them via the /bias endpoint; the
+    // app encodes through the same server tokenizers). Without entries this is never called.
+    const ccModel = getChatCompletionModel(engine.oai);
+    const encodeTokens = async (text: string): Promise<number[]> => {
+      const res = await client.post<{ ids?: number[] }>(
+        `/api/tokenizers/openai/encode?model=${encodeURIComponent(ccModel)}`,
+        { text },
+      );
+      return Array.isArray(res.data?.ids) ? res.data.ids : [];
+    };
     const req = await buildChatCompletionGenerateRequest({
       character,
       power: engine.power,
@@ -261,7 +271,9 @@ export async function* streamGeneration(
       maxTokens: engine.maxTokens,
       countTokens,
       stream: true,
-      ...(opts.type ? { type: opts.type } : {}),
+      encodeTokens,
+      // CC impersonation is a generate type on the desktop (prepareOpenAIMessages).
+      ...(opts.isImpersonate ? { type: 'impersonate' as const } : opts.type ? { type: opts.type } : {}),
       ...(opts.chatMetadata ? { chatMetadata: opts.chatMetadata } : {}),
       ...(opts.lorebook ? { lorebook: opts.lorebook } : {}),
       ...(opts.authorsNote ? { authorsNote: opts.authorsNote } : {}),
