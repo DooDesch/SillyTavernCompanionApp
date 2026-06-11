@@ -41,6 +41,8 @@ export {
 export type { ChatFileInfo, SaveChatResult, BackendStatus } from './connection/endpoints';
 export { savePreset, deletePreset, restorePreset } from './connection/presets';
 export type { PresetApiId, PresetRef, RestorePresetResult } from './connection/presets';
+export { getUserAvatars, deleteUserAvatar, uploadUserAvatar } from './connection/avatars';
+export type { FormDataLike, AvatarCrop } from './connection/avatars';
 
 // Discovery
 export type { DiscoveredInstance, DiscoveryProvider, DiscoverySource } from './discovery/types';

@@ -7,7 +7,11 @@
 export interface FetchInitLike {
   method?: string;
   headers?: Record<string, string>;
-  body?: string;
+  /**
+   * A JSON string for normal POSTs, or a platform FormData object for multipart uploads
+   * (passed through to the underlying fetch unchanged so it can derive the boundary).
+   */
+  body?: string | object;
   signal?: AbortSignal;
 }
 
