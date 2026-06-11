@@ -46,6 +46,19 @@ export interface GenerateOptions {
 export interface GenerationChunk {
   text: string;
   reasoning: string;
+  /**
+   * Non-token progress (e.g. the AI Horde queue position). The chat screen translates
+   * the key via t() and shows it while no text has streamed yet.
+   */
+  status?: { key: string; params?: Record<string, string | number> };
+}
+
+/** The selected main_api has no app implementation (yet). */
+export class UnsupportedApiError extends Error {
+  constructor(readonly mainApi: string) {
+    super(`Unsupported main_api: ${mainApi}`);
+    this.name = 'UnsupportedApiError';
+  }
 }
 
 /**
@@ -64,9 +77,23 @@ export async function* streamGeneration(
 ): AsyncGenerator<GenerationChunk, GenerationChunk, void> {
   const history = historyFromMessages(messages, character.name);
   const headers = await client.authHeaders();
-  const isChat = engine.mode === 'cc';
   const countTokens = tokenCounterFor(client, engine);
 
+  // Backend dispatcher (desktop main_api routing). The wave-1 integrations replace the
+  // stub cases with real request flows (novel: SSE, kobold: SSE/single-POST, horde: poll).
+  switch (engine.mainApi) {
+    case 'textgenerationwebui':
+    case 'openai':
+      break;
+    case 'novel':
+    case 'kobold':
+    case 'koboldhorde':
+      throw new UnsupportedApiError(engine.mainApi);
+    default:
+      break; // unknown values fall through to the textgen path (legacy behavior)
+  }
+
+  const isChat = engine.mode === 'cc';
   let url: string;
   let body: unknown;
 

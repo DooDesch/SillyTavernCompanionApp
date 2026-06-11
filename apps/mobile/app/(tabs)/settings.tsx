@@ -360,6 +360,25 @@ export default function SettingsScreen() {
           </Card>
         </Section>
 
+        {/* SillyTavern configuration pages */}
+        <Section title={t('settings.configuration')} icon="tune">
+          <SettingRow
+            label={t('settings.formattingSubtitle')}
+            value={t('settings.formatting')}
+            onPress={() => router.push('/settings/formatting')}
+          />
+          <SettingRow
+            label={t('settings.chatBehaviorSubtitle')}
+            value={t('settings.chatBehavior')}
+            onPress={() => router.push('/settings/chat-behavior')}
+          />
+          <SettingRow
+            label={t('settings.personasManageSubtitle')}
+            value={t('settings.personasManage')}
+            onPress={() => router.push('/settings/personas')}
+          />
+        </Section>
+
         {/* AI backend */}
         <Section title={t('settings.aiBackend')} icon="zap">
           <Card className="flex-row items-center gap-3 px-4 py-3.5">

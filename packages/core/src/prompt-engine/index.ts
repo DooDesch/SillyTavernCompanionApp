@@ -62,3 +62,6 @@ export type { ConnectionProfile, ConnectionProfiles } from './profiles';
 
 // World Info / lorebooks
 export * from './worldinfo/index';
+export { resolveApiSlug, normalizeMainApi, MAIN_APIS } from './apiMap';
+export type { MainApi, ResolvedApiSlug } from './apiMap';
+export { parsePresetArray, presetsByName } from './presetArrays';

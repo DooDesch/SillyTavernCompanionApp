@@ -17,6 +17,8 @@ export interface StreamSnapshot {
   active: boolean;
   text: string;
   reasoning: string;
+  /** Translated non-token progress line (e.g. Horde queue position); shown while text is empty. */
+  statusText?: string;
 }
 
 /** Cap for the post-stream animation tail so finalize never waits long on a chunky last event. */
@@ -32,6 +34,7 @@ const listeners = new Set<() => void>();
 let pacer: SmoothPacer | null = null;
 let latestText = '';
 let latestReasoning = '';
+let statusText: string | undefined;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let throttleTimer: ReturnType<typeof setTimeout> | null = null;
 let upstreamDone = false;
@@ -39,8 +42,15 @@ let drainResolve: (() => void) | null = null;
 let drainTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function emit(text: string, reasoning: string, active = true): void {
-  if (snapshot.active === active && snapshot.text === text && snapshot.reasoning === reasoning) return;
-  snapshot = { active, text, reasoning };
+  if (
+    snapshot.active === active &&
+    snapshot.text === text &&
+    snapshot.reasoning === reasoning &&
+    snapshot.statusText === statusText
+  ) {
+    return;
+  }
+  snapshot = statusText !== undefined ? { active, text, reasoning, statusText } : { active, text, reasoning };
   for (const fn of listeners) fn();
 }
 
@@ -88,9 +98,16 @@ export const streamingSession = {
     drainResolve = null;
     latestText = opts.initialText ?? '';
     latestReasoning = '';
+    statusText = undefined;
     pacer = opts.smooth ? new SmoothPacer({ speed: opts.speed ?? SMOOTH_SPEED_DEFAULT }) : null;
     pacer?.seed(latestText);
     emit(latestText, '');
+  },
+
+  /** Show or clear a translated non-token progress line (e.g. Horde queue position). */
+  setStatus(text: string | null): void {
+    statusText = text ?? undefined;
+    emit(snapshot.text, snapshot.reasoning, snapshot.active);
   },
 
   /** Called per SSE event with the FULL accumulated text + reasoning (never deltas). */
@@ -151,6 +168,7 @@ export const streamingSession = {
     pacer = null;
     latestText = '';
     latestReasoning = '';
+    statusText = undefined;
     emit('', '', false);
   },
 };

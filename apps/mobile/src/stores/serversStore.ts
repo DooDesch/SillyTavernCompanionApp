@@ -17,8 +17,13 @@ export interface SavedServer {
 }
 
 const KEY_LIST = 'servers.list';
-const credUserKey = (id: string) => `server.${id}.user`;
-const credPassKey = (id: string) => `server.${id}.pass`;
+/**
+ * expo-secure-store keys must match [\w.-]+ - server ids are base URLs and contain
+ * ':' and '/', which made every credential write reject silently. Slug them.
+ */
+const safeKey = (id: string) => id.replace(/[^\w.-]/g, '_');
+const credUserKey = (id: string) => `server.${safeKey(id)}.user`;
+const credPassKey = (id: string) => `server.${safeKey(id)}.pass`;
 
 interface ServersState {
   servers: SavedServer[];

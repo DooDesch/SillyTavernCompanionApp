@@ -2,6 +2,8 @@ import type { EngineConfig } from './settings';
 import type { ContextSettings, InstructSettings, SyspromptSettings } from './types';
 import type { TextgenSettings } from './textgenBody';
 import type { OaiSettings } from './chatcompletion/types';
+import { resolveApiSlug } from './apiMap';
+import { parsePresetArray } from './presetArrays';
 
 /**
  * SillyTavern Connection Profile (power_user.connectionManager.profiles[]). Each profile bundles a
@@ -66,10 +68,15 @@ interface SettingsResponseArrays {
   instruct?: Array<InstructSettings & { name?: string }>;
   context?: Array<ContextSettings & { name?: string }>;
   sysprompt?: Array<{ name?: string; content?: string; post_history?: string }>;
-  textgenerationwebui_presets?: Array<Partial<TextgenSettings>>;
+  /** RAW JSON-string arrays (readPresetsFromDirectory) - normalize via parsePresetArray. */
+  textgenerationwebui_presets?: unknown[];
   textgenerationwebui_preset_names?: string[];
-  openai_settings?: Array<Partial<OaiSettings>>;
+  openai_settings?: unknown[];
   openai_setting_names?: string[];
+  koboldai_settings?: unknown[];
+  koboldai_setting_names?: string[];
+  novelai_settings?: unknown[];
+  novelai_setting_names?: string[];
 }
 
 const byName = <T extends { name?: string }>(arr: T[] | undefined, name?: string): T | undefined =>
@@ -92,13 +99,31 @@ export function applyProfileToConfig(
     mode: profile.mode === 'cc' ? 'cc' : 'tc',
   };
 
-  // Chat-completion profile: pick the source + apply the named OpenAI preset (samplers + prompts).
-  if (profile.mode === 'cc') {
+  // The profile's api slug decides the routing (desktop CONNECT_API_MAP semantics):
+  // main_api plus the textgen type or chat-completion source it selects. Falls back to
+  // the legacy mode-based mapping for unknown slugs.
+  const resolved = resolveApiSlug(profile.api);
+  if (resolved) {
+    next.mainApi = resolved.mainApi;
+    next.mode = resolved.mainApi === 'openai' ? 'cc' : 'tc';
+    if (resolved.textgenType) next.textgen.type = resolved.textgenType;
+    if (resolved.ccSource) next.oai.chat_completion_source = resolved.ccSource;
+  } else if (next.mode === 'cc') {
+    next.mainApi = 'openai';
     if (profile.api) next.oai.chat_completion_source = profile.api;
+  }
+
+  // Chat-completion profile: apply the named OpenAI preset (samplers + prompts).
+  // The preset arrays arrive as RAW JSON strings - parse before spreading.
+  if (next.mode === 'cc') {
     if (profile.preset && Array.isArray(response.openai_setting_names)) {
       const idx = response.openai_setting_names.indexOf(profile.preset);
-      const preset = idx >= 0 ? response.openai_settings?.[idx] : undefined;
-      if (preset) next.oai = { ...next.oai, ...preset, chat_completion_source: profile.api ?? next.oai.chat_completion_source };
+      const presets = parsePresetArray<Partial<OaiSettings>>(response.openai_settings);
+      const preset = idx >= 0 ? presets[idx] : undefined;
+      if (preset) {
+        const source = next.oai.chat_completion_source;
+        next.oai = { ...next.oai, ...preset, chat_completion_source: source };
+      }
     }
   }
 
@@ -123,12 +148,14 @@ export function applyProfileToConfig(
     next.power.sysprompt = { ...next.power.sysprompt, enabled: false };
   }
 
-  if (profile.preset && Array.isArray(response.textgenerationwebui_preset_names)) {
+  if (next.mode === 'tc' && profile.preset && Array.isArray(response.textgenerationwebui_preset_names)) {
     const idx = response.textgenerationwebui_preset_names.indexOf(profile.preset);
-    const preset = idx >= 0 ? response.textgenerationwebui_presets?.[idx] : undefined;
+    const presets = parsePresetArray<Partial<TextgenSettings>>(response.textgenerationwebui_presets);
+    const preset = idx >= 0 ? presets[idx] : undefined;
     if (preset) {
-      // Keep the live backend type + server URLs; take sampler values from the preset.
-      next.textgen = { ...next.textgen, ...preset, type: config.textgen.type, server_urls: config.textgen.server_urls };
+      // Keep the (possibly profile-resolved) backend type + live server URLs; take
+      // sampler values from the preset. Preset arrays arrive as RAW JSON strings.
+      next.textgen = { ...next.textgen, ...preset, type: next.textgen.type, server_urls: config.textgen.server_urls };
     }
   }
 
