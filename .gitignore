@@ -33,3 +33,6 @@ docs/screenshots/
 
 # Local Expo module build output
 apps/mobile/modules/**/android/build/
+
+# Agent worktrees
+.claude/worktrees/
