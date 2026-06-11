@@ -37,6 +37,12 @@ export interface EngineConfig {
   mainApi: MainApi;
   /** Backend URL to forward generation to (api_server), overriding textgen.server_urls. */
   apiServerOverride?: string;
+  /**
+   * KoboldAI Classic named-preset arrays from the /api/settings/get RESPONSE root (raw
+   * JSON-string presets + parallel names). Populated by the app - extractEngineConfig
+   * only sees the parsed `settings` string, which does not contain them.
+   */
+  koboldPresets?: { koboldai_settings?: unknown; koboldai_setting_names?: unknown };
 }
 
 interface RawSettings {

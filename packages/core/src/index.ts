@@ -29,6 +29,10 @@ export {
   saveSettings,
   getTextCompletionStatus,
   getChatCompletionStatus,
+  getKoboldStatus,
+  getHordeStatus,
+  getHordeModels,
+  getHordeWorkers,
   getAllCharacters,
   getCharacter,
   getCharacterChats,
@@ -38,7 +42,12 @@ export {
   deleteChat,
   getWorldInfo,
 } from './connection/endpoints';
-export type { ChatFileInfo, SaveChatResult, BackendStatus } from './connection/endpoints';
+export type {
+  ChatFileInfo,
+  SaveChatResult,
+  BackendStatus,
+  KoboldBackendStatus,
+} from './connection/endpoints';
 export { savePreset, deletePreset, restorePreset } from './connection/presets';
 export type { PresetApiId, PresetRef, RestorePresetResult } from './connection/presets';
 export { getUserAvatars, deleteUserAvatar, uploadUserAvatar } from './connection/avatars';
@@ -80,6 +89,8 @@ export { SseParser } from './streaming/sseParser';
 export type { SseEvent } from './streaming/sseParser';
 export { parseTextgenData } from './streaming/textgen';
 export type { TextgenDelta } from './streaming/textgen';
+export { parseKoboldData, parseTokenFrame } from './streaming/kobold';
+export type { TokenFrameDelta } from './streaming/kobold';
 export { iterateSseStream } from './streaming/stream';
 export type { GenerateStreamRequest, StreamToken, StreamTransport } from './streaming/stream';
 export { SmoothPacer, smoothDelayMs, SMOOTH_SPEED_DEFAULT } from './streaming/smooth';

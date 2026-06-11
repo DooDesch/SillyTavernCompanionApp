@@ -2,6 +2,7 @@ import type { StClient } from './StClient';
 import type { StCharacter } from '../types/character';
 import type { StChat } from '../types/chat';
 import type { StVersion } from '../types/version';
+import type { HordeModel, HordeWorker } from '../prompt-engine/horde';
 import { chatFromArray, chatToArray } from '../chat/serialize';
 import { isIntegrityConflict } from '../chat/integrity';
 
@@ -119,6 +120,69 @@ export async function getTextCompletionStatus(
   } catch {
     return { connected: false };
   }
+}
+
+export interface KoboldBackendStatus extends BackendStatus {
+  /** Kobold United API version (KoboldCpp emulates it) - drives the stop_sequence/badwords gates. */
+  koboldUnitedVersion?: string;
+  /**
+   * KoboldCpp marker - the ST server forwards /extra/version's `result` field, which is the
+   * literal string 'KoboldCpp' on real KoboldCpp (and absent on Kobold United). versionCompare's
+   * letters-after-digits collation then unlocks all KoboldCpp feature gates, like desktop.
+   */
+  koboldCppVersion?: string;
+}
+
+/**
+ * KoboldAI Classic status via the ST server (`/api/backends/kobold/status` fans out to
+ * {api_server}/v1/info/version + /extra/version + /v1/model). Mirrors desktop's
+ * `getStatusKobold`: connected requires a model (not 'no_connection'/ReadOnly) AND the
+ * mandatory koboldUnitedVersion. Never throws.
+ */
+export async function getKoboldStatus(client: StClient, apiServer: string): Promise<KoboldBackendStatus> {
+  try {
+    const res = await client.post<{
+      model?: string;
+      koboldUnitedVersion?: string;
+      koboldCppVersion?: string;
+    }>('/api/backends/kobold/status', {
+      main_api: 'kobold',
+      api_server: apiServer,
+    });
+    const model = res.data?.model;
+    const united = res.data?.koboldUnitedVersion;
+    const connected = !!(res.ok && united && model && model !== 'no_connection');
+    return {
+      connected,
+      ...(connected && model ? { model } : {}),
+      ...(united ? { koboldUnitedVersion: united } : {}),
+      ...(res.data?.koboldCppVersion ? { koboldCppVersion: res.data.koboldCppVersion } : {}),
+    };
+  } catch {
+    return { connected: false };
+  }
+}
+
+/** AI Horde heartbeat via the ST server (`/api/horde/status` -> `{ ok }`). Never throws. */
+export async function getHordeStatus(client: StClient): Promise<BackendStatus> {
+  try {
+    const res = await client.post<{ ok?: boolean }>('/api/horde/status', {});
+    return { connected: res.ok && res.data?.ok === true };
+  } catch {
+    return { connected: false };
+  }
+}
+
+/** Available AI Horde text models (`/api/horde/text-models`; server caches 60s, force bypasses). */
+export async function getHordeModels(client: StClient, force = false): Promise<HordeModel[]> {
+  const res = await client.post<HordeModel[]>('/api/horde/text-models', { force });
+  return Array.isArray(res.data) ? res.data : [];
+}
+
+/** Available AI Horde text workers (`/api/horde/text-workers`). */
+export async function getHordeWorkers(client: StClient, force = false): Promise<HordeWorker[]> {
+  const res = await client.post<HordeWorker[]>('/api/horde/text-workers', { force });
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 /** Check whether the chat-completion (cloud) backend is usable - validates the server-side API key. */

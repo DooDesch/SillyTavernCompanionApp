@@ -13,6 +13,13 @@ import { checkWorldInfo, type TimedWorldInfoState } from './worldinfo/activate';
 import type { WorldInfoEntry, WorldInfoSettings } from './worldinfo/types';
 import { EXTENSION_ROLE, roleFromString, type DepthInjection } from './depthInject';
 import {
+  createKoboldGenerationData,
+  normalizeKaiSettings,
+  KOBOLD_GENERATE_PATH,
+  type KaiFlags,
+} from './kobold';
+import { presetsByName } from './presetArrays';
+import {
   buildChatCompletionMessages,
   calculateLogitBias,
   createChatCompletionBody,
@@ -79,10 +86,24 @@ export interface TextgenGenerateRequest {
   includedMessages: number;
 }
 
-/** Build the full `/api/backends/text-completions/generate` request (prompt + sampler body). */
-export async function buildTextgenGenerateRequest(
-  params: TextgenGenerateParams,
-): Promise<TextgenGenerateRequest> {
+/** Shared params of the text-completion-prompt request builders (textgen + kobold). */
+type TextPromptParams = Pick<
+  TextgenGenerateParams,
+  | 'character'
+  | 'power'
+  | 'identity'
+  | 'history'
+  | 'maxContext'
+  | 'countTokens'
+  | 'chatMetadata'
+  | 'lorebook'
+  | 'authorsNote'
+  | 'isImpersonate'
+  | 'type'
+>;
+
+/** World-Info scan + text-completion prompt assembly shared by the textgen and kobold builders. */
+async function buildTextPrompt(params: TextPromptParams): Promise<BuildPromptResult> {
   const syncCount = (t: string): number => {
     const r = params.countTokens(t);
     return typeof r === 'number' ? r : Math.ceil(t.length / 3.5);
@@ -104,7 +125,7 @@ export async function buildTextgenGenerateRequest(
     worldInfo = { before: wi.before, after: wi.after, depth: wi.depth };
   }
 
-  const built: BuildPromptResult = await buildTextCompletionPrompt({
+  return buildTextCompletionPrompt({
     character: params.character,
     power: params.power,
     identity: params.identity,
@@ -117,6 +138,13 @@ export async function buildTextgenGenerateRequest(
     ...(params.isImpersonate ? { isImpersonate: params.isImpersonate } : {}),
     type: params.type === 'regenerate' || params.type === 'swipe' ? 'normal' : params.type,
   });
+}
+
+/** Build the full `/api/backends/text-completions/generate` request (prompt + sampler body). */
+export async function buildTextgenGenerateRequest(
+  params: TextgenGenerateParams,
+): Promise<TextgenGenerateRequest> {
+  const built: BuildPromptResult = await buildTextPrompt(params);
 
   const body = createTextgenBody(params.textgen, {
     prompt: built.prompt,
@@ -134,6 +162,92 @@ export async function buildTextgenGenerateRequest(
     prompt: built.prompt,
     stoppingStrings: built.stoppingStrings,
     includedMessages: built.includedMessages,
+  };
+}
+
+export interface KoboldGenerateParams extends TextPromptParams {
+  /** Raw kai_settings block; desktop defaults are backfilled (normalizeKaiSettings). */
+  kai: Record<string, unknown>;
+  /** Response length (desktop amount_gen, possibly Horde-adjusted). */
+  maxTokens: number;
+  /** Feature gates from the kobold status versions (computeKaiFlags). */
+  flags: KaiFlags;
+  /** Backend URL forwarded as api_server (kai.api_server or the profile override). */
+  apiServer: string;
+  /**
+   * Named-preset arrays from the /api/settings/get RESPONSE root (raw JSON-string
+   * presets + parallel names). The active preset is resolved by kai.preset_settings;
+   * a missing/unknown name falls back to the GUI preset like desktop.
+   */
+  presets?: { koboldai_settings?: unknown; koboldai_setting_names?: unknown };
+  /** True when building for AI Horde (forces the version gates open). */
+  isHorde?: boolean;
+  /**
+   * Body max_context_length override. Horde auto-adjust passes the worker-adjusted
+   * context here while `maxContext` carries the (smaller) prompt-token budget,
+   * mirroring desktop's this_max_context vs adjustedParams.maxContextLength split.
+   */
+  bodyMaxContext?: number;
+}
+
+export interface KoboldGenerateRequest {
+  url: string;
+  body: Record<string, unknown>;
+  prompt: string;
+  stoppingStrings: string[];
+  includedMessages: number;
+  /** The preset the body was built from ('gui' when none/unknown). */
+  presetName: string;
+}
+
+/**
+ * Build the full `/api/backends/kobold/generate` request: the same text-completion
+ * prompt assembly as the textgen path, then `createKoboldGenerationData` (desktop
+ * getKoboldGenerationData incl. the GUI short body).
+ */
+export async function buildKoboldGenerateRequest(
+  params: KoboldGenerateParams,
+): Promise<KoboldGenerateRequest> {
+  const built: BuildPromptResult = await buildTextPrompt(params);
+
+  const kai = normalizeKaiSettings(params.kai);
+  let preset: Record<string, unknown> | null = null;
+  if (kai.preset_settings !== 'gui') {
+    const byName = presetsByName(
+      params.presets?.koboldai_settings,
+      params.presets?.koboldai_setting_names,
+    );
+    // Desktop resets an unknown preset name to 'gui' (loadKoboldSettings).
+    preset = byName.get(String(kai.preset_settings)) ?? null;
+  }
+
+  const type = params.isImpersonate
+    ? 'impersonate'
+    : params.type === 'regenerate' || params.type === 'swipe'
+      ? 'normal'
+      : params.type;
+
+  const body = createKoboldGenerationData({
+    finalPrompt: built.prompt,
+    kai,
+    preset,
+    flags: params.flags,
+    maxLength: params.maxTokens,
+    maxContextLength: params.bodyMaxContext ?? params.maxContext,
+    isHorde: params.isHorde ?? false,
+    type,
+    stoppingStrings: built.stoppingStrings,
+    apiServer: params.apiServer,
+    identity: params.identity,
+  });
+
+  return {
+    url: KOBOLD_GENERATE_PATH,
+    body,
+    prompt: built.prompt,
+    stoppingStrings: built.stoppingStrings,
+    includedMessages: built.includedMessages,
+    presetName: preset ? String(kai.preset_settings) : 'gui',
   };
 }
 

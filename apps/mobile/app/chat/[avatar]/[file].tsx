@@ -43,7 +43,7 @@ import { useLorebook } from '@/hooks/useLorebook';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
 import { useProfiles } from '@/stores/profilesStore';
 import { usePrefs } from '@/stores/prefsStore';
-import { streamGeneration } from '@/lib/generate';
+import { streamGeneration, GenerationUserError } from '@/lib/generate';
 import { streamingSession } from '@/lib/streamingSession';
 import { streamDebug } from '@/lib/streamDebug';
 import { syncPersonaToPc } from '@/lib/sync';
@@ -346,6 +346,7 @@ export default function ChatScreen() {
       let finalText = prefix;
       let finalReasoning = '';
       let gotText = false;
+      let userErrorMessage: string | null = null;
       try {
         for await (const acc of streamGeneration(client, engine, character, contextMsgs, {
           type: mode === 'new' ? 'normal' : mode,
@@ -362,13 +363,22 @@ export default function ChatScreen() {
               }
             : {}),
         })) {
+          // Non-token progress (e.g. AI Horde queue position): show as a translated status
+          // line in the live bubble; clear it when the first text arrives.
+          if (acc.status) {
+            streamingSession.setStatus(t(acc.status.key, acc.status.params ?? {}) as string);
+          } else if (acc.text) {
+            streamingSession.setStatus(null);
+          }
           if (acc.text.trim()) gotText = true;
           finalText = isContinue ? prefix + acc.text : acc.text;
           finalReasoning = acc.reasoning;
           streamingSession.update(finalText, acc.reasoning);
         }
-      } catch {
-        // aborted / network error - handled below via gotText/abortedByUser
+      } catch (e) {
+        // aborted / network error - handled below via gotText/abortedByUser. Errors that
+        // carry a translated message (e.g. Horde faulted/timeout) surface in the alert.
+        if (e instanceof GenerationUserError) userErrorMessage = e.message;
       } finally {
         abortRef.current = null;
         // ST 1:1: an empty (non-aborted) result is "No message generated" - never keep/save junk.
@@ -400,7 +410,7 @@ export default function ChatScreen() {
         if (failed) {
           Alert.alert(
             t('chat.noResponseTitle'),
-            t('chat.noResponseMessage'),
+            userErrorMessage ?? t('chat.noResponseMessage'),
           );
         }
       }
