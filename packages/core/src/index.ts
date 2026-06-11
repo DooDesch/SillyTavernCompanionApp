@@ -29,6 +29,7 @@ export {
   saveSettings,
   getTextCompletionStatus,
   getChatCompletionStatus,
+  getNovelStatus,
   getAllCharacters,
   getCharacter,
   getCharacterChats,
@@ -38,7 +39,7 @@ export {
   deleteChat,
   getWorldInfo,
 } from './connection/endpoints';
-export type { ChatFileInfo, SaveChatResult, BackendStatus } from './connection/endpoints';
+export type { ChatFileInfo, SaveChatResult, BackendStatus, NovelStatus } from './connection/endpoints';
 
 // Discovery
 export type { DiscoveredInstance, DiscoveryProvider, DiscoverySource } from './discovery/types';
@@ -76,6 +77,8 @@ export { SseParser } from './streaming/sseParser';
 export type { SseEvent } from './streaming/sseParser';
 export { parseTextgenData } from './streaming/textgen';
 export type { TextgenDelta } from './streaming/textgen';
+export { parseNovelData } from './streaming/novelai';
+export type { NovelDelta } from './streaming/novelai';
 export { iterateSseStream } from './streaming/stream';
 export type { GenerateStreamRequest, StreamToken, StreamTransport } from './streaming/stream';
 export { SmoothPacer, smoothDelayMs, SMOOTH_SPEED_DEFAULT } from './streaming/smooth';

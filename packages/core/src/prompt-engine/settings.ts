@@ -37,6 +37,13 @@ export interface EngineConfig {
   mainApi: MainApi;
   /** Backend URL to forward generation to (api_server), overriding textgen.server_urls. */
   apiServerOverride?: string;
+  /**
+   * NovelAI preset collection from the /api/settings/get RESPONSE ROOT (not the parsed
+   * settings string): an array of RAW JSON strings plus the parallel names array. Populated
+   * by the app layer; resolved via presetsByName for the nai order fallback.
+   */
+  novelaiSettings?: unknown;
+  novelaiSettingNames?: unknown;
 }
 
 interface RawSettings {

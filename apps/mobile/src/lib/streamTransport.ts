@@ -2,6 +2,17 @@ import { fetch as expoFetch } from 'expo/fetch';
 import { iterateSseStream, type GenerateStreamRequest, type SseEvent } from '@st/core';
 import i18n from '@/i18n';
 
+/** Non-OK HTTP response while opening an SSE stream - carries the status for per-backend handling. */
+export class SseHttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'SseHttpError';
+  }
+}
+
 /**
  * Open an SSE POST stream over `expo/fetch` and yield raw SSE events. The caller parses each event
  * per backend (text-completion vs the active chat-completion source). Aborting `req.signal` closes
@@ -15,7 +26,7 @@ export async function* openSseStream(req: GenerateStreamRequest): AsyncGenerator
     signal: req.signal,
   });
   if (!res.ok) {
-    throw new Error(i18n.t('errors.generationFailed', { status: res.status }));
+    throw new SseHttpError(res.status, i18n.t('errors.generationFailed', { status: res.status }));
   }
   if (!res.body) {
     throw new Error(i18n.t('errors.streamNoBody'));

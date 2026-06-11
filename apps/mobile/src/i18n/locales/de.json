@@ -111,6 +111,7 @@
     "noPhotoAccessTitle": "Kein Zugriff",
     "noResponseMessage": "Es wurde keine Nachricht generiert. Ist das KI-Backend (KoboldCpp/Cloud) erreichbar und in SillyTavern verbunden?",
     "noResponseTitle": "Keine Antwort",
+    "novelNoKey": "Kein NovelAI-API-Key in SillyTavern hinterlegt.",
     "readAloud": "Vorlesen",
     "readingAloud": "Liest vor …",
     "reasoning": "Gedanken",

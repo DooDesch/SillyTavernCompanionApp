@@ -43,7 +43,7 @@ import { useLorebook } from '@/hooks/useLorebook';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
 import { useProfiles } from '@/stores/profilesStore';
 import { usePrefs } from '@/stores/prefsStore';
-import { streamGeneration } from '@/lib/generate';
+import { FriendlyGenerationError, streamGeneration } from '@/lib/generate';
 import { streamingSession } from '@/lib/streamingSession';
 import { streamDebug } from '@/lib/streamDebug';
 import { syncPersonaToPc } from '@/lib/sync';
@@ -346,6 +346,7 @@ export default function ChatScreen() {
       let finalText = prefix;
       let finalReasoning = '';
       let gotText = false;
+      let genError: unknown;
       try {
         for await (const acc of streamGeneration(client, engine, character, contextMsgs, {
           type: mode === 'new' ? 'normal' : mode,
@@ -367,8 +368,10 @@ export default function ChatScreen() {
           finalReasoning = acc.reasoning;
           streamingSession.update(finalText, acc.reasoning);
         }
-      } catch {
-        // aborted / network error - handled below via gotText/abortedByUser
+      } catch (err) {
+        // aborted / network error - handled below via gotText/abortedByUser;
+        // friendly errors (e.g. missing NovelAI key) surface in the failure alert.
+        genError = err;
       } finally {
         abortRef.current = null;
         // ST 1:1: an empty (non-aborted) result is "No message generated" - never keep/save junk.
@@ -400,7 +403,7 @@ export default function ChatScreen() {
         if (failed) {
           Alert.alert(
             t('chat.noResponseTitle'),
-            t('chat.noResponseMessage'),
+            genError instanceof FriendlyGenerationError ? t(genError.i18nKey) : t('chat.noResponseMessage'),
           );
         }
       }
@@ -504,13 +507,16 @@ export default function ChatScreen() {
       })) {
         setInput(acc.text);
       }
-    } catch {
-      // aborted / network - keep whatever drafted
+    } catch (err) {
+      // aborted / network - keep whatever drafted; friendly errors still inform the user
+      if (err instanceof FriendlyGenerationError) {
+        Alert.alert(t('chat.noResponseTitle'), t(err.i18nKey));
+      }
     } finally {
       abortRef.current = null;
       setStreaming(false);
     }
-  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote]);
+  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote, t]);
 
   // Persist a header change (e.g. Author's Note) back to the server.
   const saveHeader = useCallback(

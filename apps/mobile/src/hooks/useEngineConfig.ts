@@ -42,6 +42,17 @@ export function useEngineConfig(charName: string): {
 
     let config = extractEngineConfig(parsed, charName);
 
+    // NovelAI presets ride on the RESPONSE ROOT (raw JSON-string array + parallel names),
+    // not inside the parsed settings string - thread them through for the nai order fallback.
+    const root = data as { novelai_settings?: unknown; novelai_setting_names?: unknown };
+    if (root.novelai_settings !== undefined || root.novelai_setting_names !== undefined) {
+      config = {
+        ...config,
+        novelaiSettings: root.novelai_settings,
+        novelaiSettingNames: root.novelai_setting_names,
+      };
+    }
+
     const { profiles, selectedId } = extractConnectionProfiles(parsed);
     const activeId = activeProfileId ?? selectedId;
     const profile = profiles.find((p) => p.id === activeId);
