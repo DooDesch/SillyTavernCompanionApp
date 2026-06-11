@@ -14,8 +14,11 @@ import type { WorldInfoEntry, WorldInfoSettings } from './worldinfo/types';
 import { EXTENSION_ROLE, roleFromString, type DepthInjection } from './depthInject';
 import {
   buildChatCompletionMessages,
+  calculateLogitBias,
   createChatCompletionBody,
+  getOaiCustomStoppingStrings,
   CHAT_COMPLETION_GENERATE_PATH,
+  type ChatCompletionGenerateType,
   type ChatCompletionMessage,
   type OaiSettings,
 } from './chatcompletion/index';
@@ -148,7 +151,18 @@ export interface ChatCompletionGenerateParams {
   lorebook?: { entries: WorldInfoEntry[]; settings: WorldInfoSettings; timedState?: TimedWorldInfoState };
   /** Author's Note injected in-chat at a depth. */
   authorsNote?: DepthInjection;
-  type?: 'normal' | 'continue' | 'regenerate' | 'swipe';
+  type?: ChatCompletionGenerateType;
+  /**
+   * Async tokenizer (text -> token ids), e.g. POST /api/tokenizers/openai/encode. Enables
+   * logit_bias from the selected oai bias preset (desktop resolves it via
+   * POST /api/backends/chat-completions/bias). When absent, logit_bias is omitted.
+   */
+  encodeTokens?: (text: string) => Promise<number[]>;
+  /**
+   * "Start reply with" bias override (script.js getBiasStrings: textarea {{}} bias or a recent
+   * message's extra.bias). Defaults to power_user.user_prompt_bias; ignored on continue/impersonate.
+   */
+  promptBias?: string;
 }
 
 export interface ChatCompletionGenerateRequest {
@@ -212,6 +226,15 @@ export async function buildChatCompletionGenerateRequest(
   }
   if (params.authorsNote?.content) depthInjections.push(params.authorsNote);
 
+  const type = params.type ?? 'normal';
+
+  // "Start reply with" bias (script.js getBiasStrings 5735-5767): empty on continue/impersonate,
+  // otherwise the explicit override or power_user.user_prompt_bias. Substituted in buildMessages.
+  const promptBias =
+    type === 'continue' || type === 'impersonate'
+      ? ''
+      : (params.promptBias ?? String(params.power.user_prompt_bias ?? ''));
+
   const messages = await buildChatCompletionMessages({
     oai: params.oai,
     fields,
@@ -223,13 +246,25 @@ export async function buildChatCompletionGenerateRequest(
     ...(worldInfoBefore ? { worldInfoBefore } : {}),
     ...(worldInfoAfter ? { worldInfoAfter } : {}),
     ...(depthInjections.length ? { depthInjections } : {}),
-    ...(params.type === 'continue' ? { type: 'continue' as const } : {}),
+    type,
+    ...(promptBias ? { bias: promptBias } : {}),
   });
+
+  // power_user.custom_stopping_strings, macro-substituted (power-user.js getCustomStoppingStrings).
+  const customStoppingStrings = getOaiCustomStoppingStrings(params.power, params.identity);
+
+  // Logit bias needs a tokenizer; without an injected encoder it is omitted (documented on the param).
+  const logitBias = params.encodeTokens
+    ? await calculateLogitBias(params.oai, params.encodeTokens)
+    : undefined;
 
   const body = createChatCompletionBody(params.oai, messages, {
     stream: params.stream,
     identity: params.identity,
-    type: params.type === 'continue' ? 'continue' : 'normal',
+    type,
+    ...(customStoppingStrings.length ? { customStoppingStrings } : {}),
+    ...(logitBias ? { logitBias } : {}),
+    ...(params.power.request_token_probabilities ? { requestTokenProbabilities: true } : {}),
   });
 
   return { url: CHAT_COMPLETION_GENERATE_PATH, body, messages };

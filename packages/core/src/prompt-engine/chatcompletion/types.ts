@@ -47,6 +47,14 @@ export interface OaiPromptOrderEntry {
   order: { identifier: string; enabled: boolean }[];
 }
 
+/** One entry of a logit bias preset (oai_settings.bias_presets[name][i]). */
+export interface LogitBiasPresetEntry {
+  id?: string;
+  /** Plain text to tokenize, or a raw JSON token-id array like "[1, 2, 3]". */
+  text: string;
+  value: number;
+}
+
 export interface OaiSettings {
   chat_completion_source: ChatCompletionSource;
 
@@ -94,11 +102,60 @@ export interface OaiSettings {
   show_thoughts?: boolean;
   use_sysprompt?: boolean;
   assistant_prefill?: string;
+  /** Claude prefill used instead of assistant_prefill when impersonating. */
+  assistant_impersonation?: string;
+  /** Impersonation instruction appended as the final (control) prompt on impersonate. */
+  impersonation_prompt?: string;
   continue_prefill?: boolean;
   continue_nudge_prompt?: string;
   continue_postfix?: string;
   seed?: number;
   n?: number;
+
+  // Generic request features (openai.js createGenerationParameters base body).
+  enable_web_search?: boolean;
+  request_images?: boolean;
+  request_image_resolution?: string;
+  request_image_aspect_ratio?: string;
+  verbosity?: string;
+  reverse_proxy?: string;
+  proxy_password?: string;
+
+  // Logit bias presets (resolved via calculateLogitBias with an injected encoder).
+  bias_preset_selected?: string;
+  bias_presets?: Record<string, LogitBiasPresetEntry[]>;
+
+  // Azure OpenAI
+  azure_openai_model?: string;
+  azure_base_url?: string;
+  azure_deployment_name?: string;
+  azure_api_version?: string;
+
+  // OpenRouter routing options
+  openrouter_use_fallback?: boolean;
+  openrouter_providers?: string[];
+  openrouter_quantizations?: string[];
+  openrouter_allow_fallbacks?: boolean;
+  openrouter_middleout?: string;
+
+  // Custom OpenAI-compatible endpoint
+  custom_url?: string;
+  custom_include_body?: string;
+  custom_exclude_body?: string;
+  custom_include_headers?: string;
+
+  // Vertex AI
+  vertexai_auth_mode?: string;
+  vertexai_region?: string;
+  vertexai_express_project_id?: string;
+
+  // Per-provider endpoint/account selectors
+  zai_endpoint?: string;
+  siliconflow_endpoint?: string;
+  minimax_endpoint?: string;
+  workers_ai_account_id?: string;
+  nanogpt_provider?: string;
+  nanogpt_payg_override?: boolean;
 
   [key: string]: unknown;
 }

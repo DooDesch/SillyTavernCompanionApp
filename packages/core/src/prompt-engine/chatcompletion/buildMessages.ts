@@ -30,11 +30,22 @@ export interface BuildMessagesInput {
   maxContext: number;
   maxTokens: number;
   countTokens: TokenCounter;
-  type?: 'normal' | 'continue' | 'regenerate' | 'swipe' | 'quiet';
+  type?: 'normal' | 'continue' | 'regenerate' | 'swipe' | 'quiet' | 'impersonate';
+  /**
+   * "Start reply with" bias (script.js getBiasStrings: textarea {{}} bias, a recent message's
+   * extra.bias, or power_user.user_prompt_bias). Rendered as the trailing assistant entry after
+   * every ordered prompt (openai.js preparePromptsForChatCompletion 1376 + populateChatCompletion
+   * 1254). Desktop returns '' for continue/impersonate types - callers must do the same.
+   */
+  bias?: string;
 }
 
 /** ST default_continue_nudge_prompt (openai.js). */
 const DEFAULT_CONTINUE_NUDGE = '[Continue your last message without repeating its original content.]';
+
+/** ST default_impersonation_prompt (openai.js:104). */
+export const DEFAULT_IMPERSONATION_PROMPT =
+  "[Write your next reply from the point of view of {{user}}, using the chat history so far as a guideline for the writing style of {{user}}. Don't write as {{char}} or system. Don't describe actions of {{char}}.]";
 
 const ccRole = (role: number): ChatCompletionMessage['role'] =>
   role === EXTENSION_ROLE.USER ? 'user' : role === EXTENSION_ROLE.ASSISTANT ? 'assistant' : 'system';
@@ -236,6 +247,17 @@ export async function buildChatCompletionMessages(input: BuildMessagesInput): Pr
   }
 
   const messages = [...pre, ...historyMessages, ...post];
+
+  // "Start reply with" bias: a trailing assistant entry placed after ALL ordered prompts
+  // (incl. post-history ones) and before the control prompts (openai.js populateChatCompletion:
+  // the 'bias' prompt is appended to the collection end at 1483 and added at 1254; control
+  // prompts - impersonate/quiet/continue-prefill - render after it at 1337). It never coexists
+  // with the continue/impersonate blocks below because getBiasStrings yields '' for those types.
+  const bias = input.bias ? subst(input.bias) : '';
+  if (bias.trim().length > 0) {
+    messages.push({ role: 'assistant', content: bias });
+  }
+
   if (continueMessage) {
     if (oai.continue_prefill) {
       // Assistant prefill flavor: the partial reply is the final assistant message
@@ -260,5 +282,17 @@ export async function buildChatCompletionMessages(input: BuildMessagesInput): Pr
       messages.push(continueMessage, { role: 'system', content: subst(nudge) });
     }
   }
+
+  // Impersonation instruction: a control prompt that ends the request when impersonating
+  // (openai.js preparePromptsForChatCompletion 1362/1373 + populateChatCompletion 1215-1216).
+  // Desktop substitutes oai_settings.impersonation_prompt and skips it when cleared to ''.
+  if ((input.type ?? 'normal') === 'impersonate') {
+    const raw = oai.impersonation_prompt !== undefined ? oai.impersonation_prompt : DEFAULT_IMPERSONATION_PROMPT;
+    const impersonation = raw ? subst(raw) : '';
+    if (impersonation) {
+      messages.push({ role: 'system', content: impersonation });
+    }
+  }
+
   return oai.squash_system_messages ? squashSystemMessages(messages) : messages;
 }
