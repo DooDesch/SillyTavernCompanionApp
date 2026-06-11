@@ -7,7 +7,7 @@ import {
   setDefaultPersona,
   upsertPersona,
 } from './personas';
-import { extractPersonas } from './settings';
+import { applyPersonaToConfig, extractEngineConfig, extractPersonas, type Persona } from './settings';
 
 function settingsWith(personaBits: Record<string, unknown>): Record<string, unknown> {
   return { user_avatar: 'a.png', power_user: { ...personaBits } };
@@ -115,6 +115,47 @@ describe('deletePersonaFromSettings', () => {
     const s = settingsWith({ personas: { 'a.png': 'A' }, persona_descriptions: {}, default_persona: 'b.png' });
     deletePersonaFromSettings(s, 'a.png');
     expect((s.power_user as Record<string, unknown>).default_persona).toBe('b.png');
+  });
+
+  it('clears the root user_avatar when it pointed at the deleted persona', () => {
+    const s = settingsWith({ personas: { 'a.png': 'A' }, persona_descriptions: { 'a.png': {} } });
+    expect(s.user_avatar).toBe('a.png');
+    deletePersonaFromSettings(s, 'a.png');
+    expect('user_avatar' in s).toBe(false);
+  });
+
+  it('leaves an unrelated root user_avatar alone', () => {
+    const s = settingsWith({ personas: { 'a.png': 'A', 'b.png': 'B' }, persona_descriptions: {} });
+    deletePersonaFromSettings(s, 'b.png');
+    expect(s.user_avatar).toBe('a.png');
+  });
+});
+
+describe('applyPersonaToConfig', () => {
+  const baseConfig = () => extractEngineConfig({ main_api: 'koboldcpp' }, 'Seraphina');
+  const persona = (over: Partial<Persona> = {}): Persona => ({
+    avatar: 'a.png',
+    name: 'Dennis',
+    description: 'PD',
+    position: PERSONA_POSITIONS.AT_DEPTH,
+    depth: 7,
+    role: 2,
+    title: '',
+    ...over,
+  });
+
+  it('copies name, description and the full position/depth/role descriptor (selectCurrentPersona)', () => {
+    const config = applyPersonaToConfig(baseConfig(), persona());
+    expect(config.identity.user).toBe('Dennis');
+    expect(config.power.persona_description).toBe('PD');
+    expect(config.power.persona_description_position).toBe(PERSONA_POSITIONS.AT_DEPTH);
+    expect(config.power.persona_description_depth).toBe(7);
+    expect(config.power.persona_description_role).toBe(2);
+  });
+
+  it('migrates the deprecated AFTER_CHAR position to IN_PROMPT (personas.js:626-628)', () => {
+    const config = applyPersonaToConfig(baseConfig(), persona({ position: PERSONA_POSITIONS.AFTER_CHAR }));
+    expect(config.power.persona_description_position).toBe(PERSONA_POSITIONS.IN_PROMPT);
   });
 });
 

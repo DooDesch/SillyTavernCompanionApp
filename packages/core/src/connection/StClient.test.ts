@@ -70,6 +70,26 @@ describe('StClient', () => {
     expect(lastPost?.init?.headers?.['X-CSRF-Token']).toBe('T2');
   });
 
+  it('forwards an AbortSignal to the underlying fetch on POST', async () => {
+    const calls: Recorded[] = [];
+    const fetchImpl: FetchLike = async (url, init) => {
+      calls.push({ url, init });
+      if (url.endsWith('/csrf-token')) return makeResponse({ body: { token: 'T' } });
+      return makeResponse({ body: { ok: true } });
+    };
+
+    const client = new StClient({ baseUrl: 'http://host:8000', fetchImpl });
+    const ac = new AbortController();
+    await client.post('/api/backends/kobold/generate', { prompt: 'P' }, { signal: ac.signal });
+
+    const postCall = calls.find((c) => c.url.endsWith('/api/backends/kobold/generate'));
+    expect(postCall?.init?.signal).toBe(ac.signal);
+    // Requests without an init never carry a signal.
+    await client.post('/api/test', {});
+    const plainCall = calls.find((c) => c.url.endsWith('/api/test'));
+    expect(plainCall?.init?.signal).toBeUndefined();
+  });
+
   it('attaches HTTP Basic Auth to every request', async () => {
     const calls: Recorded[] = [];
     const fetchImpl: FetchLike = async (url, init) => {

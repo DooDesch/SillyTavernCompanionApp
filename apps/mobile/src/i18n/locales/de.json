@@ -111,6 +111,7 @@
     "hordeGenerating": "Horde generiert…",
     "hordeGuiPreset": "Das GUI-Settings-Preset wird für Horde nicht unterstützt. Wähle in SillyTavern ein anderes KoboldAI-Preset.",
     "hordeImpossible": "Keine Horde-Worker können mit dieser Anfrage Text generieren. Ändere die Parameter oder versuch es später erneut.",
+    "hordeNoModels": "Kein Horde-Modell in SillyTavern ausgewählt.",
     "hordeQueued": "Warteschlange: Position {{position}}",
     "hordeTimeout": "Zeitüberschreitung bei der Horde-Anfrage. Versuch es erneut.",
     "imageAttached": "Bild angehängt",
@@ -129,8 +130,7 @@
     "thinking": "Denkt",
     "unhide": "Wieder einblenden",
     "unsavedMessage": "Aus einer früheren Sitzung gibt es ungespeicherte Änderungen. Wiederherstellen?",
-    "unsavedTitle": "Ungespeicherte Änderungen",
-    "unsupportedApi": "Dieses Backend ({{api}}) wird von der App noch nicht unterstützt."
+    "unsavedTitle": "Ungespeicherte Änderungen"
   },
   "chats": {
     "daysAgo": "vor {{n}} Tg",
@@ -216,7 +216,7 @@
     },
     "hints": {
       "activation_regex": "Modellnamen, die auf diese Regex passen, wählen die Vorlage automatisch aus.",
-      "bind_to_context": "Beim Auswählen wird auch die gleichnamige Kontextvorlage ausgewählt.",
+      "bind_to_context": "Am Desktop wird beim Auswählen auch die gleichnamige Kontextvorlage gewählt.",
       "content": "Haupt-System-Prompt. Makros wie {{char}} und {{user}} werden ersetzt.",
       "macro": "{{user}}, {{char}} usw. auch in Sequenzen ersetzen.",
       "names_as_stop_strings": "Charakternamen als Stop-Strings verwenden.",

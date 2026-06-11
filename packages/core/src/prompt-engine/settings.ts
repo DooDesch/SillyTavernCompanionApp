@@ -2,6 +2,7 @@ import type { Identity, PowerUserSubset } from './types';
 import type { TextgenSettings } from './textgenBody';
 import type { OaiSettings } from './chatcompletion/types';
 import { normalizeMainApi, type MainApi } from './apiMap';
+import { PERSONA_POSITIONS } from './personas';
 
 /**
  * Raw per-backend settings block (kai_settings / nai_settings / horde_settings).
@@ -152,11 +153,24 @@ export function extractPersonas(parsed: Record<string, unknown>): PersonaList {
   };
 }
 
-/** Apply a chosen persona to an engine config (overrides name1 + persona description). */
+/**
+ * Apply a chosen persona to an engine config: overrides name1 and copies the full descriptor
+ * into power_user, mirroring desktop selectCurrentPersona (personas.js:897-930) which sets
+ * persona_description/_position/_depth/_role. The deprecated AFTER_CHAR position is migrated
+ * to IN_PROMPT like setPersonaDescription (personas.js:626-628) does on load.
+ */
 export function applyPersonaToConfig(config: EngineConfig, persona: Persona): EngineConfig {
+  const position =
+    persona.position === PERSONA_POSITIONS.AFTER_CHAR ? PERSONA_POSITIONS.IN_PROMPT : persona.position;
   return {
     ...config,
     identity: { ...config.identity, user: persona.name },
-    power: { ...config.power, persona_description: persona.description },
+    power: {
+      ...config.power,
+      persona_description: persona.description,
+      persona_description_position: position,
+      persona_description_depth: persona.depth,
+      persona_description_role: persona.role,
+    },
   };
 }

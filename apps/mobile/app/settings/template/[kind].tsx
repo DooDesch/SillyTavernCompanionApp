@@ -100,7 +100,8 @@ export default function TemplateEditorScreen() {
 
   /** Warn-once before the first template-file write (mirrors the generation-settings pattern). */
   const confirmFirstWrite = useCallback(async (): Promise<boolean> => {
-    const warned = await secrets.get(WARNED_KEY).catch(() => '1');
+    // Fail closed: when the storage read fails we cannot know the user was warned - warn again.
+    const warned = await secrets.get(WARNED_KEY).catch(() => null);
     if (warned === '1') return true;
     const ok = await new Promise<boolean>((resolve) => {
       Alert.alert(t('formatting.writeWarningTitle'), t('formatting.writeWarning'), [

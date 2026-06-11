@@ -136,6 +136,12 @@ describe('buildNovelGenerateRequest - prompt assembly', () => {
     expect(req.prompt.endsWith('Seraphina: F')).toBe(true);
   });
 
+  it('appends the name cue even for an EMPTY history (script.js:4780-4782 empty chat2 entry)', async () => {
+    const req = await buildNovelGenerateRequest(base({ history: [] }));
+    // story string, preamble, then the forced "\nSeraphina:" cue with nothing in between.
+    expect(req.prompt).toBe('D\n[ Style: chat ]\n\nSeraphina:');
+  });
+
   it('instruct mode keeps its own prompt line - no extra name append', async () => {
     const req = await buildNovelGenerateRequest(
       base({
@@ -161,7 +167,9 @@ describe('buildNovelGenerateRequest - prompt assembly', () => {
 });
 
 describe('buildNovelGenerateRequest - settings resolution', () => {
-  it('resolves the active preset from the RAW-JSON-string arrays for the order fallback', async () => {
+  it('ignores the preset order (desktop dead code) and falls back to the default order', async () => {
+    // Desktop's preset fallback (nai-settings.js:604) never fires: loadNovelSettings (:259)
+    // always backfills nai_settings.order with `settings.order || default_order`.
     const req = await buildNovelGenerateRequest(
       base({
         nai: { ...naiBlock, preset_settings_novel: 'My-Preset' },
@@ -169,10 +177,10 @@ describe('buildNovelGenerateRequest - settings resolution', () => {
         novelaiSettingNames: ['My-Preset', 'Other'],
       }),
     );
-    expect(req.body.order).toEqual([9, 8, 7]);
+    expect(req.body.order).toEqual([1, 5, 0, 2, 3, 4]);
   });
 
-  it('live nai order beats the preset order', async () => {
+  it('live nai order wins', async () => {
     const req = await buildNovelGenerateRequest(
       base({
         nai: { ...naiBlock, order: [4, 2], preset_settings_novel: 'My-Preset' },
@@ -188,9 +196,10 @@ describe('buildNovelGenerateRequest - settings resolution', () => {
     expect(req.streaming).toBe(true);
   });
 
-  it('budgets against the clamped novel context (kayra Tablet: 4096)', async () => {
+  it('budgets against the clamped novel context (kayra Tablet: 4096) minus the response length', async () => {
     // Each line costs 1000 "tokens"; with maxContext 20000 the kayra Tablet clamp (4096)
-    // must be the effective budget -> only the newest 3 history lines fit (3000 + base 1000).
+    // minus maxTokens (64) is the effective budget -> the newest 3 history lines fit
+    // (base 1000 + 3000 = 4000 < 4032).
     const history = Array.from({ length: 10 }, (_, i) => ({
       name: i % 2 ? 'Seraphina' : 'Dennis',
       mes: `m${i}`,
@@ -206,5 +215,19 @@ describe('buildNovelGenerateRequest - settings resolution', () => {
       }),
     );
     expect(req.includedMessages).toBe(3);
+
+    // A bigger response reservation (getMaxPromptTokens = clamped - amount_gen,
+    // script.js:5922-5929) shrinks the budget below 4000 -> only 2 lines fit.
+    const reqBigResponse = await buildNovelGenerateRequest(
+      base({
+        nai: { ...naiBlock, model_novel: 'kayra-v1' },
+        history,
+        maxContext: 20000,
+        maxTokens: 100,
+        countTokens: () => 1000,
+        tier: 1,
+      }),
+    );
+    expect(reqBigResponse.includedMessages).toBe(2);
   });
 });

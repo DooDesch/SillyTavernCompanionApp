@@ -82,6 +82,18 @@ describe('versionCompare', () => {
     expect(versionCompare('KoboldCpp', '1.30')).toBe(true);
     expect(versionCompare('KoboldCpp', '1.48')).toBe(true);
   });
+
+  it('compares the digit-run prefix of letter-suffixed segments numerically first', () => {
+    // localeCompare({ numeric: true }) semantics: 29 < 30 decides before the 'b' tail.
+    expect(versionCompare('1.29b', '1.30')).toBe(false);
+    expect(versionCompare('1.30', '1.29b')).toBe(true);
+    expect(versionCompare('1.2.3b', '1.2.4')).toBe(false);
+    expect(versionCompare('1.2.4', '1.2.3b')).toBe(true);
+    // A letter tail only breaks numeric ties ('29b' > '29').
+    expect(versionCompare('1.29b', '1.29')).toBe(true);
+    expect(versionCompare('1.29', '1.29b')).toBe(false);
+    expect(versionCompare('1.29b', '1.29b')).toBe(true);
+  });
 });
 
 describe('computeKaiFlags', () => {

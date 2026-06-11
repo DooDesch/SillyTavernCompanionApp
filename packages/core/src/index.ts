@@ -20,7 +20,7 @@ export type { FetchLike, FetchInitLike, FetchResponseLike } from './net/http';
 
 // Connection / API
 export { StClient } from './connection/StClient';
-export type { StClientOptions, StResponse, BasicAuthCredentials } from './connection/StClient';
+export type { StClientOptions, StResponse, StRequestInit, BasicAuthCredentials } from './connection/StClient';
 export { CookieJar, readSetCookie, splitSetCookieHeader } from './connection/cookies';
 export {
   getVersion,

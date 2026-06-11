@@ -3,6 +3,7 @@ import type { StChatMessage } from '../types/chat';
 import type { Identity, PowerUserSubset } from './types';
 import {
   buildTextCompletionPrompt,
+  placePersonaDescription,
   type BuildPromptResult,
   type HistoryMessage,
   type TokenCounter,
@@ -11,7 +12,7 @@ import { getCharacterCardFields, type ChatFieldOverrides } from './characterFiel
 import { createTextgenBody, type TextgenSettings } from './textgenBody';
 import { checkWorldInfo, type TimedWorldInfoState } from './worldinfo/activate';
 import type { WorldInfoEntry, WorldInfoSettings } from './worldinfo/types';
-import { EXTENSION_ROLE, roleFromString, type DepthInjection } from './depthInject';
+import { roleFromString, type DepthInjection } from './depthInject';
 import {
   createKoboldGenerationData,
   normalizeKaiSettings,
@@ -26,9 +27,7 @@ import {
   NOVELAI_GENERATE_PATH,
   type NovelEncode,
 } from './novelai';
-import { getStoppingStrings } from './stoppingStrings';
 import { substituteParams } from './substituteParams';
-import type { InstructContext } from './instruct';
 import {
   buildChatCompletionMessages,
   calculateLogitBias,
@@ -81,6 +80,13 @@ export interface TextgenGenerateParams {
   lorebook?: { entries: WorldInfoEntry[]; settings: WorldInfoSettings; timedState?: TimedWorldInfoState };
   /** Override the backend URL (api_server), e.g. from the active connection profile. */
   apiServerOverride?: string;
+  /**
+   * Body truncation_length/num_ctx override. Desktop budgets the PROMPT against
+   * getMaxPromptTokens() (max_context - amount_gen, script.js:5922-5929) while the body
+   * keeps the FULL max_context (textgen-settings.js:1641/1698) - pass the full context
+   * here and the response-reserved budget as `maxContext`.
+   */
+  bodyMaxContext?: number;
   /** Author's Note injected in-chat at a depth. */
   authorsNote?: DepthInjection;
   /** Generate the user's next turn instead of the character's. */
@@ -159,7 +165,7 @@ export async function buildTextgenGenerateRequest(
   const body = createTextgenBody(params.textgen, {
     prompt: built.prompt,
     maxTokens: params.maxTokens,
-    maxContext: params.maxContext,
+    maxContext: params.bodyMaxContext ?? params.maxContext,
     stoppingStrings: built.stoppingStrings,
     stream: params.stream,
     isContinue: params.type === 'continue',
@@ -266,9 +272,14 @@ export interface NovelGenerateParams {
   power: PowerUserSubset;
   /** Raw nai_settings block from /api/settings/get (normalized at this boundary). */
   nai: Record<string, unknown>;
-  /** Raw novelai_settings preset array (RAW-JSON-string entries, from the settings response root). */
+  /**
+   * Raw novelai_settings preset array (RAW-JSON-string entries, from the settings response
+   * root). Currently unused: the only preset read on the desktop (the order fallback,
+   * nai-settings.js:604) is dead code because loadNovelSettings (:259) always backfills
+   * nai_settings.order. Kept so the config plumbing stays in place.
+   */
   novelaiSettings?: unknown;
-  /** Parallel novelai_setting_names array. */
+  /** Parallel novelai_setting_names array (see novelaiSettings). */
   novelaiSettingNames?: unknown;
   identity: Identity;
   history: HistoryMessage[];
@@ -309,8 +320,10 @@ export interface NovelGenerateRequest {
  */
 export async function buildNovelGenerateRequest(params: NovelGenerateParams): Promise<NovelGenerateRequest> {
   const nai = normalizeNaiSettings(params.nai);
-  // Desktop budgets the prompt against the novel-clamped context (getMaxContextTokens novel branch).
-  const maxContext = getNovelMaxContext(nai, params.maxContext, params.tier);
+  // Desktop budgets the prompt against getMaxPromptTokens() = getMaxContextTokens() -
+  // amount_gen (script.js:5922-5929): clamp to the novel context limits FIRST
+  // (getMaxContextTokens novel branch), then reserve the response length.
+  const maxContext = getNovelMaxContext(nai, params.maxContext, params.tier) - params.maxTokens;
 
   const syncCount = (t: string): number => {
     const r = params.countTokens(t);
@@ -375,29 +388,13 @@ export async function buildNovelGenerateRequest(params: NovelGenerateParams): Pr
   });
 
   // Desktop: getStoppingStrings(isImpersonate, isContinue) inside getNovelGenerationData.
-  const ctx: InstructContext = {
-    instruct: params.power.instruct,
-    context: params.power.context,
-    identity: params.identity,
-    selectedGroup: false,
-  };
-  const stoppingStrings = getStoppingStrings(ctx, params.power, {
-    isImpersonate,
-    isContinue,
-    lastMessageIsUser,
-  });
-
-  // The active preset is only consulted for the order fallback chain (nai-settings.js:604);
-  // every other field comes from the live nai_settings (loadNovelPreset copies preset fields
-  // into nai_settings at selection time, which the server has already persisted).
-  const preset = presetsByName(params.novelaiSettings, params.novelaiSettingNames).get(
-    String(nai.preset_settings_novel ?? ''),
-  );
+  // buildTextCompletionPrompt computes them with the exact same context and flags
+  // (isImpersonate/isContinue/lastMessageIsUser), so the built list is byte-identical.
+  const stoppingStrings = built.stoppingStrings;
 
   const body = await createNovelGenerationData({
     prompt: built.prompt,
     nai,
-    preset,
     maxLength: params.maxTokens,
     stoppingStrings,
     encode: params.encode,
@@ -488,20 +485,16 @@ export async function buildChatCompletionGenerateRequest(
       content: fields.charDepthPrompt,
     });
   }
-  if (
-    fields.persona &&
-    (params.power.persona_description_position ?? 0) === 2 // PERSONA_AT_DEPTH
-  ) {
-    depthInjections.push({
-      depth:
-        typeof params.power.persona_description_depth === 'number'
-          ? params.power.persona_description_depth
-          : 2,
-      role: params.power.persona_description_role ?? EXTENSION_ROLE.SYSTEM,
-      content: fields.persona,
-    });
-  }
-  if (params.authorsNote?.content) depthInjections.push(params.authorsNote);
+  // Persona placement (desktop addPersonaDescriptionExtensionPrompt + openai.js:1424): only
+  // IN_PROMPT/AFTER_CHAR keep the personaDescription prompt slot; AT_DEPTH injects in-chat,
+  // TOP_AN/BOTTOM_AN ride the Author's Note, NONE drops the persona.
+  const personaPlacement = placePersonaDescription(params.power, fields.persona, params.authorsNote);
+  if (personaPlacement.personaInjection) depthInjections.push(personaPlacement.personaInjection);
+  if (personaPlacement.authorsNote?.content) depthInjections.push(personaPlacement.authorsNote);
+  const fieldsForMessages =
+    personaPlacement.personaForPrompt === fields.persona
+      ? fields
+      : { ...fields, persona: personaPlacement.personaForPrompt };
 
   const type = params.type ?? 'normal';
 
@@ -514,7 +507,7 @@ export async function buildChatCompletionGenerateRequest(
 
   const messages = await buildChatCompletionMessages({
     oai: params.oai,
-    fields,
+    fields: fieldsForMessages,
     history: params.history,
     identity: params.identity,
     maxContext,

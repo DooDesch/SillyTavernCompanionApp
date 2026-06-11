@@ -511,8 +511,19 @@ export default function ChatScreen() {
         signal: ac.signal,
         ...(effectiveLorebook ? { lorebook: effectiveLorebook } : {}),
         ...(authorsNote ? { authorsNote } : {}),
+        ...(header?.chat_metadata
+          ? {
+              chatMetadata: header.chat_metadata as {
+                system_prompt?: string;
+                scenario?: string;
+                mes_example?: string;
+              },
+            }
+          : {}),
       })) {
-        setInput(acc.text);
+        // Status-only chunks (e.g. the Horde queue position) carry text '' - they must
+        // not wipe what has been drafted into the input so far.
+        if (acc.text) setInput(acc.text);
       }
     } catch (err) {
       // aborted / network - keep whatever drafted; friendly errors still inform the user
@@ -523,7 +534,7 @@ export default function ChatScreen() {
       abortRef.current = null;
       setStreaming(false);
     }
-  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote, t]);
+  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote, header, t]);
 
   // Persist a header change (e.g. Author's Note) back to the server.
   const saveHeader = useCallback(

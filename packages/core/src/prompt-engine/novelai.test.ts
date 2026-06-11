@@ -327,8 +327,8 @@ describe('logit bias', () => {
   });
 });
 
-describe('order fallback chain (nai.order || preset.order || default)', () => {
-  const mk = (order: number[] | undefined, preset?: Record<string, unknown>) => {
+describe('order fallback (nai.order || default; the desktop preset fallback is dead code)', () => {
+  const mk = (order: number[] | undefined) => {
     const { encode } = makeEncoder();
     const nai = { ...clioSettings } as NaiSettings;
     if (order === undefined) delete nai.order;
@@ -336,7 +336,6 @@ describe('order fallback chain (nai.order || preset.order || default)', () => {
     return createNovelGenerationData({
       prompt: 'P',
       nai,
-      preset,
       maxLength: 100,
       stoppingStrings: [],
       encode,
@@ -344,12 +343,9 @@ describe('order fallback chain (nai.order || preset.order || default)', () => {
   };
 
   it('prefers the live nai order', async () => {
-    expect((await mk([2, 3], { order: [9] })).order).toEqual([2, 3]);
+    expect((await mk([2, 3])).order).toEqual([2, 3]);
   });
-  it('falls back to the active preset order', async () => {
-    expect((await mk(undefined, { order: [9, 8] })).order).toEqual([9, 8]);
-  });
-  it('falls back to the default order', async () => {
+  it('falls back to the default order (loadNovelSettings backfill, nai-settings.js:259)', async () => {
     expect((await mk(undefined)).order).toEqual(NAI_DEFAULT_ORDER);
     expect((await mk(undefined)).order).toEqual([1, 5, 0, 2, 3, 4]);
   });

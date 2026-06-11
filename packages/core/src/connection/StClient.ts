@@ -20,6 +20,11 @@ export interface StResponse<T = unknown> {
   data: T;
 }
 
+/** Per-request options (currently only an AbortSignal for cancellable POSTs). */
+export interface StRequestInit {
+  signal?: AbortSignal;
+}
+
 function defaultBase64(input: string): string {
   if (typeof btoa === 'function') return btoa(input);
   return Buffer.from(input, 'utf-8').toString('base64');
@@ -85,8 +90,8 @@ export class StClient {
     return this.toResponse<T>(res);
   }
 
-  async post<T = unknown>(path: string, body?: unknown): Promise<StResponse<T>> {
-    return this.postOnce<T>(path, body, true);
+  async post<T = unknown>(path: string, body?: unknown, init?: StRequestInit): Promise<StResponse<T>> {
+    return this.postOnce<T>(path, body, true, init);
   }
 
   /**
@@ -111,18 +116,24 @@ export class StClient {
     return this.toResponse<T>(res);
   }
 
-  private async postOnce<T>(path: string, body: unknown, allowRetry: boolean): Promise<StResponse<T>> {
+  private async postOnce<T>(
+    path: string,
+    body: unknown,
+    allowRetry: boolean,
+    init?: StRequestInit,
+  ): Promise<StResponse<T>> {
     const headers = await this.authHeaders();
     const res = await this.fetchImpl(this.url(path), {
       method: 'POST',
       headers,
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...(init?.signal ? { signal: init.signal } : {}),
     });
     this.cookies.ingestFromHeaders(res.headers);
 
     if (res.status === 403 && allowRetry) {
       await this.ensureCsrf(true);
-      return this.postOnce<T>(path, body, false);
+      return this.postOnce<T>(path, body, false, init);
     }
     return this.toResponse<T>(res);
   }

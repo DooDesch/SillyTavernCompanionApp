@@ -227,8 +227,10 @@ export async function runHordeTask(
 
   for (let retryNumber = 0; retryNumber < HORDE_MAX_RETRIES; retryNumber++) {
     if (opts.signal?.aborted) {
-      // Exactly once: we throw immediately after, so this line cannot run twice.
-      await deps.post('/api/horde/cancel-task', { taskId });
+      // Exactly once: we throw immediately after, so this line cannot run twice. Desktop
+      // fire-and-forgets the cancel POST (horde.js:246) - a failed cancel must never mask
+      // the abort, so the result (and any rejection) is deliberately ignored.
+      void Promise.resolve(deps.post('/api/horde/cancel-task', { taskId })).catch(() => {});
       throw new HordeAbortError();
     }
 

@@ -75,7 +75,11 @@ export function useEngineConfig(charName: string): {
       if (persona) config = applyPersonaToConfig(config, persona);
     }
 
-    if (koboldOverride) config = { ...config, apiServerOverride: koboldOverride };
+    // The app-local KoboldCpp URL override targets the textgen backend only - it must not
+    // hijack KoboldAI Classic's api_server (kai.api_server / a profile apiUrl handle that).
+    if (koboldOverride && config.mainApi === 'textgenerationwebui') {
+      config = { ...config, apiServerOverride: koboldOverride };
+    }
 
     return config;
   }, [data, charName, activeProfileId, koboldOverride, activePersonaAvatar]);

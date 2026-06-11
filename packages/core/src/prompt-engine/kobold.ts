@@ -111,14 +111,23 @@ export function versionCompare(srcVersion: string | null | undefined, minVersion
     if (x === undefined) return false; // shorter + equal so far -> smaller ("1.2" < "1.2.2")
     if (y === undefined) return true; // longer -> bigger ("1.48.1" >= "1.48")
     if (x === y) continue;
-    const nx = /^\d+$/.test(x) ? Number(x) : NaN;
-    const ny = /^\d+$/.test(y) ? Number(y) : NaN;
-    if (!Number.isNaN(nx) && !Number.isNaN(ny)) {
+    // localeCompare({ numeric: true }) chunks each segment into digit runs and letter runs:
+    // a leading digit run compares numerically FIRST ('29b' < '30', '3b' < '4'), and only a
+    // tie on the number falls through to the letter tail ('29b' > '29'). Segments without a
+    // digit prefix collate after all numbers ('KoboldCpp' >= any numeric gate).
+    const mx = /^(\d+)(.*)$/.exec(x);
+    const my = /^(\d+)(.*)$/.exec(y);
+    if (mx && my) {
+      const nx = Number(mx[1]);
+      const ny = Number(my[1]);
       if (nx !== ny) return nx > ny;
+      const rx = mx[2] ?? '';
+      const ry = my[2] ?? '';
+      if (rx !== ry) return rx > ry; // '' < 'b' < 'c': the letter tail breaks the tie
       continue; // "01" vs "1" - numerically equal
     }
-    if (!Number.isNaN(nx)) return false; // numeric < non-numeric
-    if (!Number.isNaN(ny)) return true; // non-numeric > numeric ("KoboldCpp" >= "1.30")
+    if (mx) return false; // numeric < non-numeric
+    if (my) return true; // non-numeric > numeric ("KoboldCpp" >= "1.30")
     return x > y;
   }
   return true; // equal

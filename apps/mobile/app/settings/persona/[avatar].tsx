@@ -161,9 +161,11 @@ export default function PersonaEditorScreen() {
         onPress: async () => {
           setBusy(true);
           try {
-            const fileOk = await deleteUserAvatar(client, avatarId);
+            // The avatar file delete is best-effort (an orphaned image is harmless); the
+            // settings entry is what the list and the engine read, so it is authoritative.
+            await deleteUserAvatar(client, avatarId);
             const settingsOk = await syncPersonaDelete(client, avatarId);
-            if (!fileOk && !settingsOk) {
+            if (!settingsOk) {
               Alert.alert(t('common.error'), t('personas.deleteFailed'));
               return;
             }

@@ -107,9 +107,11 @@ export function upsertPersona(
 
 /**
  * Remove a persona from the settings (the avatar FILE is deleted separately via
- * `/api/avatars/delete`). Desktop parity (personas.js:1180-1186): removes the entries
+ * `/api/avatars/delete`). Desktop parity (personas.js:1180-1200): removes the entries
  * from `personas` + `persona_descriptions` and leaves `default_persona = null` when the
- * deleted persona was the default.
+ * deleted persona was the default. The root `user_avatar` is also cleared when it pointed
+ * at the deleted persona - the desktop repoints it via loadPersonaForCurrentChat; the
+ * minimal mirror is dropping the stale reference.
  */
 export function deletePersonaFromSettings(settings: Record<string, unknown>, avatarId: string): void {
   const pu = personaPowerUser(settings);
@@ -118,6 +120,7 @@ export function deletePersonaFromSettings(settings: Record<string, unknown>, ava
     delete pu.persona_descriptions[avatarId];
   }
   if (pu.default_persona === avatarId) pu.default_persona = null;
+  if (settings.user_avatar === avatarId) delete settings.user_avatar;
 }
 
 /**

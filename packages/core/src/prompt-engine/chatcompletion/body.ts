@@ -341,7 +341,10 @@ export function createChatCompletionBody(
   // Claude (openai.js:2811-2821).
   if (source === 'claude') {
     body.top_k = num(oai.top_k_openai);
-    body.use_sysprompt = oai.use_sysprompt ?? true;
+    // Raw forward like desktop (openai.js:2813; default is FALSE, openai.js:484) - an
+    // undefined value drops out of the body via the final cleanup, exactly like
+    // desktop's JSON.stringify.
+    body.use_sysprompt = oai.use_sysprompt;
     body.stop = stops(); // Claude shouldn't have limits on stop strings.
     // No body prefill on quiet gens (summarization) and when continue-prefilling: with
     // continue_prefill the displaced partial reply IS the prefill - sending the body
@@ -378,7 +381,8 @@ export function createChatCompletionBody(
     body.stop = stops(stopStringsLimit)
       .slice(0, stopStringsLimit)
       .filter((x) => x.length >= 1 && x.length <= 16);
-    body.use_sysprompt = oai.use_sysprompt ?? true;
+    // Raw forward like desktop (openai.js:2844; default FALSE) - undefined drops out.
+    body.use_sysprompt = oai.use_sysprompt;
     if (source === 'vertexai') {
       body.vertexai_auth_mode = oai.vertexai_auth_mode;
       body.vertexai_region = oai.vertexai_region;

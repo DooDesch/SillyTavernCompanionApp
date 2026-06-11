@@ -86,6 +86,22 @@ describe('createChatCompletionBody golden bodies per source', () => {
     });
   });
 
+  it('claude/makersuite forward use_sysprompt RAW (desktop default is false, openai.js:484/2813/2844)', () => {
+    // undefined: the key drops out of the body, exactly like desktop JSON.stringify.
+    const claudeUnset: OaiSettings = { ...base, chat_completion_source: 'claude', claude_model: 'c' };
+    expect('use_sysprompt' in createChatCompletionBody(claudeUnset, messages, opts)).toBe(false);
+    // false: forwarded as false (the old `?? true` fallback flipped this).
+    const claudeOff: OaiSettings = { ...claudeUnset, use_sysprompt: false };
+    expect(createChatCompletionBody(claudeOff, messages, opts).use_sysprompt).toBe(false);
+    const gemOff: OaiSettings = {
+      ...base,
+      chat_completion_source: 'makersuite',
+      google_model: 'gemini-2.0-flash',
+      use_sysprompt: false,
+    };
+    expect(createChatCompletionBody(gemOff, messages, opts).use_sysprompt).toBe(false);
+  });
+
   it('openrouter (extra samplers + routing fields)', () => {
     const oai: OaiSettings = {
       ...base,

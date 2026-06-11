@@ -81,8 +81,8 @@ export interface NaiSettings {
  * Normalize the raw `nai_settings` block from /api/settings/get into NaiSettings, applying
  * exactly the `||` fallbacks desktop loadNovelSettings (nai-settings.js:230-266) applies.
  * Plain assignments stay passthrough (desktop also overwrites its defaults with undefined).
- * Deviation: `order` is NOT defaulted here so the getNovelGenerationData fallback chain
- * `nai.order || preset.order || default_order` (nai-settings.js:604) stays live.
+ * `order` is NOT defaulted here; getNovelGenerationData applies `nai.order || default_order`,
+ * matching loadNovelSettings (nai-settings.js:259) which always backfills order the same way.
  */
 export function normalizeNaiSettings(raw: Record<string, unknown>): NaiSettings {
   const r = raw as Partial<NaiSettings> & Record<string, unknown>;
@@ -241,7 +241,9 @@ export async function getNovelBadWordsIds(
   slug: NovelTokenizerSlug,
   encode: NovelEncode,
 ): Promise<number[][]> {
-  const cacheKey = `${slug} ${bannedTokens}`;
+  // '|' separator: slugs never contain it, and a printable char keeps this file grep-able
+  // (an embedded NUL byte makes tools treat the source as binary).
+  const cacheKey = `${slug}|${bannedTokens}`;
   const cached = badWordsCache.get(cacheKey);
   if (cached) return cached;
 
@@ -347,8 +349,6 @@ export interface CreateNovelGenerationDataParams {
   prompt: string;
   /** Normalized live nai_settings. */
   nai: NaiSettings;
-  /** The active preset (novelai_settings[novelai_setting_names[preset_settings_novel]]) - order fallback only. */
-  preset?: Record<string, unknown> | undefined;
   /** Requested response length (amount_gen) - clamped to the model/tier maximum. */
   maxLength: number;
   /** Stopping strings (getStoppingStrings(isImpersonate, isContinue)) - erato expansion happens here. */
@@ -367,7 +367,7 @@ export interface CreateNovelGenerationDataParams {
 export async function createNovelGenerationData(
   params: CreateNovelGenerationDataParams,
 ): Promise<Record<string, unknown>> {
-  const { nai, preset, encode } = params;
+  const { nai, encode } = params;
   let finalPrompt = params.prompt;
 
   const isKayra = nai.model_novel.includes('kayra');
@@ -449,7 +449,10 @@ export async function createNovelGenerationData(
     use_cache: false,
     return_full_text: false,
     prefix,
-    order: nai.order || (preset?.order as number[] | undefined) || NAI_DEFAULT_ORDER,
+    // Desktop nai-settings.js:604 also falls back to the active preset's order, but that
+    // branch is dead code: loadNovelSettings (:259) always backfills nai_settings.order
+    // with `settings.order || default_order`, which this two-step fallback reproduces.
+    order: nai.order || NAI_DEFAULT_ORDER,
     // power_user.request_token_probabilities is not surfaced in the app - desktop sends
     // undefined in that case too (the key drops out of the JSON).
     num_logprobs: undefined,

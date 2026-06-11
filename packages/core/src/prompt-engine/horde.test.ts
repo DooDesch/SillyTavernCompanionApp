@@ -218,6 +218,20 @@ describe('runHordeTask', () => {
     expect(cancels[0]?.body).toEqual({ taskId: 'task-1' });
   });
 
+  it('throws HordeAbortError even when the cancel POST rejects (fire-and-forget, horde.js:246)', async () => {
+    const ac = new AbortController();
+    ac.abort();
+    const deps: HordeTaskDeps = {
+      post: async (path): Promise<HordePostResponse> => {
+        if (path === '/api/horde/generate-text') return { ok: true, data: { id: 'task-1' } };
+        if (path === '/api/horde/cancel-task') throw new Error('network down');
+        return { ok: true, data: {} };
+      },
+      delay: () => Promise.resolve(),
+    };
+    await expect(runHordeTask(deps, PAYLOAD, { signal: ac.signal })).rejects.toBeInstanceOf(HordeAbortError);
+  });
+
   it('exposes typed error classes', () => {
     expect(new HordeError('timeout')).toBeInstanceOf(Error);
     expect(new HordeAbortError().name).toBe('HordeAbortError');

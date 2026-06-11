@@ -74,7 +74,9 @@ export const TEMPLATE_FIELDS: Record<TemplateKind, TemplateField[]> = {
     { key: 'activation_regex', type: 'textarea', section: 'misc', def: '', hint: true },
   ],
   context: [
-    { key: 'story_string', type: 'textarea', section: 'template', def: '{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}\'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}', tall: true, hint: true },
+    // Long-press reset default = the current desktop Default context preset (anchor-equipped
+    // story string from default/content/presets/context/Default.json).
+    { key: 'story_string', type: 'textarea', section: 'template', def: '{{#if anchorBefore}}{{anchorBefore}}\n{{/if}}{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{personality}}\n{{/if}}{{#if scenario}}{{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}{{#if anchorAfter}}{{anchorAfter}}\n{{/if}}{{trim}}', tall: true, hint: true },
     { key: 'chat_start', type: 'textarea', section: 'template', def: '***' },
     { key: 'example_separator', type: 'textarea', section: 'template', def: '***' },
     { key: 'use_stop_strings', type: 'toggle', section: 'behavior', def: false, hint: true },
@@ -204,6 +206,12 @@ export function buildSelectPatch(kind: TemplateKind, template: TemplateObject): 
       migrated.output_suffix = migrated.separator_sequence || '';
       delete migrated.separator_sequence;
     }
+    // names / names_force_groups => names_behavior (instruct-mode.js:63-69)
+    if (migrated.names !== undefined) {
+      migrated.names_behavior = migrated.names ? 'always' : migrated.names_force_groups ? 'force' : 'none';
+      delete migrated.names;
+      delete migrated.names_force_groups;
+    }
     const fields: Record<string, unknown> = { preset: name };
     for (const prop of INSTRUCT_COPY_PROPS) {
       if (migrated[prop] !== undefined) fields[prop] = migrated[prop];
@@ -212,14 +220,15 @@ export function buildSelectPatch(kind: TemplateKind, template: TemplateObject): 
   }
 
   if (kind === 'context') {
+    const fixed = autoFixStoryString(template);
     const fields: Record<string, unknown> = { preset: name };
     for (const { key, def } of CONTEXT_COPY_PROPS) {
-      const value = template[key] ?? def;
+      const value = fixed[key] ?? def;
       if (value !== undefined) fields[key] = value;
     }
     const globals: Record<string, unknown> = {};
     for (const { key, def } of CONTEXT_GLOBAL_PROPS) {
-      globals[key] = template[key] ?? def;
+      globals[key] = fixed[key] ?? def;
     }
     return { fields, globals };
   }
@@ -240,4 +249,38 @@ function definedOnly(obj: TemplateObject): TemplateObject {
     if (v !== undefined) out[k] = v;
   }
   return out;
+}
+
+/**
+ * Port of desktop `autoFixStoryString` (power-user.js:1949-1981, applied on context select at
+ * :2046): legacy templates without `story_string_position` get the missing anchorBefore /
+ * anchorAfter fields spliced into their story string (start / end, inside the curly span).
+ * Returns a fixed copy; templates that already carry story_string_position pass through.
+ */
+export function autoFixStoryString(template: TemplateObject): TemplateObject {
+  if (!template || Object.hasOwn(template, 'story_string_position')) {
+    return template;
+  }
+
+  let storyString = (template.story_string as string | undefined) || '';
+
+  const autoFixMissingField = (field: string, position: 'start' | 'end'): void => {
+    if (storyString.includes(`{{${field}}}`)) {
+      return;
+    }
+    const fieldTemplate = `{{#if ${field}}}{{${field}}}\n{{/if}}`;
+    const firstCurlyPosition = storyString.includes('{{') ? storyString.indexOf('{{') : 0;
+    const lastCurlyPosition = storyString.includes('}}') ? storyString.lastIndexOf('}}') + '}}'.length : storyString.length;
+    const lastTrimPosition = storyString.includes('{{trim}}') ? storyString.lastIndexOf('{{trim}}') : storyString.length;
+    const endPosition = Math.min(lastTrimPosition, lastCurlyPosition);
+    storyString =
+      position === 'start'
+        ? storyString.substring(0, firstCurlyPosition) + fieldTemplate + storyString.substring(firstCurlyPosition)
+        : storyString.substring(0, endPosition) + fieldTemplate + storyString.substring(endPosition);
+  };
+
+  autoFixMissingField('anchorBefore', 'start');
+  autoFixMissingField('anchorAfter', 'end');
+
+  return { ...template, story_string: storyString };
 }

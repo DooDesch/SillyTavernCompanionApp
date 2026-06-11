@@ -17,6 +17,7 @@ import {
 import { getStoppingStrings } from './stoppingStrings';
 import { getExampleBlocks } from './examples';
 import { EXTENSION_ROLE, injectAtDepth, roleFromString, type DepthInjection } from './depthInject';
+import { PERSONA_POSITIONS } from './personas';
 
 export interface HistoryMessage {
   name: string;
@@ -71,15 +72,78 @@ export interface BuildPromptResult {
   includedMessages: number;
 }
 
-const PERSONA_IN_PROMPT = 0;
-/** persona_description_positions: AT_DEPTH (inject persona into the chat at a depth). */
-const PERSONA_AT_DEPTH = 2;
+/** Desktop Author's Note default depth (authors-note.js DEFAULT_DEPTH; the app's note editor default). */
+const AN_DEFAULT_DEPTH = 4;
+
+/** Resolved placement of the persona description (see `placePersonaDescription`). */
+export interface PersonaPlacement {
+  /** Persona text for the story string / CC personaDescription slot ('' unless in-prompt). */
+  personaForPrompt: string;
+  /** The (possibly persona-merged) Author's Note injection. */
+  authorsNote: DepthInjection | undefined;
+  /** Standalone persona in-chat injection (position AT_DEPTH). */
+  personaInjection: DepthInjection | undefined;
+}
+
+/**
+ * Where the persona description lands per persona_description_position (desktop
+ * addPersonaDescriptionExtensionPrompt, script.js:3144-3166 + storyStringParams script.js:4647):
+ *  - IN_PROMPT(0) and the deprecated AFTER_CHAR(1, migrated to 0 on load): story string slot
+ *  - TOP_AN(2)/BOTTOM_AN(3): prepended/appended to the Author's Note injection content. The
+ *    desktop injects the merged value at the note's slot even when the note itself is empty,
+ *    so without an app-side note the persona goes in alone at the note defaults (depth 4,
+ *    system role). Gap vs desktop: the AN interval/trigger logic does not exist in the app -
+ *    the merged note always fires, where desktop drops it on non-trigger turns.
+ *  - AT_DEPTH(4): standalone in-chat injection at persona depth/role
+ *  - NONE(9, or unknown): the persona is dropped entirely
+ */
+export function placePersonaDescription(
+  power: PowerUserSubset,
+  persona: string,
+  authorsNote: DepthInjection | undefined,
+): PersonaPlacement {
+  const position = power.persona_description_position ?? PERSONA_POSITIONS.IN_PROMPT;
+  const inPrompt = position === PERSONA_POSITIONS.IN_PROMPT || position === PERSONA_POSITIONS.AFTER_CHAR;
+  if (!persona || inPrompt) {
+    return { personaForPrompt: inPrompt ? persona : '', authorsNote, personaInjection: undefined };
+  }
+  if (position === PERSONA_POSITIONS.TOP_AN || position === PERSONA_POSITIONS.BOTTOM_AN) {
+    const note = authorsNote?.content ?? '';
+    const content = note
+      ? position === PERSONA_POSITIONS.TOP_AN
+        ? `${persona}\n${note}`
+        : `${note}\n${persona}`
+      : persona;
+    return {
+      personaForPrompt: '',
+      authorsNote: {
+        depth: authorsNote?.depth ?? AN_DEFAULT_DEPTH,
+        role: authorsNote?.role ?? EXTENSION_ROLE.SYSTEM,
+        content,
+      },
+      personaInjection: undefined,
+    };
+  }
+  if (position === PERSONA_POSITIONS.AT_DEPTH) {
+    return {
+      personaForPrompt: '',
+      authorsNote,
+      personaInjection: {
+        depth: typeof power.persona_description_depth === 'number' ? power.persona_description_depth : 2,
+        role: power.persona_description_role ?? EXTENSION_ROLE.SYSTEM,
+        content: persona,
+      },
+    };
+  }
+  return { personaForPrompt: '', authorsNote, personaInjection: undefined };
+}
 
 /** Collect all in-chat @depth injections: WI atDepth, character depth_prompt, persona@depth, AN. */
 function gatherDepthInjections(
   input: BuildPromptInput,
   fields: CharacterCardFields,
   character: StCharacter,
+  persona: PersonaPlacement,
 ): DepthInjection[] {
   const injections: DepthInjection[] = [];
 
@@ -94,19 +158,9 @@ function gatherDepthInjections(
     });
   }
 
-  const power = input.power;
-  if (
-    fields.persona &&
-    (power.persona_description_position ?? PERSONA_IN_PROMPT) === PERSONA_AT_DEPTH
-  ) {
-    injections.push({
-      depth: typeof power.persona_description_depth === 'number' ? power.persona_description_depth : 2,
-      role: power.persona_description_role ?? EXTENSION_ROLE.SYSTEM,
-      content: fields.persona,
-    });
-  }
+  if (persona.personaInjection) injections.push(persona.personaInjection);
 
-  if (input.authorsNote?.content) injections.push(input.authorsNote);
+  if (persona.authorsNote?.content) injections.push(persona.authorsNote);
 
   // Post-history instructions (character jailbreak / post_history_instructions) go after the chat.
   if (fields.jailbreak) {
@@ -136,8 +190,8 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
     if (isInstruct) system = substituteParams(system, { identity, original: power.sysprompt.content ?? '' });
   }
 
-  const personaForStory =
-    (power.persona_description_position ?? PERSONA_IN_PROMPT) === PERSONA_IN_PROMPT ? fields.persona : '';
+  const personaPlacement = placePersonaDescription(power, fields.persona, input.authorsNote);
+  const personaForStory = personaPlacement.personaForPrompt;
 
   const storyString = renderStoryString(power.context.story_string, {
     description: fields.description,
@@ -271,7 +325,7 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
       forceAvatar: false,
     });
   };
-  let depthInjections = gatherDepthInjections(input, fields, character);
+  let depthInjections = gatherDepthInjections(input, fields, character, personaPlacement);
   if (type === 'continue') {
     // ST doChatInject: on continue, depth 0 behaves as depth 1 so injections land
     // BEFORE the partial reply - nothing may come between it and the model.
@@ -286,18 +340,20 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
 
   // Continue: pull the (suffix-free) partial reply back out and append it after
   // everything else - ST's cyclePrompt/generatedPromptCache mechanism. Skipped for a
-  // lone greeting (ST only shifts when chat2.length > 1).
+  // lone greeting (ST only shifts when chat2.length > 1, script.js:4807 - gate on the
+  // full history, not on how many messages fit the budget).
   let cyclePrompt = '';
-  if (type === 'continue' && includedCount > 1) {
+  if (type === 'continue' && history.length > 1) {
     cyclePrompt = injected.pop() ?? '';
   }
 
   // mesSendString = examples + history (with @depth) + final line, with the chat_start separator.
   let mesSendString = injected.join('') + finalLine;
 
-  // Forced last line (ST modifyLastPromptLine: ensure a newline, then append - only when
-  // any chat line made it into the context, like desktop's `if (mesSend.length)` guard).
-  if (input.lastLineAppend !== undefined && injected.length > 0) {
+  // Forced last line (ST modifyLastPromptLine: ensure a newline, then append). Desktop guard
+  // is `if (mesSend.length)` - with an EMPTY chat that still holds because script.js:4780-4782
+  // pushes an empty entry into chat2, so the cue is appended for empty histories too.
+  if (input.lastLineAppend !== undefined && (injected.length > 0 || history.length === 0)) {
     if (!mesSendString.endsWith('\n')) {
       mesSendString += '\n';
     }
@@ -315,7 +371,10 @@ export async function buildTextCompletionPrompt(input: BuildPromptInput): Promis
   let prompt = `${combinedStoryString}${mesExmString}${mesSendString}${cyclePrompt}`.replace(/\r/g, '');
   if (collapse) prompt = collapseNewlines(prompt);
 
+  // Desktop computes these as getStoppingStrings(isImpersonate, isContinue)
+  // (kai-settings.js:197 via script.js:2977-2979) - isImpersonate must be forwarded.
   const stoppingStrings = getStoppingStrings(ctx, power, {
+    isImpersonate,
     isContinue: type === 'continue',
     lastMessageIsUser: history[history.length - 1]?.isUser === true,
   });

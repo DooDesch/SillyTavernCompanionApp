@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { deleteUserAvatar } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
 import { useProfiles } from '@/stores/profilesStore';
 import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
@@ -36,6 +37,10 @@ export default function PersonasScreen() {
   const [creating, setCreating] = useState(false);
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['settings'] });
+
+  // Avatar cache buster: a replaced persona picture keeps its filename, so the thumbnails
+  // only refresh when the settings query refetches - key the image URL to that timestamp.
+  const settingsUpdatedAt = queryClient.getQueryState(['settings', client?.baseUrl])?.dataUpdatedAt ?? 0;
 
   const onPickActive = (avatar: string) => {
     setActivePersona(avatar);
@@ -89,6 +94,8 @@ export default function PersonasScreen() {
       }
       const ok = await syncPersonaUpsert(client, avatarId, { name });
       if (!ok) {
+        // Best-effort rollback of the already-uploaded image so no orphan file lingers.
+        await deleteUserAvatar(client, avatarId).catch(() => {});
         Alert.alert(t('common.error'), t('personas.createFailed'));
         return;
       }
@@ -140,7 +147,7 @@ export default function PersonasScreen() {
                   onPress={() => onPickActive(p.avatar)}
                   className="mb-2 flex-row items-center gap-3 px-3 py-3"
                 >
-                  <Avatar avatar={p.avatar} name={p.name} type="persona" size={48} ring={active} />
+                  <Avatar avatar={p.avatar} name={p.name} type="persona" size={48} ring={active} cacheKey={settingsUpdatedAt} />
                   <View className="flex-1">
                     <View className="flex-row items-center gap-2">
                       <AppText variant="title" numberOfLines={1} style={{ flexShrink: 1 }}>

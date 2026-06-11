@@ -83,14 +83,6 @@ export interface GenerationChunk {
   status?: { key: string; params?: Record<string, string | number> };
 }
 
-/** The selected main_api has no app implementation (yet). */
-export class UnsupportedApiError extends Error {
-  constructor(readonly mainApi: string) {
-    super(`Unsupported main_api: ${mainApi}`);
-    this.name = 'UnsupportedApiError';
-  }
-}
-
 /** A generation failure whose message is already translated for direct display. */
 export class GenerationUserError extends Error {
   constructor(message: string) {
@@ -111,17 +103,25 @@ export class FriendlyGenerationError extends GenerationUserError {
  * NovelAI subscription data cache (desktop keeps `novel_data` from the status check). The tier
  * drives the kayra context clamp and the kayra/erato response-length clamp. Refreshed lazily;
  * without a NOVEL secret the status is 400 and the tier stays unknown (safe defaults apply).
+ * Keyed by the ST instance URL so switching connections never reuses a stale tier.
  */
-let novelTier: number | undefined;
-let novelTierFetchedAt = 0;
+const novelTierCache = new Map<string, { tier: number | undefined; fetchedAt: number }>();
 const NOVEL_TIER_TTL_MS = 5 * 60_000;
 
 async function getNovelTierCached(client: StClient): Promise<number | undefined> {
-  if (Date.now() - novelTierFetchedAt < NOVEL_TIER_TTL_MS) return novelTier;
+  const cached = novelTierCache.get(client.baseUrl);
+  if (cached && Date.now() - cached.fetchedAt < NOVEL_TIER_TTL_MS) return cached.tier;
   const status = await getNovelStatus(client);
-  novelTierFetchedAt = Date.now();
-  novelTier = status.connected ? status.tier : undefined;
-  return novelTier;
+  const tier = status.connected ? status.tier : undefined;
+  novelTierCache.set(client.baseUrl, { tier, fetchedAt: Date.now() });
+  return tier;
+}
+
+/** Abort error matching what an aborted `fetch` throws, so the chat screen's catch treats both alike. */
+function abortError(): Error {
+  const err = new Error('Aborted');
+  err.name = 'AbortError';
+  return err;
 }
 
 /**
@@ -194,10 +194,14 @@ async function* streamNovelGeneration(
   }
 
   // Non-streaming: single POST, the reply carries { output } (or { error } / { message }).
+  // The signal both cancels the in-flight request and (checked after the await) discards a
+  // reply that raced the user's stop - a stopped generation must never finalize.
   const res = await client.post<{ output?: unknown; error?: { message?: string } | boolean; message?: string }>(
     req.url,
     req.body,
+    opts.signal ? { signal: opts.signal } : undefined,
   );
+  if (opts.signal?.aborted) throw abortError();
   if (res.status === 400) {
     throw new FriendlyGenerationError('chat.novelNoKey');
   }
@@ -240,8 +244,6 @@ export async function* streamGeneration(
       return yield* streamKobold(client, engine, character, history, countTokens, headers, opts);
     case 'koboldhorde':
       return yield* streamHorde(client, engine, character, history, countTokens, opts);
-    case 'novel':
-      throw new UnsupportedApiError(engine.mainApi);
     default:
       break; // unknown values fall through to the textgen path (legacy behavior)
   }
@@ -287,7 +289,10 @@ export async function* streamGeneration(
       textgen: engine.textgen,
       identity: engine.identity,
       history,
-      maxContext: engine.maxContext,
+      // Desktop getMaxPromptTokens (script.js:5922-5929): the prompt budget reserves the
+      // response length, while the body truncation_length keeps the full context.
+      maxContext: engine.maxContext - engine.maxTokens,
+      bodyMaxContext: engine.maxContext,
       maxTokens: engine.maxTokens,
       countTokens,
       stream: true,
@@ -361,7 +366,11 @@ async function* streamKobold(
     kai,
     identity: engine.identity,
     history,
-    maxContext: engine.maxContext,
+    // Desktop getMaxPromptTokens (script.js:5922-5929) reserves the response length for the
+    // prompt budget; the body max_context_length stays the FULL context (kai-settings.js:179
+    // via the script.js:5210 call site).
+    maxContext: engine.maxContext - engine.maxTokens,
+    bodyMaxContext: engine.maxContext,
     maxTokens: engine.maxTokens,
     countTokens,
     flags,
@@ -389,11 +398,15 @@ async function* streamKobold(
     return { text, reasoning: '' };
   }
 
-  // Non-streaming (incl. the GUI preset, which has no streaming field): single POST.
+  // Non-streaming (incl. the GUI preset, which has no streaming field): single POST. The
+  // signal makes the stop button work here too; the post-await check discards a reply that
+  // raced the user's stop.
   const res = await client.post<{ results?: Array<{ text?: string }>; error?: unknown }>(
     req.url,
     req.body,
+    opts.signal ? { signal: opts.signal } : undefined,
   );
+  if (opts.signal?.aborted) throw abortError();
   if (!res.ok || res.data?.error) {
     throw new Error(i18n.t('errors.generationFailed', { status: res.status }));
   }
@@ -403,22 +416,29 @@ async function* streamKobold(
 }
 
 /**
- * Sleep that wakes early when the app returns to the foreground, so a Horde poll loop
- * that Android froze in the background catches up immediately on resume instead of
- * waiting out the remaining interval.
+ * Sleep that wakes early when the app returns to the foreground (so a Horde poll loop
+ * that Android froze in the background catches up immediately on resume) and when the
+ * caller's AbortSignal fires (so the loop-head abort check runs - and the cancel POST
+ * goes out - promptly instead of after the remaining interval).
  */
-function resumeFriendlyDelay(ms: number): Promise<void> {
+function resumeFriendlyDelay(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
     let sub: { remove(): void } | null = null;
     const finish = (): void => {
       clearTimeout(timer);
       sub?.remove();
+      signal?.removeEventListener('abort', finish);
       resolve();
     };
     const timer = setTimeout(finish, ms);
     sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') finish();
     });
+    signal?.addEventListener('abort', finish);
   });
 }
 
@@ -460,10 +480,20 @@ async function* streamHorde(
 
   const horde = normalizeHordeSettings(engine.horde);
 
+  // Desktop validateHordeModel (horde.js:136-145, called at the top of generateHorde):
+  // without a selected model the request would be rejected or queue forever. Deviation:
+  // the desktop also intersects with the LIVE model list; the app skips that extra
+  // round-trip and only checks the stored selection.
+  if (horde.models.length === 0) {
+    throw new GenerationUserError(i18n.t('chat.hordeNoModels'));
+  }
+
   // Desktop adjustHordeGenerationParams: shrink to the weakest selected worker. The
-  // prompt budget additionally drops by the response length (script.js this_max_context).
+  // prompt budget additionally drops by the response length: this_max_context starts as
+  // getMaxPromptTokens() = max_context - amount_gen (script.js:4501/5922-5929) and the
+  // context auto-adjust branch overrides it with the worker-adjusted pair (script.js:4526).
   let bodyMaxContext = engine.maxContext;
-  let promptMaxContext = engine.maxContext;
+  let promptMaxContext = engine.maxContext - engine.maxTokens;
   let maxLength = engine.maxTokens;
   if (horde.auto_adjust_context_length || horde.auto_adjust_response_length) {
     const [workers, models] = await Promise.all([getHordeWorkers(client), getHordeModels(client)]);
@@ -526,7 +556,7 @@ async function* streamHorde(
         const res = await client.post(path, body);
         return { ok: res.ok, data: res.data };
       },
-      delay: resumeFriendlyDelay,
+      delay: (ms) => resumeFriendlyDelay(ms, opts.signal),
     },
     payload,
     {

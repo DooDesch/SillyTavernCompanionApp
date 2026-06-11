@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-06-11)
 
 ## Corpus Check
-- 221 files · ~142.573 words
+- 221 files · ~142.896 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1097 nodes · 2354 edges · 58 communities detected
+- 1099 nodes · 2356 edges · 58 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 874 · imports: 577 · imports_from: 464 · re_exports: 269 · calls: 136 · method: 34
+- Edge kinds: contains: 876 · imports: 577 · imports_from: 464 · re_exports: 269 · calls: 136 · method: 34
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
 - Included files: 221 · Candidates: 247
-- Excluded: 0 untracked · 71444 ignored · 3 sensitive · 5 missing committed
+- Excluded: 0 untracked · 3 ignored · 3 sensitive · 5 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `41237a1`
+- Built from Git commit: `916a315`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `useConnection` - 21 edges
@@ -59,16 +59,16 @@ Cohesion: 0.09
 Nodes (34): adjustNovelInstructionPrompt(), badWordsCache, calculateNovelLogitBias(), clearNovelBadWordsCache(), createNovelGenerationData(), CreateNovelGenerationDataParams, getBadWordPermutations(), getKayraMaxContextTokens() (+26 more)
 
 ### Community 5 - "Community 5"
+Cohesion: 0.06
+Nodes (22): adjusted, body, ccModel, countTokens, delta, flags, FriendlyGenerationError, GenerateOptions (+14 more)
+
+### Community 6 - "Community 6"
 Cohesion: 0.15
 Nodes (29): baseChatReplace(), ChatFieldOverrides, getCharacterCardFields(), applyName(), ExampleMessage, formatInstructModeExamples(), getExampleBlocks(), parseExampleIntoIndividual() (+21 more)
 
-### Community 6 - "Community 6"
+### Community 7 - "Community 7"
 Cohesion: 0.11
 Nodes (30): BackendStatus, ChatFileInfo, deleteChat(), getAllCharacters(), getCharacter(), getCharacterChats(), getChat(), getChatCompletionStatus() (+22 more)
-
-### Community 7 - "Community 7"
-Cohesion: 0.06
-Nodes (21): adjusted, body, countTokens, delta, flags, FriendlyGenerationError, GenerateOptions, GenerationChunk (+13 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.11
@@ -271,7 +271,7 @@ Cohesion: 1.00
 Nodes (1): { withAppBuildGradle }
 
 ## Knowledge Gaps
-- **317 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+312 more)
+- **318 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+313 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 37`** (1 nodes): `StClient`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -287,14 +287,14 @@ Nodes (1): { withAppBuildGradle }
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `StClient` connect `Community 37` to `Community 18`, `Community 21`, `Community 31`, `Community 41`, `Community 6`?**
+- **Why does `StClient` connect `Community 37` to `Community 18`, `Community 21`, `Community 31`, `Community 41`, `Community 7`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `SmoothPacer` connect `Community 19` to `Community 6`?**
+- **Why does `SmoothPacer` connect `Community 19` to `Community 7`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `StCharacter` connect `Community 8` to `Community 6`, `Community 33`, `Community 5`, `Community 10`, `Community 27`, `Community 11`?**
+- **Why does `StCharacter` connect `Community 8` to `Community 7`, `Community 33`, `Community 6`, `Community 10`, `Community 27`, `Community 11`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **What connects `config`, `TAB_ICON`, `TabBarProps` to the rest of the system?**
-  _317 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _318 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.06095791001451379 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
