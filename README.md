@@ -120,9 +120,9 @@ build, override the ABI per invocation: `.\gradlew.bat :app:assembleDebug "-Prea
 
 ## Known gaps & roadmap
 
-See [ROADMAP.md](ROADMAP.md). Deliberately deferred: group chats, stateful variable macros
-(`getvar`/`setvar`), server-side TTS, full preset/template editors (heavy configuration stays
-on the desktop by design).
+The roadmap lives on the [GitHub Projects board](https://github.com/users/DooDesch/projects/1)
+(open items are issues). Deliberately deferred: group chats, stateful variable macros
+(`getvar`/`setvar`), server-side TTS.
 
 ## License & attribution
 
