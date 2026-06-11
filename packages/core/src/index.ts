@@ -39,6 +39,8 @@ export {
   getWorldInfo,
 } from './connection/endpoints';
 export type { ChatFileInfo, SaveChatResult, BackendStatus } from './connection/endpoints';
+export { savePreset, deletePreset, restorePreset } from './connection/presets';
+export type { PresetApiId, PresetRef, RestorePresetResult } from './connection/presets';
 
 // Discovery
 export type { DiscoveredInstance, DiscoveryProvider, DiscoverySource } from './discovery/types';
