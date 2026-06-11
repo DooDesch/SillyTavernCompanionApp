@@ -45,6 +45,28 @@ export function syncPowerUser(client: StClient, patch: Record<string, unknown>):
   );
 }
 
+/**
+ * Apply an Advanced-Formatting template selection (or enabled-toggle) on the PC: nested-merge
+ * `fields` into `power_user[kind]` and optional `globals` into `power_user` itself - always
+ * against the SERVER-fresh copy inside the read-modify-write, so other sub-keys (and other
+ * power_user fields) written by the desktop meanwhile are never clobbered.
+ */
+export function syncTemplateSelect(
+  client: StClient,
+  kind: 'instruct' | 'context' | 'sysprompt',
+  fields: Record<string, unknown>,
+  globals?: Record<string, unknown>,
+): Promise<boolean> {
+  return safe(() =>
+    saveSettings(client, (s) => {
+      const pu = { ...((s.power_user as Record<string, unknown>) ?? {}) };
+      pu[kind] = { ...((pu[kind] as Record<string, unknown>) ?? {}), ...fields };
+      if (globals) Object.assign(pu, globals);
+      s.power_user = pu;
+    }),
+  );
+}
+
 /** Merge a partial `textgenerationwebui_settings` patch (text-completion samplers/streaming). */
 export function syncTextgen(client: StClient, patch: Record<string, unknown>): Promise<boolean> {
   return safe(() =>

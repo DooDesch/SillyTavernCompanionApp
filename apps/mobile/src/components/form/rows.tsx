@@ -41,12 +41,16 @@ export function ToggleRow({
   );
 }
 
-/** Multiline text editor row (grammar, banned tokens, sequence breakers, negative prompt). */
+/**
+ * Multiline text editor row (grammar, banned tokens, sequences, story string).
+ * Values pass through untouched - NO trimming, sequences legitimately contain newlines.
+ */
 export function TextAreaRow({
   label,
   hint,
   value,
   error,
+  tall = false,
   onChange,
   onLongPress,
 }: {
@@ -54,6 +58,8 @@ export function TextAreaRow({
   hint?: string;
   value: string;
   error?: string;
+  /** Taller editor for long template bodies (story string, system prompt content). */
+  tall?: boolean;
   onChange: (v: string) => void;
   onLongPress?: () => void;
 }) {
@@ -75,7 +81,13 @@ export function TextAreaRow({
         autoCorrect={false}
         placeholderTextColor={colors.textSubtle}
         className={`mt-2 rounded-field border bg-surface-2 px-3 py-2.5 text-text ${error ? 'border-danger' : 'border-border'}`}
-        style={{ fontFamily: fonts.regular, fontSize: 14, minHeight: 72, maxHeight: 160, textAlignVertical: 'top' }}
+        style={{
+          fontFamily: fonts.regular,
+          fontSize: 14,
+          minHeight: tall ? 180 : 72,
+          maxHeight: tall ? 360 : 160,
+          textAlignVertical: 'top',
+        }}
       />
       {error ? (
         <AppText variant="caption" color="danger" style={{ marginTop: 2 }}>
