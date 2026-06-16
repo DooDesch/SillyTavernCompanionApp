@@ -1,5 +1,8 @@
 # SillyTavern Companion
 
+> 🛟 **Need help or found a bug?** Get support at [support.doodesch.de](https://support.doodesch.de).
+
+
 [![CI](https://github.com/DooDesch/SillyTavernCompanionApp/actions/workflows/ci.yml/badge.svg)](https://github.com/DooDesch/SillyTavernCompanionApp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/DooDesch/SillyTavernCompanionApp?include_prereleases)](https://github.com/DooDesch/SillyTavernCompanionApp/releases)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
