@@ -1,6 +1,6 @@
 # SillyTavern Companion
 
-> 🛟 **Need help or found a bug?** Get support at [support.doodesch.de](https://support.doodesch.de).
+> 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/sillytaverncompanionapp](https://support.doodesch.de/sillytaverncompanionapp).
 
 
 [![CI](https://github.com/DooDesch/SillyTavernCompanionApp/actions/workflows/ci.yml/badge.svg)](https://github.com/DooDesch/SillyTavernCompanionApp/actions/workflows/ci.yml)
