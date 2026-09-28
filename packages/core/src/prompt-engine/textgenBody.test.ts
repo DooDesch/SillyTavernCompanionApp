@@ -33,6 +33,15 @@ describe('parseBannedTokens (ST getCustomTokenBans port)', () => {
 });
 
 describe('createTextgenBody new field pass-throughs', () => {
+  it('includes the selected Ollama model', () => {
+    const body = createTextgenBody(
+      { ...base, type: 'ollama', ollama_model: 'dolphin3:8b' },
+      opts,
+    );
+
+    expect(body.model).toBe('dolphin3:8b');
+  });
+
   it('sends temperature_last and no_repeat_ngram_size when set', () => {
     const body = createTextgenBody({ ...base, temperature_last: true, no_repeat_ngram_size: 3 }, opts);
     expect(body.temperature_last).toBe(true);

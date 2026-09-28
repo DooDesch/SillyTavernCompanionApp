@@ -50,6 +50,7 @@ export interface TextgenSettings {
   negative_prompt?: string;
   streaming?: boolean;
   server_urls?: Record<string, string>;
+  ollama_model?: string;
   [key: string]: unknown;
 }
 
@@ -124,6 +125,7 @@ export function createTextgenBody(settings: TextgenSettings, opts: TextgenBodyOp
 
   const body: Record<string, unknown> = {
     prompt: opts.prompt,
+    model: settings.type === 'ollama' ? settings.ollama_model : undefined,
     max_new_tokens: opts.maxTokens,
     max_tokens: opts.maxTokens,
     max_length: opts.maxTokens,
