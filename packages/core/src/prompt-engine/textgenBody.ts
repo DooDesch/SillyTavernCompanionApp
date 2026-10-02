@@ -50,7 +50,19 @@ export interface TextgenSettings {
   negative_prompt?: string;
   streaming?: boolean;
   server_urls?: Record<string, string>;
+  custom_model?: string;
+  generic_model?: string;
+  mancer_model?: string;
+  togetherai_model?: string;
+  infermaticai_model?: string;
+  dreamgen_model?: string;
+  openrouter_model?: string;
+  vllm_model?: string;
+  aphrodite_model?: string;
   ollama_model?: string;
+  featherless_model?: string;
+  tabby_model?: string;
+  llamacpp_model?: string;
   [key: string]: unknown;
 }
 
@@ -77,6 +89,38 @@ function parseSequenceBreakers(raw: string | undefined): string[] | undefined {
 
 export function getTextgenServer(settings: TextgenSettings): string {
   return settings.server_urls?.[settings.type] ?? '';
+}
+
+/** Settings field that holds the selected model, per backend type. */
+const MODEL_FIELD_BY_TYPE: Record<string, string> = {
+  ooba: 'custom_model',
+  generic: 'generic_model',
+  mancer: 'mancer_model',
+  togetherai: 'togetherai_model',
+  infermaticai: 'infermaticai_model',
+  dreamgen: 'dreamgen_model',
+  openrouter: 'openrouter_model',
+  vllm: 'vllm_model',
+  aphrodite: 'aphrodite_model',
+  ollama: 'ollama_model',
+  featherless: 'featherless_model',
+  tabby: 'tabby_model',
+  llamacpp: 'llamacpp_model',
+};
+
+/** Backend types that get their own parameter set in ST instead of the llama.cpp aliases. */
+const TYPES_WITHOUT_LLAMACPP_ALIASES = new Set(['vllm', 'infermaticai', 'aphrodite']);
+
+/**
+ * Port of ST's getTextGenModel (textgen-settings.js): the model comes from a different
+ * settings field per backend type. Types without a model selection (koboldcpp) and an
+ * empty selection return undefined, so the body carries no `model` key.
+ */
+export function getTextgenModel(settings: TextgenSettings): string | undefined {
+  if (settings.type === 'huggingface') return 'tgi';
+  const field = MODEL_FIELD_BY_TYPE[settings.type];
+  const model = field ? settings[field] : undefined;
+  return typeof model === 'string' && model ? model : undefined;
 }
 
 /**
@@ -122,10 +166,22 @@ export function parseBannedTokens(settings: TextgenSettings): {
 export function createTextgenBody(settings: TextgenSettings, opts: TextgenBodyOptions): Record<string, unknown> {
   const dynatemp = settings.dynatemp === true;
   const temperature = dynatemp ? ((settings.min_temp ?? 0) + (settings.max_temp ?? 0)) / 2 : settings.temp;
+  // ST sends these llama.cpp style names next to its own. Ollama only receives them: the ST
+  // server drops every key that is not in its OLLAMA_KEYS list.
+  const llamacppAliases = TYPES_WITHOUT_LLAMACPP_ALIASES.has(settings.type)
+    ? {}
+    : {
+        repeat_penalty: settings.rep_pen,
+        repeat_last_n: settings.rep_pen_range,
+        n_predict: opts.maxTokens,
+        num_predict: opts.maxTokens,
+        num_ctx: opts.maxContext,
+        ignore_eos: settings.ban_eos_token,
+      };
 
   const body: Record<string, unknown> = {
     prompt: opts.prompt,
-    model: settings.type === 'ollama' ? settings.ollama_model : undefined,
+    model: getTextgenModel(settings),
     max_new_tokens: opts.maxTokens,
     max_tokens: opts.maxTokens,
     max_length: opts.maxTokens,
@@ -177,6 +233,7 @@ export function createTextgenBody(settings: TextgenSettings, opts: TextgenBodyOp
     no_repeat_ngram_size: settings.no_repeat_ngram_size,
     ...parseBannedTokens(settings),
     grammar: settings.grammar_string || undefined,
+    ...llamacppAliases,
     truncation_length: opts.maxContext,
     stop: opts.stoppingStrings,
     stopping_strings: opts.stoppingStrings,

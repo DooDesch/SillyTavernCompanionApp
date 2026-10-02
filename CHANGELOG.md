@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [Unreleased]
+
+### Fixed
+- **Ollama (Text Completion)**: generation failed right away because the selected model
+  was not sent. Thanks to @Jshep223 for the report and the fix (#14, #15).
+- **Ollama (Text Completion)**: context size, response length and repetition penalty are
+  now sent under the names Ollama reads. Before, Ollama used its default context and had
+  no response limit (#16).
+- **Text Completion**: the selected model is now sent for every backend that has one
+  (Text Generation WebUI, llama.cpp, TabbyAPI, vLLM, Aphrodite, OpenRouter and others),
+  like the desktop does (#16).
+
 ## [0.15.0] - 2026-06-11 (Beta)
 
 ### Added

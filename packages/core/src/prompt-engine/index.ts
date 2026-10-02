@@ -18,7 +18,7 @@ export type { InstructContext, ForceSequence } from './instruct';
 export { getStoppingStrings } from './stoppingStrings';
 export { buildTextCompletionPrompt } from './buildPrompt';
 export type { BuildPromptInput, BuildPromptResult, HistoryMessage, TokenCounter } from './buildPrompt';
-export { createTextgenBody, getTextgenServer } from './textgenBody';
+export { createTextgenBody, getTextgenModel, getTextgenServer } from './textgenBody';
 export type { TextgenSettings, TextgenBodyOptions } from './textgenBody';
 export {
   buildTextgenGenerateRequest,
