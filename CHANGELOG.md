@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
-## [Unreleased]
+## [0.15.1] - 2026-10-03 (Beta)
 
 ### Changed
 - **Onboarding**: the pairing texts no longer mention QR pairing, which the app does not have.
