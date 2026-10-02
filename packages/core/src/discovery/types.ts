@@ -1,4 +1,4 @@
-export type DiscoverySource = 'scan' | 'qr' | 'manual' | 'mdns';
+export type DiscoverySource = 'scan' | 'manual' | 'mdns';
 
 /** A SillyTavern instance found (or entered) on the local network. */
 export interface DiscoveredInstance {
@@ -18,7 +18,7 @@ export interface DiscoveredInstance {
 }
 
 /**
- * A pluggable way to find instances. v1 ships scan/qr/manual providers; an mDNS provider
+ * A pluggable way to find instances. v1 ships scan/manual providers; an mDNS provider
  * (react-native-zeroconf) can be added later behind the same interface with no UI change.
  */
 export interface DiscoveryProvider {

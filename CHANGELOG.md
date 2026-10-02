@@ -6,6 +6,9 @@ Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
 ## [Unreleased]
 
+### Changed
+- **Onboarding**: the pairing texts no longer mention QR pairing, which the app does not have.
+
 ### Fixed
 - **Ollama (Text Completion)**: generation failed right away because the selected model
   was not sent. Thanks to @Jshep223 for the report and the fix (#14, #15).

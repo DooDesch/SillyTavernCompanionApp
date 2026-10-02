@@ -55,7 +55,7 @@ function usableHint(hint: HostHint | null, selfIp: string): HostHint | null {
  * keeps scanning. The full sweep stays on the default ports - the hint never widens it.
  *
  * Assumes a /24 (the common home-router case) since expo-network does not expose the netmask.
- * QR-pairing and manual IP entry cover the cases where the scan can't reach the host (AP isolation,
+ * Manual IP entry covers the cases where the scan can't reach the host (AP isolation,
  * wider subnets, blocked multicast, non-default ports).
  */
 export async function discoverInstances(options: DiscoverOptions = {}): Promise<DiscoveredInstance[]> {
