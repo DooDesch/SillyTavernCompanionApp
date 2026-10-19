@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
-## [Unreleased]
+## [0.16.0] - 2026-10-19 (Beta)
 
 ### Added
 - **Auto-detect finds every local LLM**: the SillyTavern server checks the default ports of
