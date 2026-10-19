@@ -15,6 +15,13 @@ on:
       - .github/workflows/release.yml
   # Dry run: builds and uploads the APK as a workflow artifact, creates NO release.
   workflow_dispatch: {}
+  # Called by auto-release.yml after it pushed the release commit and tag. A tag pushed with the
+  # workflow token starts no workflow, so the release build runs as part of that run.
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
 
 permissions:
   contents: write
@@ -22,8 +29,13 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      # Release tag: the called input, the pushed tag, or empty for warm-up and dry runs.
+      TAG: ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || '' }}
       - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
       - uses: actions/setup-node@v4
         with:
@@ -38,10 +50,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Verify tag matches app version
-        if: github.ref_type == 'tag'
+        if: env.TAG != ''
         working-directory: apps/mobile
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"; TAG_VERSION="${TAG_VERSION%%-*}"
+          TAG_VERSION="${TAG#v}"; TAG_VERSION="${TAG_VERSION%%-*}"
           APP_VERSION=$(npx expo config --json --type public | jq -r '.version')
           if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
             echo "::error::tag version $TAG_VERSION does not match app.config.ts version $APP_VERSION"
@@ -88,34 +100,35 @@ jobs:
       - name: Upload R8 mapping (deobfuscation)
         uses: actions/upload-artifact@v4
         with:
-          name: mapping-${{ github.ref_name }}
+          name: mapping-${{ env.TAG || github.run_number }}
           path: apps/mobile/android/app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn
 
       - name: Dry-run artifact (manual runs only)
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && env.TAG == ''
         uses: actions/upload-artifact@v4
         with:
           name: SillyTavernCompanion-dryrun
           path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
 
       - name: Extract CHANGELOG section
-        if: github.ref_type == 'tag'
+        if: env.TAG != ''
         run: |
-          V="${GITHUB_REF_NAME#v}"; V="${V%%-*}"
+          V="${TAG#v}"; V="${V%%-*}"
           awk -v ver="$V" 'index($0, "## [" ver "]") == 1 { found=1; next }
                            found && /^## \[/ { exit }
                            found { print }' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
           [ -s "$RUNNER_TEMP/notes.md" ] || echo "_No CHANGELOG section found._" > "$RUNNER_TEMP/notes.md"
 
       - name: Stage release asset
-        if: github.ref_type == 'tag'
-        run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "SillyTavernCompanion-${GITHUB_REF_NAME}.apk"
+        if: env.TAG != ''
+        run: cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "SillyTavernCompanion-${TAG}.apk"
 
       - name: Create GitHub release
-        if: github.ref_type == 'tag'
+        if: env.TAG != ''
         uses: softprops/action-gh-release@v2
         with:
-          files: SillyTavernCompanion-${{ github.ref_name }}.apk
+          tag_name: ${{ env.TAG }}
+          files: SillyTavernCompanion-${{ env.TAG }}.apk
           body_path: ${{ runner.temp }}/notes.md
-          prerelease: ${{ startsWith(github.ref_name, 'v0.') || contains(github.ref_name, '-') }}
+          prerelease: ${{ startsWith(env.TAG, 'v0.') || contains(env.TAG, '-') }}

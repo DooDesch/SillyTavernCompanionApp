@@ -1,0 +1,87 @@
+name: Auto release
+
+# After CI passes on main: when CHANGELOG.md has [Unreleased] entries, bump the version, move the
+# entries under it, commit, tag and publish the APK. An empty [Unreleased] section releases nothing.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Manual release, for example to force a major version.
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version step (auto reads the [Unreleased] sections)
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.commit.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # The release commit goes on top of main. If main moved on since the CI run, the CI run of
+      # the newer commit releases instead.
+      - name: Check main is still the tested commit
+        id: head
+        if: github.event_name == 'workflow_run'
+        env:
+          TESTED: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$TESTED" ]; then
+            echo "::warning::main moved past $TESTED, the CI run of the newer commit releases instead"
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.head.outputs.stale != 'true'
+        with:
+          node-version: 22
+
+      - name: Bump version and CHANGELOG
+        id: prepare
+        if: steps.head.outputs.stale != 'true'
+        run: node scripts/release/prepare.mjs --bump "${{ inputs.bump || 'auto' }}"
+
+      - name: Commit, tag and push
+        id: commit
+        if: steps.prepare.outputs.tag != ''
+        env:
+          TAG: ${{ steps.prepare.outputs.tag }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+            echo "::error::tag $TAG already exists"
+            exit 1
+          fi
+          git config user.name DooDesch
+          git config user.email doodesch@gmail.com
+          git commit -am "chore(release): $TAG"
+          git tag -a "$TAG" -m "$TAG"
+          git push --atomic origin HEAD:main "$TAG"
+          echo "Pushed release commit $(git rev-parse --short HEAD) and tag $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: prepare
+    if: needs.prepare.outputs.tag != ''
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit

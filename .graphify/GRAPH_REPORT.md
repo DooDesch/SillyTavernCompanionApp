@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-10-19)
 
 ## Corpus Check
-- 229 files · ~152.667 words
+- 230 files · ~153.122 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1208 nodes · 2560 edges · 61 communities detected
+- 1211 nodes · 2568 edges · 61 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 978 · imports: 625 · imports_from: 489 · re_exports: 289 · calls: 145 · method: 34
+- Edge kinds: contains: 980 · imports: 630 · imports_from: 490 · re_exports: 289 · calls: 145 · method: 34
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 229 · Candidates: 255
-- Excluded: 2 untracked · 48433 ignored · 3 sensitive · 5 missing committed
+- Included files: 230 · Candidates: 256
+- Excluded: 1 untracked · 48436 ignored · 3 sensitive · 5 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `d235171`
+- Built from Git commit: `eea9f23`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `StClient` - 22 edges
@@ -183,16 +183,16 @@ Cohesion: 0.16
 Nodes (11): AvatarCrop, deleteUserAvatar(), FormDataLike, getUserAvatars(), call, { client }, { client, calls }, crop (+3 more)
 
 ### Community 36 - "Community 36"
+Cohesion: 0.19
+Nodes (14): defaults, settings, AN_DEFAULTS, AuthorsNoteDefaults, BackendSettingsBlock, estimateTokens(), extractAuthorsNoteDefaults(), extractEngineConfig() (+6 more)
+
+### Community 37 - "Community 37"
 Cohesion: 0.16
 Nodes (11): IconName, Button(), ButtonProps, CONTAINER, ICON_COLOR, LABEL_COLOR, Size, Variant (+3 more)
 
-### Community 37 - "Community 37"
+### Community 38 - "Community 38"
 Cohesion: 0.15
 Nodes (10): chat, client, down, header, kobold, message, noModel, noVersion (+2 more)
-
-### Community 38 - "Community 38"
-Cohesion: 0.19
-Nodes (12): AN_DEFAULTS, AuthorsNoteDefaults, BackendSettingsBlock, estimateTokens(), extractAuthorsNoteDefaults(), extractEngineConfig(), num(), PersonaList (+4 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.26
@@ -283,7 +283,7 @@ Cohesion: 1.00
 Nodes (1): { withAppBuildGradle }
 
 ## Knowledge Gaps
-- **373 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+368 more)
+- **375 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+370 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 40`** (1 nodes): `StClient`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -301,14 +301,14 @@ Nodes (1): { withAppBuildGradle }
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `StClient` connect `Community 40` to `Community 19`, `Community 21`, `Community 35`, `Community 37`, `Community 4`, `Community 44`?**
+- **Why does `StClient` connect `Community 40` to `Community 19`, `Community 21`, `Community 35`, `Community 38`, `Community 4`, `Community 44`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Why does `StCharacter` connect `Community 1` to `Community 4`, `Community 8`, `Community 11`, `Community 31`, `Community 2`?**
   _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `SmoothPacer` connect `Community 22` to `Community 4`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **What connects `config`, `TAB_ICON`, `TabBarProps` to the rest of the system?**
-  _373 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _375 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.050595238095238096 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
