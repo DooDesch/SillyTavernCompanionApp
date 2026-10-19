@@ -84,7 +84,7 @@ export async function discoverInstances(options: DiscoverOptions = {}): Promise<
 export interface KoboldDiscoverOptions {
   onFound?: (i: KoboldInstance) => void;
   signal?: AbortSignal;
-  /** A URL to try first (e.g. the current manual koboldOverride), in addition to the stored hint. */
+  /** A URL to try first (e.g. the KoboldCpp URL picked earlier), in addition to the stored hint. */
   preferUrl?: string;
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { StClient } from './StClient';
-import { getChat, saveChat, getAllCharacters, getKoboldStatus, getHordeStatus } from './endpoints';
+import { getChat, saveChat, getAllCharacters, getKoboldStatus, getHordeStatus, getTextCompletionStatus } from './endpoints';
 import type { FetchLike, FetchResponseLike } from '../net/http';
 import type { StChat } from '../types/chat';
 
@@ -90,5 +90,17 @@ describe('endpoints', () => {
     expect(await getHordeStatus(up)).toEqual({ connected: true });
     const down = clientReturning({ '/api/horde/status': res(200, { ok: false }) });
     expect(await getHordeStatus(down)).toEqual({ connected: false });
+  });
+
+  it('text-completion status shows the selected model, not the first listed one', async () => {
+    const client = clientReturning({ '/api/backends/text-completions/status': res(200, { result: 'smollm:135m' }) });
+    const params = { apiServer: 'http://127.0.0.1:11434', apiType: 'ollama' };
+    expect(await getTextCompletionStatus(client, { ...params, model: 'qwen-rp:latest' })).toEqual({
+      connected: true,
+      model: 'qwen-rp:latest',
+    });
+    expect(await getTextCompletionStatus(client, params)).toEqual({ connected: true });
+    const kobold = { apiServer: 'http://x:5001', apiType: 'koboldcpp' };
+    expect(await getTextCompletionStatus(client, kobold)).toEqual({ connected: true, model: 'smollm:135m' });
   });
 });

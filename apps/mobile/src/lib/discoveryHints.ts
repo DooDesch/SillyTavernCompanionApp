@@ -1,3 +1,4 @@
+import type { LlmEndpoint } from '@st/core';
 import { secrets } from './storage';
 
 /**
@@ -60,3 +61,47 @@ export const rememberStHint = (ip: string, port: number): Promise<void> =>
 export const getKoboldHint = (): Promise<HostHint | null> => getHint(KEY_KOBOLD);
 export const rememberKoboldHint = (ip: string, port: number): Promise<void> =>
   rememberHint(KEY_KOBOLD, ip, port);
+
+const KEY_LLMS = 'discovery.lastLlms';
+/** Enough for every default port plus a few LAN hosts; each entry costs one fast server probe. */
+const MAX_LLM_HINTS = 10;
+
+/** LLM backends found by earlier auto-detect runs, most recent first. */
+export async function getLlmHints(): Promise<LlmEndpoint[]> {
+  try {
+    const raw = await secrets.get(KEY_LLMS);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      console.warn('[discovery] stored LLM hints are not a list, ignored');
+      return [];
+    }
+    return parsed.filter(
+      (e): e is LlmEndpoint =>
+        !!e && typeof (e as LlmEndpoint).type === 'string' && typeof (e as LlmEndpoint).url === 'string',
+    );
+  } catch (e) {
+    console.warn('[discovery] reading LLM hints failed', e);
+    return [];
+  }
+}
+
+/** Store the backends found now in front of the earlier ones, so the next run probes them first. */
+export async function rememberLlmHints(found: LlmEndpoint[], previous: LlmEndpoint[]): Promise<void> {
+  const seen = new Set<string>();
+  const merged = [...found, ...previous]
+    .filter((e) => {
+      const key = `${e.type}|${e.url}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, MAX_LLM_HINTS)
+    .map((e) => ({ type: e.type, url: e.url }));
+  try {
+    await secrets.set(KEY_LLMS, JSON.stringify(merged));
+    console.info(`[discovery] remembered ${merged.length} LLM backend(s)`);
+  } catch (e) {
+    console.warn('[discovery] storing LLM hints failed', e);
+  }
+}

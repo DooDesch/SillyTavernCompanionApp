@@ -6,6 +6,7 @@ import type { HordeModel, HordeWorker } from '../prompt-engine/horde';
 import { chatFromArray, chatToArray } from '../chat/serialize';
 import { isIntegrityConflict } from '../chat/integrity';
 import { getNovelTierName } from '../prompt-engine/novelai';
+import { getTextgenModelField } from '../prompt-engine/textgenBody';
 
 /**
  * Typed wrappers over the SillyTavern private API. Request body field names mirror the server
@@ -98,24 +99,38 @@ export interface BackendStatus {
   connected: boolean;
   /** The loaded model id, when the backend reports one. */
   model?: string;
+  /** Every model the backend lists (text completion only), e.g. the installed Ollama models. */
+  models?: string[];
 }
+
+/** Types whose desktop readout falls back to the server's `result` when no model is selected. */
+const STATUS_RESULT_FALLBACK_TYPES = new Set(['tabby', 'llamacpp', 'generic']);
 
 /**
  * Check whether the text-completion backend (KoboldCpp etc.) is reachable, via ST's status endpoint
  * (which fetches the backend's model list). Mirrors ST's `getStatusTextgen` - 200+`result` = online,
- * 400 = no connection. Never throws.
+ * 400 = no connection. For backends with a model selection `result` is only the first model the
+ * backend lists (Ollama: the first entry of /api/tags), so the readout shows the selected `model`
+ * instead, like desktop. Never throws.
  */
 export async function getTextCompletionStatus(
   client: StClient,
-  params: { apiServer: string; apiType: string },
+  params: { apiServer: string; apiType: string; model?: string; signal?: AbortSignal },
 ): Promise<BackendStatus> {
   try {
-    const res = await client.post<{ result?: string }>('/api/backends/text-completions/status', {
-      api_server: params.apiServer,
-      api_type: params.apiType,
-    });
+    const res = await client.post<{ result?: string; data?: Array<{ id?: unknown }> }>(
+      '/api/backends/text-completions/status',
+      { api_server: params.apiServer, api_type: params.apiType },
+      params.signal ? { signal: params.signal } : undefined,
+    );
     if (res.ok && res.data?.result && res.data.result !== 'no_connection') {
-      return { connected: true, model: res.data.result };
+      const hasModelSelection = !!getTextgenModelField(params.apiType);
+      const fallback = !hasModelSelection || STATUS_RESULT_FALLBACK_TYPES.has(params.apiType);
+      const model = params.model || (fallback ? res.data.result : undefined);
+      const models = Array.isArray(res.data.data)
+        ? res.data.data.map((m) => m?.id).filter((id): id is string => typeof id === 'string' && !!id)
+        : [];
+      return { connected: true, ...(model ? { model } : {}), ...(models.length ? { models } : {}) };
     }
     return { connected: false };
   } catch {

@@ -5,6 +5,15 @@ import Constants from 'expo-constants';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  detectLlmsViaServer,
+  getTextgenModel,
+  getTextgenModelField,
+  getTextgenServer,
+  mergeLlmCandidates,
+  textgenTypeLabel,
+  type FoundLlm,
+} from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
 import { useProfiles } from '@/stores/profilesStore';
 import { useServers } from '@/stores/serversStore';
@@ -16,6 +25,7 @@ import { useConnectionProfiles } from '@/hooks/useConnectionProfiles';
 import { useEngineConfig } from '@/hooks/useEngineConfig';
 import { useBackendStatus } from '@/hooks/useBackendStatus';
 import { discoverKobold } from '@/lib/discovery';
+import { getLlmHints, parseHostPort, rememberLlmHints } from '@/lib/discoveryHints';
 import { syncPersonaToPc, syncSelectedProfileToPc } from '@/lib/sync';
 import { PickerSheet, type PickerOption } from '@/components/PickerSheet';
 import { Screen, Header, Section, Card, Button, AppText, Badge, IconButton, SliderRow } from '@/components/ui';
@@ -86,8 +96,8 @@ export default function SettingsScreen() {
     personas,
     activePersonaAvatar,
     setActivePersona,
-    koboldOverride,
-    setKoboldOverride,
+    backendOverride,
+    setBackendOverride,
   } = useConnectionProfiles();
   const { engine } = useEngineConfig('');
   const backend = useBackendStatus(engine);
@@ -154,7 +164,10 @@ export default function SettingsScreen() {
       // leave disabled
     }
   };
-  const [sheet, setSheet] = useState<'profile' | 'persona' | 'language' | 'chatlist' | null>(null);
+  const [sheet, setSheet] = useState<'profile' | 'persona' | 'language' | 'chatlist' | 'found' | 'model' | null>(
+    null,
+  );
+  const [foundLlms, setFoundLlms] = useState<FoundLlm[]>([]);
 
   const chatListOptions: PickerOption[] = [
     { id: 'latest', label: t('settings.chatListLatest'), sublabel: t('settings.chatListLatestSub') },
@@ -171,6 +184,8 @@ export default function SettingsScreen() {
 
   const onPickProfile = (id: string) => {
     setActiveProfile(id);
+    // A picked profile brings its own backend, so the backend picked in the app stops applying.
+    setBackendOverride(undefined);
     if (syncToPc && client) {
       void syncSelectedProfileToPc(client, id).then((ok) => {
         if (ok) void queryClient.invalidateQueries({ queryKey: ['settings'] });
@@ -200,22 +215,111 @@ export default function SettingsScreen() {
     sublabel: p.description ? p.description.slice(0, 60) : undefined,
   }));
 
-  const detectKobold = async () => {
+  // The backend the engine currently talks to (text completion only).
+  const isTextgen = engine?.mainApi === 'textgenerationwebui';
+  const currentType = isTextgen ? engine.textgen.type : undefined;
+  const currentUrl = isTextgen ? engine.apiServerOverride || getTextgenServer(engine.textgen) : undefined;
+  const currentModel = isTextgen ? getTextgenModel(engine.textgen) : undefined;
+  const overrideApplied = !!backendOverride && (!backendOverride.legacy || currentType === 'koboldcpp');
+  const backendKey = (type: string, url: string, model?: string) =>
+    `${type}|${url}|${getTextgenModelField(type) ? (model ?? '') : ''}`;
+
+  // One entry per backend and model, so one tap picks both.
+  const foundEntries = foundLlms.flatMap((f) => {
+    const selectable = !!getTextgenModelField(f.type);
+    const models = selectable && f.models.length > 0 ? f.models : [f.models[0]];
+    return models.map((shown) => ({ ...f, shown, model: selectable ? shown : undefined }));
+  });
+  const foundOptions: PickerOption[] = foundEntries.map((e) => ({
+    id: backendKey(e.type, e.url, e.model),
+    label: e.shown ? `${textgenTypeLabel(e.type)} · ${e.shown}` : textgenTypeLabel(e.type),
+    sublabel: e.url,
+  }));
+  const onPickFound = (id: string) => {
+    const entry = foundEntries.find((e) => backendKey(e.type, e.url, e.model) === id);
+    if (!entry) {
+      console.warn('[settings] picked LLM entry not found', id);
+      return;
+    }
+    setBackendOverride({ type: entry.type, url: entry.url, ...(entry.model ? { model: entry.model } : {}) });
+    console.info(`[settings] backend set to ${entry.type} at ${entry.url}`, entry.model ?? '');
+  };
+
+  const listedModels = backend.data?.models ?? [];
+  const canPickModel = !!currentType && !!getTextgenModelField(currentType) && listedModels.length > 0;
+  const modelOptions: PickerOption[] = listedModels.map((m) => ({ id: m, label: m }));
+  const onPickModel = (model: string) => {
+    if (!currentType || !currentUrl) {
+      console.warn('[settings] model picked without a text-completion backend');
+      return;
+    }
+    setBackendOverride({ type: currentType, url: currentUrl, model });
+    console.info(`[settings] model set to ${model} on ${currentType} at ${currentUrl}`);
+  };
+
+  /**
+   * Find running LLMs. The SillyTavern server probes the backends found in earlier runs and the
+   * default ports (it reaches 127.0.0.1 on its own PC); its answer opens the list right away. The
+   * phone's LAN scan for KoboldCpp is slower and adds its hits to the open list.
+   */
+  const detectBackends = async () => {
+    if (!client) {
+      console.warn('[settings] auto-detect without a SillyTavern connection');
+      return;
+    }
     setScanning(true);
     try {
-      const found = await discoverKobold(koboldOverride ? { preferUrl: koboldOverride } : {});
-      if (found.length === 0) {
-        Alert.alert('KoboldCpp', t('settings.koboldNotFound'));
+      const remembered = await getLlmHints();
+      const stHost = parseHostPort(client.baseUrl)?.ip;
+      const results: FoundLlm[] = [];
+      let listOpen = false;
+      // A backend on the SillyTavern PC answers as 127.0.0.1 and as the PC's LAN address (phone
+      // scan, earlier hints). Both count as one; the first answer stays.
+      const sameBackendKey = (url: string) => {
+        const hp = parseHostPort(url);
+        if (!hp) return url;
+        const local = hp.ip === stHost || hp.ip === 'localhost' || hp.ip === '127.0.0.1';
+        return `${local ? '127.0.0.1' : hp.ip}:${hp.port}`;
+      };
+      const addFound = (items: FoundLlm[]) => {
+        for (const item of items) {
+          const key = sameBackendKey(item.url);
+          if (results.some((r) => sameBackendKey(r.url) === key)) continue;
+          results.push(item);
+        }
+        if (listOpen) setFoundLlms([...results]);
+      };
+
+      const preferUrl = backendOverride?.type === 'koboldcpp' ? backendOverride.url : undefined;
+      const lanScan = discoverKobold({
+        ...(preferUrl ? { preferUrl } : {}),
+        onFound: (k) => addFound([{ type: 'koboldcpp', url: k.baseUrl, models: [] }]),
+      }).catch((e: unknown) => {
+        console.warn('[settings] LAN scan for KoboldCpp failed', e);
+        return [];
+      });
+
+      addFound(await detectLlmsViaServer(client, mergeLlmCandidates(remembered)));
+      console.info('[settings] server probe found', results.map((f) => `${f.type}@${f.url}`));
+      if (results.length > 0) {
+        listOpen = true;
+        setFoundLlms([...results]);
+        setSheet('found');
+      }
+
+      await lanScan;
+      console.info('[settings] auto-detect found', results.map((f) => `${f.type}@${f.url}`));
+      void rememberLlmHints(results, remembered);
+      if (results.length === 0) {
+        Alert.alert(t('settings.autoDetect'), t('settings.llmNotFound'));
         return;
       }
-      setKoboldOverride(found[0]!.baseUrl);
-      Alert.alert(
-        t('settings.koboldFound'),
-        found.length === 1
-          ? found[0]!.baseUrl
-          : t('settings.koboldFoundMultiple', { count: found.length, url: found[0]!.baseUrl }),
-      );
+      if (!listOpen) {
+        setFoundLlms([...results]);
+        setSheet('found');
+      }
     } catch (e) {
+      console.error('[settings] auto-detect failed', e);
       Alert.alert(t('common.error'), e instanceof Error ? e.message : t('settings.scanFailed'));
     } finally {
       setScanning(false);
@@ -381,7 +485,10 @@ export default function SettingsScreen() {
 
         {/* AI backend */}
         <Section title={t('settings.aiBackend')} icon="zap">
-          <Card className="flex-row items-center gap-3 px-4 py-3.5">
+          <Card
+            onPress={canPickModel ? () => setSheet('model') : undefined}
+            className="flex-row items-center gap-3 px-4 py-3.5"
+          >
             <View
               className={`h-2.5 w-2.5 rounded-full ${backend.isLoading ? 'bg-text-subtle' : backendConnected ? 'bg-success' : 'bg-danger'}`}
             />
@@ -394,17 +501,23 @@ export default function SettingsScreen() {
                     : t('common.notConnected')}
               </AppText>
               <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 1 }}>
-                {engine?.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion')} ·{' '}
-                {koboldOverride ?? t('settings.defaultViaSillyTavern')}
+                {[
+                  engine?.mode === 'cc' ? t('settings.chatCompletion') : t('settings.textCompletion'),
+                  currentType ? textgenTypeLabel(currentType) : undefined,
+                  overrideApplied ? currentUrl : t('settings.defaultViaSillyTavern'),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </AppText>
             </View>
+            {canPickModel ? <Icon name="chevronRight" size={18} color={colors.textSubtle} /> : null}
           </Card>
           <View className="flex-row gap-2">
             <View className="flex-1">
-              <Button label={t('settings.autoDetect')} leftIcon="search" loading={scanning} onPress={detectKobold} />
+              <Button label={t('settings.autoDetect')} leftIcon="search" loading={scanning} onPress={detectBackends} />
             </View>
-            {koboldOverride ? (
-              <Button label={t('settings.reset')} variant="secondary" fullWidth={false} onPress={() => setKoboldOverride(undefined)} />
+            {backendOverride ? (
+              <Button label={t('settings.reset')} variant="secondary" fullWidth={false} onPress={() => setBackendOverride(undefined)} />
             ) : null}
           </View>
         </Section>
@@ -513,6 +626,22 @@ export default function SettingsScreen() {
         options={profileOptions}
         activeId={activeId}
         onSelect={onPickProfile}
+        onClose={() => setSheet(null)}
+      />
+      <PickerSheet
+        visible={sheet === 'found'}
+        title={t('settings.llmFoundTitle')}
+        options={foundOptions}
+        activeId={currentType && currentUrl ? backendKey(currentType, currentUrl, currentModel) : undefined}
+        onSelect={onPickFound}
+        onClose={() => setSheet(null)}
+      />
+      <PickerSheet
+        visible={sheet === 'model'}
+        title={t('settings.chooseModel')}
+        options={modelOptions}
+        activeId={currentModel}
+        onSelect={onPickModel}
         onClose={() => setSheet(null)}
       />
       <PickerSheet

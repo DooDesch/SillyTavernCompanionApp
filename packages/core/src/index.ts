@@ -65,6 +65,14 @@ export { fingerprintVersion, htmlLooksLikeSillyTavern } from './discovery/finger
 export type { Fingerprint } from './discovery/fingerprint';
 export { mapPool } from './discovery/pool';
 export {
+  detectLlmsViaServer,
+  mergeLlmCandidates,
+  textgenTypeLabel,
+  LOCAL_LLM_CANDIDATES,
+  TEXTGEN_TYPE_LABELS,
+} from './discovery/llm';
+export type { FoundLlm, LlmEndpoint } from './discovery/llm';
+export {
   enumerateSubnet24,
   enumerateSubnetHosts,
   netmaskToPrefix,
