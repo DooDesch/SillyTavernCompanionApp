@@ -99,15 +99,14 @@ function parseBlocks(text: string): Block[] {
 // color wins over the italic color inside quotes (desktop ST: .mes_text q em { color: inherit }).
 function spanStyle(s: InlineSpan): TextStyle {
   if (s.code) return { color: COLORS.code, fontFamily: MONO, fontSize: 13.5 };
-  const style: TextStyle = {
+  const textDecorationLine: TextStyle['textDecorationLine'] =
+    s.underline && s.strike ? 'underline line-through' : s.underline ? 'underline' : s.strike ? 'line-through' : undefined;
+  return {
     color: s.quote ? COLORS.quote : s.italic ? COLORS.italic : COLORS.base,
     fontFamily: s.bold ? fonts.semibold : fonts.regular,
+    ...(s.italic ? { fontStyle: 'italic' as const } : {}),
+    ...(textDecorationLine ? { textDecorationLine } : {}),
   };
-  if (s.italic) style.fontStyle = 'italic';
-  if (s.underline && s.strike) style.textDecorationLine = 'underline line-through';
-  else if (s.underline) style.textDecorationLine = 'underline';
-  else if (s.strike) style.textDecorationLine = 'line-through';
-  return style;
 }
 
 function InlineText({ text }: { text: string }) {
