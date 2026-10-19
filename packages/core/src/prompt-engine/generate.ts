@@ -65,6 +65,38 @@ export function currentSwipeText(m: StChatMessage): string {
   return m.mes ?? '';
 }
 
+const MACRO_HINT = /\{\{|<(?:USER|BOT|CHAR|CHARIFNOTGROUP|GROUP)>/i;
+
+/**
+ * Port of the message-0 branch of ST's messageFormatting (script.js): the first chat message
+ * (the greeting) runs through substituteParams with its own name as {{char}} when it is shown,
+ * and ST writes the result back into chat[0].mes, so later prompts get the substituted text too.
+ * User and system messages and every later message keep their text.
+ */
+export function resolveGreetingMacros(
+  messages: readonly StChatMessage[],
+  character: StCharacter,
+  power: PowerUserSubset,
+  identity: Identity,
+): StChatMessage[] {
+  const all = messages as StChatMessage[];
+  const first = all[0];
+  if (!first || first.is_user || first.is_system) return all;
+  const text = currentSwipeText(first);
+  if (!MACRO_HINT.test(text)) return all;
+  const greetingIdentity: Identity = { user: identity.user, char: first.name || identity.char };
+  const card = getCharacterCardFields(character, power, greetingIdentity);
+  const resolved = substituteParams(text, { identity: greetingIdentity, card });
+  if (resolved === text) return all;
+  const next: StChatMessage = { ...first, mes: resolved };
+  if (Array.isArray(first.swipes) && typeof first.swipe_id === 'number' && first.swipes[first.swipe_id] !== undefined) {
+    const swipes = first.swipes.slice();
+    swipes[first.swipe_id] = resolved;
+    next.swipes = swipes;
+  }
+  return [next, ...all.slice(1)];
+}
+
 export interface TextgenGenerateParams {
   character: StCharacter;
   power: PowerUserSubset;

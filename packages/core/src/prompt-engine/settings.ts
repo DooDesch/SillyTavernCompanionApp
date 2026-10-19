@@ -100,6 +100,18 @@ export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 3.5);
 }
 
+/**
+ * Port of ST's isExternalMediaAllowed (chats.js): a per-character override wins, otherwise
+ * power_user.forbid_external_media decides. ST's default is to forbid external media.
+ */
+export function isExternalMediaAllowed(power: PowerUserSubset, avatar: string | undefined): boolean {
+  const allowed = power.external_media_allowed_overrides;
+  const forbidden = power.external_media_forbidden_overrides;
+  if (avatar && Array.isArray(allowed) && allowed.includes(avatar)) return true;
+  if (avatar && Array.isArray(forbidden) && forbidden.includes(avatar)) return false;
+  return power.forbid_external_media === false;
+}
+
 export interface Persona {
   /** Persona avatar filename (the id). */
   avatar: string;

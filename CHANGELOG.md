@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [Unreleased]
+
+### Fixed
+- **Greeting macros**: `{{char}}`, `{{user}}` and the other macros in the first message and its
+  alternate greetings are resolved, in the chat and in the prompt, like on the desktop.
+- **Images in messages**: markdown images (`![alt](url)`) show as images when SillyTavern
+  allows external media for the character ("Ext. Media"). When it forbids them, the image is
+  hidden like on the desktop instead of showing as raw text.
+
 ## [0.16.0] - 2026-10-19 (Beta)
 
 ### Added

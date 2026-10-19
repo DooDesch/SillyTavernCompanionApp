@@ -1,6 +1,7 @@
-import { memo } from 'react';
-import { Text, View, type TextStyle } from 'react-native';
+import { memo, useState } from 'react';
+import { Image, Text, View, type TextStyle } from 'react-native';
 import { parseInline, type InlineSpan } from '@/lib/inlineMarkup';
+import { isExternalUrl, splitImages } from '@/lib/markdownImages';
 import { colors, fonts } from '@/theme/tokens';
 
 /**
@@ -28,7 +29,8 @@ type Block =
   | { type: 'heading'; level: number; content: string }
   | { type: 'quote'; content: string }
   | { type: 'list'; items: string[]; ordered: boolean }
-  | { type: 'para'; content: string };
+  | { type: 'para'; content: string }
+  | { type: 'image'; url: string; alt: string };
 
 function splitFences(text: string): { code: boolean; content: string }[] {
   const out: { code: boolean; content: string }[] = [];
@@ -44,8 +46,8 @@ function splitFences(text: string): { code: boolean; content: string }[] {
   return out;
 }
 
-/** Split a prose chunk into heading/quote/list/paragraph blocks. */
-function proseToBlocks(text: string): Block[] {
+/** Split a prose chunk into heading/quote/list/paragraph (and, if enabled, image) blocks. */
+function proseToBlocks(text: string, images: boolean): Block[] {
   const lines = text.split('\n');
   const blocks: Block[] = [];
   let para: string[] = [];
@@ -57,6 +59,20 @@ function proseToBlocks(text: string): Block[] {
     }
   };
   for (const line of lines) {
+    if (images && line.includes('![')) {
+      const parts = splitImages(line);
+      if (parts.some((p) => p.kind === 'image')) {
+        for (const p of parts) {
+          if (p.kind === 'image') {
+            flushPara();
+            blocks.push({ type: 'image', url: p.url, alt: p.alt });
+          } else if (p.text.trim()) {
+            para.push(p.text.trim());
+          }
+        }
+        continue;
+      }
+    }
     const heading = /^(#{1,6})\s+(.*)$/.exec(line);
     const quote = /^>\s?(.*)$/.exec(line);
     const list = /^\s*([-*+]|\d+\.)\s+(.*)$/.exec(line);
@@ -86,13 +102,44 @@ function proseToBlocks(text: string): Block[] {
   return blocks;
 }
 
-function parseBlocks(text: string): Block[] {
+function parseBlocks(text: string, images: boolean): Block[] {
   const blocks: Block[] = [];
   for (const chunk of splitFences(text)) {
     if (chunk.code) blocks.push({ type: 'code', content: chunk.content });
-    else blocks.push(...proseToBlocks(chunk.content));
+    else blocks.push(...proseToBlocks(chunk.content, images));
   }
   return blocks;
+}
+
+const loggedBlocked = new Set<string>();
+
+/** Desktop ST removes blocked media without a trace in the message; the app logs it once per URL. */
+function logBlocked(url: string, reason: string) {
+  if (loggedBlocked.has(url)) return;
+  loggedBlocked.add(url);
+  console.info(`[RichText] image not shown (${reason})`, url);
+}
+
+function MarkdownImage({ uri, alt }: { uri: string; alt: string }) {
+  const [ratio, setRatio] = useState<number | null>(null);
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <Image
+      source={{ uri }}
+      accessibilityLabel={alt || undefined}
+      resizeMode="contain"
+      style={{ width: '100%', aspectRatio: ratio ?? 1, maxHeight: 480, borderRadius: 12, marginVertical: 4 }}
+      onLoad={(e) => {
+        const { width, height } = e.nativeEvent.source;
+        if (width > 0 && height > 0) setRatio(width / height);
+      }}
+      onError={(e) => {
+        console.warn('[RichText] image failed to load', uri, e.nativeEvent.error);
+        setFailed(true);
+      }}
+    />
+  );
 }
 
 // Compositional styling (nesting-capable parser): bold+italic combine, and the quote
@@ -122,12 +169,26 @@ function InlineText({ text }: { text: string }) {
   );
 }
 
-function RichTextImpl({ text }: { text: string }) {
-  const blocks = parseBlocks(text);
+/**
+ * `externalMedia` is ST's external media rule for the shown character: true renders markdown
+ * images, false drops them like desktop ST does. Without the prop, image markdown stays text.
+ */
+function RichTextImpl({ text, externalMedia }: { text: string; externalMedia?: boolean }) {
+  const blocks = parseBlocks(text, externalMedia !== undefined);
   return (
     <View>
       {blocks.map((b, i) => {
         switch (b.type) {
+          case 'image':
+            if (!isExternalUrl(b.url)) {
+              logBlocked(b.url, 'relative URL');
+              return null;
+            }
+            if (!externalMedia) {
+              logBlocked(b.url, 'external media forbidden in SillyTavern');
+              return null;
+            }
+            return <MarkdownImage key={i} uri={b.url} alt={b.alt} />;
           case 'code':
             return (
               <View key={i} className="my-1 rounded-field bg-surface-2 px-3 py-2">
