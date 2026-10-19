@@ -105,12 +105,25 @@ Release builds use R8 minification.
 
 ## Publishing a release
 
-1. Bump `version` in `apps/mobile/app.config.ts` and in the three `package.json` files (root,
-   `packages/core`, `apps/mobile`). Raise `android.versionCode` by 1.
-2. Move the `[Unreleased]` entries in `CHANGELOG.md` under the new version.
-3. Push a tag `vX.Y.Z`.
+Releases are automatic. Every change that users notice adds an entry under `[Unreleased]` in
+`CHANGELOG.md`. When CI passes on `main` and `[Unreleased]` has entries,
+`.github/workflows/auto-release.yml` runs `scripts/release/prepare.mjs`:
 
-The tag starts `.github/workflows/release.yml`. It checks that the tag matches the app version,
+- The next version is a minor step when `[Unreleased]` has an Added, Changed, Removed or
+  Deprecated section, else a patch step.
+- It bumps `version` in `apps/mobile/app.config.ts` and in the three `package.json` files, raises
+  `android.versionCode` by 1 and moves the `[Unreleased]` entries under the new version.
+- The workflow commits this as `chore(release): vX.Y.Z`, pushes the commit and the tag to `main`
+  and then runs `release.yml` for the tag.
+
+An empty `[Unreleased]` section releases nothing. A major version, or a release without waiting for
+a merge, is started by hand: Actions > Auto release > Run workflow, or
+`gh workflow run auto-release.yml -f bump=major`. `node scripts/release/prepare.mjs --dry-run`
+prints the next version without changing files.
+
+A tag pushed by hand (`vX.Y.Z`, versions already bumped) still starts `release.yml` directly.
+
+`release.yml` checks that the tag matches the app version,
 builds the APK, fails if the APK is not signed with the release key, and creates a GitHub release
 with the APK attached. The release notes are the section for that version in `CHANGELOG.md`. The
 workflow needs the repo secrets `ANDROID_KEYSTORE_BASE64` and `STC_UPLOAD_*`. Starting it by hand
