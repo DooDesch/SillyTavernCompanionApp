@@ -19,6 +19,7 @@ import {
   parseKoboldData,
   parseNovelData,
   parseTextgenData,
+  resolveGreetingMacros,
   resolveTokenizer,
   runHordeTask,
   HordeAbortError,
@@ -229,7 +230,10 @@ export async function* streamGeneration(
   messages: StChatMessage[],
   opts: GenerateOptions = {},
 ): AsyncGenerator<GenerationChunk, GenerationChunk, void> {
-  const history = historyFromMessages(messages, character.name);
+  const history = historyFromMessages(
+    resolveGreetingMacros(messages, character, engine.power, engine.identity),
+    character.name,
+  );
   const headers = await client.authHeaders();
   const countTokens = tokenCounterFor(client, engine);
 

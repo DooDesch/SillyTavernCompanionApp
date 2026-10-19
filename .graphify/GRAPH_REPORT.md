@@ -1,37 +1,37 @@
 # Graph Report - .  (2026-10-19)
 
 ## Corpus Check
-- 225 files · ~150.269 words
+- 229 files · ~152.195 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1171 nodes · 2491 edges · 62 communities detected
+- 1200 nodes · 2543 edges · 62 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 945 · imports: 612 · imports_from: 479 · re_exports: 281 · calls: 140 · method: 34
+- Edge kinds: contains: 970 · imports: 625 · imports_from: 489 · re_exports: 283 · calls: 142 · method: 34
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 225 · Candidates: 251
-- Excluded: 1 untracked · 48410 ignored · 3 sensitive · 5 missing committed
+- Included files: 229 · Candidates: 255
+- Excluded: 0 untracked · 45340 ignored · 3 sensitive · 5 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `caa4c94`
+- Built from Git commit: `eb5db1b`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `StClient` - 22 edges
 2. `useConnection` - 21 edges
 3. `Icon()` - 21 edges
 4. `haptics` - 18 edges
-5. `Identity` - 14 edges
-6. `AppText()` - 13 edges
-7. `safe()` - 12 edges
-8. `substituteParams()` - 12 edges
-9. `PowerUserSubset` - 12 edges
-10. `SmoothPacer` - 12 edges
+5. `PowerUserSubset` - 14 edges
+6. `Identity` - 14 edges
+7. `StCharacter` - 14 edges
+8. `AppText()` - 13 edges
+9. `safe()` - 12 edges
+10. `substituteParams()` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - None detected - all connections are within the same source files.
@@ -43,68 +43,68 @@ Cohesion: 0.05
 Nodes (52): PickerOption, PickerSheet(), CollapsibleHeader(), OrderListRow(), SegmentedRow(), TextAreaRow(), ToggleRow(), TemplatesView (+44 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (36): BuildPromptResult, buildTextCompletionPrompt(), gatherDepthInjections(), HistoryMessage, placePersonaDescription(), TokenCounter, DepthInjection, EXTENSION_ROLE (+28 more)
+Cohesion: 0.05
+Nodes (34): history, many, persona, plainPower, power, seraphina, char, history (+26 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.10
-Nodes (31): checkWorldInfo(), CheckWorldInfoParams, emptyTimedState(), filterByInclusionGroups(), pickGroupWinner(), TimedWorldInfoState, characterBookToEntries(), extractWorldInfoSettings() (+23 more)
+Cohesion: 0.06
+Nodes (38): BuildPromptResult, buildTextCompletionPrompt(), gatherDepthInjections(), HistoryMessage, placePersonaDescription(), TokenCounter, DepthInjection, EXTENSION_ROLE (+30 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.10
-Nodes (33): BackendStatus, ChatFileInfo, deleteChat(), getAllCharacters(), getCharacter(), getCharacterChats(), getChat(), getChatCompletionStatus() (+25 more)
+Nodes (31): checkWorldInfo(), CheckWorldInfoParams, emptyTimedState(), filterByInclusionGroups(), pickGroupWinner(), TimedWorldInfoState, characterBookToEntries(), extractWorldInfoSettings() (+23 more)
 
 ### Community 4 - "Community 4"
+Cohesion: 0.10
+Nodes (33): BackendStatus, ChatFileInfo, deleteChat(), getAllCharacters(), getCharacter(), getCharacterChats(), getChat(), getChatCompletionStatus() (+25 more)
+
+### Community 5 - "Community 5"
 Cohesion: 0.09
 Nodes (33): adjustHordeParams(), createHordePayload(), HORDE_DEFAULT_SETTINGS, HordeAbortError, HordeError, HordeFailure, HordeModel, HordePostResponse (+25 more)
 
-### Community 5 - "Community 5"
+### Community 6 - "Community 6"
 Cohesion: 0.06
 Nodes (23): adjusted, body, ccModel, countTokens, delta, flags, FriendlyGenerationError, GenerateOptions (+15 more)
 
-### Community 6 - "Community 6"
+### Community 7 - "Community 7"
 Cohesion: 0.09
 Nodes (34): adjustNovelInstructionPrompt(), badWordsCache, calculateNovelLogitBias(), clearNovelBadWordsCache(), createNovelGenerationData(), CreateNovelGenerationDataParams, getBadWordPermutations(), getKayraMaxContextTokens() (+26 more)
 
-### Community 7 - "Community 7"
+### Community 8 - "Community 8"
 Cohesion: 0.14
 Nodes (30): PersonaPlacement, baseChatReplace(), ChatFieldOverrides, getCharacterCardFields(), applyName(), ExampleMessage, formatInstructModeExamples(), getExampleBlocks() (+22 more)
 
-### Community 8 - "Community 8"
+### Community 9 - "Community 9"
+Cohesion: 0.08
+Nodes (25): Block, COLORS, INLINE, InlineText(), loggedBlocked, MONO, parseBlocks(), parseInline() (+17 more)
+
+### Community 10 - "Community 10"
 Cohesion: 0.13
 Nodes (20): AppText(), AppTextProps, COLOR, TextColor, Badge(), DOT, TEXT, Tone (+12 more)
 
-### Community 9 - "Community 9"
+### Community 11 - "Community 11"
 Cohesion: 0.06
 Nodes (29): base, baseParams, body, character, claude, claudeOff, claudeUnset, commonBody (+21 more)
 
-### Community 10 - "Community 10"
+### Community 12 - "Community 12"
 Cohesion: 0.10
 Nodes (19): persister, LockGate(), AppLanguage, deviceLanguage(), SUPPORTED_LANGUAGES, queryClient, mem, rememberBaseUrl() (+11 more)
 
-### Community 11 - "Community 11"
+### Community 13 - "Community 13"
 Cohesion: 0.08
 Nodes (15): Bubble, DOT, GenMode, MVCP, MVCP_FOLLOW, MVCP_READ, AuthorsNoteSheet(), AuthorsNoteValue (+7 more)
 
-### Community 12 - "Community 12"
+### Community 14 - "Community 14"
 Cohesion: 0.09
 Nodes (22): Fingerprint, fingerprintVersion(), htmlLooksLikeSillyTavern(), NEGATIVE, fp, mapPool(), probeInstance(), ProbeOptions (+14 more)
 
-### Community 13 - "Community 13"
+### Community 15 - "Community 15"
 Cohesion: 0.10
 Nodes (16): SseEvent, SseParser, events, p, chunk, decoder, GenerateStreamRequest, parser (+8 more)
 
-### Community 14 - "Community 14"
+### Community 16 - "Community 16"
 Cohesion: 0.13
 Nodes (14): Avatar(), FALLBACK_TINTS, tintFor(), ChatActionsSheets(), ChatTarget, fetchLike(), ConnectionState, useConnection (+6 more)
-
-### Community 15 - "Community 15"
-Cohesion: 0.11
-Nodes (21): Block, COLORS, INLINE, InlineText(), MONO, parseBlocks(), parseInline(), proseToBlocks() (+13 more)
-
-### Community 16 - "Community 16"
-Cohesion: 0.10
-Nodes (20): history, many, persona, plainPower, power, seraphina, base, char (+12 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.13
@@ -287,7 +287,7 @@ Cohesion: 1.00
 Nodes (1): { withAppBuildGradle }
 
 ## Knowledge Gaps
-- **358 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+353 more)
+- **373 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+368 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 38`** (1 nodes): `StClient`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -305,17 +305,17 @@ Nodes (1): { withAppBuildGradle }
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `StClient` connect `Community 38` to `Community 19`, `Community 21`, `Community 33`, `Community 35`, `Community 3`, `Community 43`?**
+- **Why does `StClient` connect `Community 38` to `Community 19`, `Community 21`, `Community 33`, `Community 35`, `Community 4`, `Community 43`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Why does `StCharacter` connect `Community 16` to `Community 3`, `Community 7`, `Community 9`, `Community 29`, `Community 1`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Why does `SmoothPacer` connect `Community 22` to `Community 3`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+- **Why does `StCharacter` connect `Community 1` to `Community 4`, `Community 8`, `Community 11`, `Community 29`, `Community 2`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `SmoothPacer` connect `Community 22` to `Community 4`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **What connects `config`, `TAB_ICON`, `TabBarProps` to the rest of the system?**
-  _358 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _373 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.050595238095238096 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.0627177700348432 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05454545454545454 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.1 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0613107822410148 - nodes in this community are weakly interconnected._

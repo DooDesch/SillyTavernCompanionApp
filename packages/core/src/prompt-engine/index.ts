@@ -27,6 +27,7 @@ export {
   buildNovelGenerateRequest,
   historyFromMessages,
   currentSwipeText,
+  resolveGreetingMacros,
   TEXT_COMPLETION_GENERATE_PATH,
 } from './generate';
 export type {
@@ -108,7 +109,13 @@ export type {
 
 // Chat completion (cloud backends)
 export * from './chatcompletion/index';
-export { extractEngineConfig, estimateTokens, extractPersonas, applyPersonaToConfig } from './settings';
+export {
+  extractEngineConfig,
+  estimateTokens,
+  extractPersonas,
+  applyPersonaToConfig,
+  isExternalMediaAllowed,
+} from './settings';
 export type { EngineConfig, Persona, PersonaList } from './settings';
 
 // Persona management (settings.json mutators - run inside the saveSettings callback)

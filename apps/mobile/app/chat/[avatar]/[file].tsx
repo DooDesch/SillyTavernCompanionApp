@@ -30,6 +30,8 @@ import {
   getChat,
   getCharacter,
   historyFromMessages,
+  isExternalMediaAllowed,
+  resolveGreetingMacros,
   saveChat,
   type DepthInjection,
   type StChatHeader,
@@ -136,6 +138,16 @@ export default function ChatScreen() {
   const [activeLore, setActiveLore] = useState<Set<string>>(new Set());
   const [speaking, setSpeaking] = useState<{ index: number; name: string } | null>(null);
   const speakSessionRef = useRef(0);
+
+  // Desktop parity: the greeting shows with its macros resolved (messageFormatting, message 0).
+  const shownMessages = useMemo(
+    () => (character && engine ? resolveGreetingMacros(messages, character, engine.power, engine.identity) : messages),
+    [messages, character, engine],
+  );
+  const externalMedia = useMemo(
+    () => (engine ? isExternalMediaAllowed(engine.power, avatarUrl) : false),
+    [engine, avatarUrl],
+  );
 
   // Author's Note lives in the chat header's chat_metadata (round-trips to the desktop).
   const meta = header?.chat_metadata as Record<string, unknown> | undefined;
@@ -598,7 +610,7 @@ export default function ChatScreen() {
   const openLore = useCallback(() => {
     if (lorebook && engine) {
       try {
-        const hist = historyFromMessages(messages, character?.name ?? '');
+        const hist = historyFromMessages(shownMessages, character?.name ?? '');
         const wi = checkWorldInfo({
           entries: lorebook.entries,
           chatMessages: hist.map((m) => `${m.name}: ${m.mes}`),
@@ -614,19 +626,20 @@ export default function ChatScreen() {
           if (e.content && active.has(e.content)) fired.add(entryUid(e, i));
         });
         setActiveLore(fired);
-      } catch {
+      } catch (e) {
+        console.warn('[lore] active-entry preview failed', e);
         setActiveLore(new Set());
       }
     }
     setSheet('lore');
-  }, [lorebook, engine, messages, character]);
+  }, [lorebook, engine, shownMessages, character]);
 
   const startEdit = useCallback(
     (index: number) => {
-      const m = messages[index];
+      const m = shownMessages[index];
       if (m) setEditing({ index, text: currentSwipeText(m) });
     },
-    [messages],
+    [shownMessages],
   );
 
   const saveEdit = useCallback(() => {
@@ -677,10 +690,10 @@ export default function ChatScreen() {
 
   const copyMessage = useCallback(
     async (index: number) => {
-      const m = messages[index];
+      const m = shownMessages[index];
       if (m) await Clipboard.setStringAsync(currentSwipeText(m));
     },
-    [messages],
+    [shownMessages],
   );
 
   // Read a message aloud with the device's own TTS (no server TTS config needed). The session
@@ -695,7 +708,7 @@ export default function ChatScreen() {
 
   const speakMessage = useCallback(
     (index: number) => {
-      const m = messages[index];
+      const m = shownMessages[index];
       if (!m) return;
       const plain = plainForSpeech(currentSwipeText(m));
       const session = ++speakSessionRef.current;
@@ -722,7 +735,7 @@ export default function ChatScreen() {
       setSpeaking({ index, name: m.name });
       void showTtsNotification(m.name, stopSpeaking);
     },
-    [messages, stopSpeaking],
+    [shownMessages, stopSpeaking],
   );
 
   const branchFrom = useCallback(
@@ -823,7 +836,7 @@ export default function ChatScreen() {
       )}
       <FlashList
         ref={listRef}
-        data={messages}
+        data={shownMessages}
         keyExtractor={(m, i) => m._cid ?? String(i)}
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 12 }}
@@ -851,6 +864,7 @@ export default function ChatScreen() {
               message={item}
               charAvatar={avatarUrl}
               plain={streaming && isLast}
+              externalMedia={externalMedia}
               index={index}
               // Message actions are disabled while generating (like desktop ST) - finalize
               // computes from the generation-start array, so it must not change mid-stream.
@@ -1181,6 +1195,7 @@ const Bubble = memo(function Bubble({
   message,
   charAvatar,
   plain,
+  externalMedia,
   index,
   onLongPress,
 }: {
@@ -1188,6 +1203,8 @@ const Bubble = memo(function Bubble({
   charAvatar?: string;
   /** True for the actively-streaming bubble: content comes from `streamingSession`, not `message`. */
   plain?: boolean;
+  /** ST's external media rule for this character: show or drop markdown images. */
+  externalMedia: boolean;
   index: number;
   onLongPress?: (index: number) => void;
 }) {
@@ -1213,7 +1230,7 @@ const Bubble = memo(function Bubble({
       ) : (
         <>
           {!isUser && reasoning ? <ReasoningBlock text={reasoning} /> : null}
-          <RichText text={text || ' '} />
+          <RichText text={text || ' '} externalMedia={externalMedia} />
         </>
       )}
     </Pressable>
