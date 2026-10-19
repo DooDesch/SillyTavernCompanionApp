@@ -116,6 +116,11 @@ with the APK attached. The release notes are the section for that version in `CH
 workflow needs the repo secrets `ANDROID_KEYSTORE_BASE64` and `STC_UPLOAD_*`. Starting it by hand
 (`workflow_dispatch`) builds the APK as a workflow artifact and creates no release.
 
+A tag run can only read caches, and only those of `main`. The workflow therefore also builds on
+`main` when the native setup changes (lockfile, `apps/mobile/package.json`, `app.config.ts`,
+`plugins/`, `modules/`, the workflow itself) and saves the Gradle cache, including the Gradle
+build cache. That run creates no release.
+
 Tags below `v1.0.0` and tags with a suffix (`v1.2.0-beta.1`) are published as pre-releases. The
 in-app updater reads the release list for that reason, not GitHub's "latest release", which skips
 pre-releases.

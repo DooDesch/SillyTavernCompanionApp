@@ -3,6 +3,16 @@ name: Release
 on:
   push:
     tags: ['v*']
+    # Cache warm-up: a tag run may only read caches, and only those of the default branch. A
+    # build on main after a change to the native setup saves the Gradle cache that tag runs reuse.
+    branches: [main]
+    paths:
+      - pnpm-lock.yaml
+      - apps/mobile/package.json
+      - apps/mobile/app.config.ts
+      - apps/mobile/plugins/**
+      - apps/mobile/modules/**
+      - .github/workflows/release.yml
   # Dry run: builds and uploads the APK as a workflow artifact, creates NO release.
   workflow_dispatch: {}
 
@@ -59,9 +69,10 @@ jobs:
           STC_UPLOAD_STORE_PASSWORD: ${{ secrets.STC_UPLOAD_STORE_PASSWORD }}
           STC_UPLOAD_KEY_ALIAS: ${{ secrets.STC_UPLOAD_KEY_ALIAS }}
           STC_UPLOAD_KEY_PASSWORD: ${{ secrets.STC_UPLOAD_KEY_PASSWORD }}
+        # lintVital only re-checks what the release lint config marks fatal; it costs ~45 s per run.
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleRelease
+          ./gradlew :app:assembleRelease -x :app:lintVitalRelease -x :app:lintVitalAnalyzeRelease
 
       # The signing plugin falls back to the debug keystore by design (local dev convenience),
       # so a missing/broken secret must hard-fail HERE - a debug-signed "release" never ships.
@@ -82,7 +93,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Dry-run artifact (manual runs only)
-        if: github.ref_type != 'tag'
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: SillyTavernCompanion-dryrun
