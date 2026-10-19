@@ -6,6 +6,8 @@ Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-10-19 (Beta)
+
 ### Fixed
 - **Default Author's Note**: chats without their own Author's Note use the default note from
   SillyTavern (text, depth, role and interval), like on the desktop. Before, the app sent no note.
