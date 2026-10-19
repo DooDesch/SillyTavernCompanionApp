@@ -51,6 +51,65 @@ export interface EngineConfig {
    */
   novelaiSettings?: unknown;
   novelaiSettingNames?: unknown;
+  /** Default Author's Note (extension_settings.note) for chats without their own note values. */
+  noteDefaults?: AuthorsNoteDefaults;
+}
+
+/** Desktop Author's Note defaults (authors-note.js DEFAULT_DEPTH / DEFAULT_INTERVAL / DEFAULT_ROLE). */
+export const AN_DEFAULTS = { content: '', depth: 4, interval: 1, role: 0 } as const;
+
+export interface AuthorsNoteDefaults {
+  content: string;
+  depth: number;
+  /** Inject every N user messages; 0 disables the note. */
+  interval: number;
+  /** extension_prompt_roles value: 0 system, 1 user, 2 assistant. */
+  role: number;
+}
+
+const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+
+/** Reads extension_settings.note (default, defaultDepth, defaultInterval, defaultRole). */
+export function extractAuthorsNoteDefaults(parsed: Record<string, unknown>): AuthorsNoteDefaults {
+  const ext = parsed.extension_settings as Record<string, unknown> | undefined;
+  const note = (ext?.note ?? {}) as Record<string, unknown>;
+  return {
+    content: typeof note.default === 'string' ? note.default : AN_DEFAULTS.content,
+    depth: num(note.defaultDepth) ?? AN_DEFAULTS.depth,
+    interval: num(note.defaultInterval) ?? AN_DEFAULTS.interval,
+    role: num(note.defaultRole) ?? AN_DEFAULTS.role,
+  };
+}
+
+export type ResolvedAuthorsNote = AuthorsNoteDefaults;
+
+/**
+ * Port of authors-note.js loadSettings: a chat's own note_* metadata wins, every missing value
+ * falls back to the default Author's Note. A chat note saved as '' stays empty, like on the desktop.
+ */
+export function resolveAuthorsNote(
+  meta: Record<string, unknown> | undefined,
+  defaults: AuthorsNoteDefaults | undefined,
+): ResolvedAuthorsNote {
+  const d = defaults ?? AN_DEFAULTS;
+  return {
+    content: typeof meta?.note_prompt === 'string' ? meta.note_prompt : d.content,
+    depth: num(meta?.note_depth) ?? d.depth,
+    interval: num(meta?.note_interval) ?? d.interval,
+    role: num(meta?.note_role) ?? d.role,
+  };
+}
+
+/**
+ * Port of authors-note.js setFloatingPrompt's interval rule: interval 1 always injects, 0 or less
+ * never, N injects when the number of user messages is a multiple of N (counting down before the
+ * first N). No user message yet means no note.
+ */
+export function shouldInjectAuthorsNote(interval: number, userMessageCount: number): boolean {
+  const count = interval === 1 ? 1 : userMessageCount;
+  if (count <= 0 || interval <= 0) return false;
+  const till = count >= interval ? count % interval : interval - count;
+  return till === 0;
 }
 
 interface RawSettings {
@@ -92,6 +151,7 @@ export function extractEngineConfig(parsed: RawSettings, charName: string): Engi
     maxContext: Number(parsed.max_context) || 16384,
     maxTokens: Number(parsed.amount_gen) || 512,
     mainApi,
+    noteDefaults: extractAuthorsNoteDefaults(parsed),
   };
 }
 

@@ -1,25 +1,25 @@
 # Graph Report - .  (2026-10-19)
 
 ## Corpus Check
-- 229 files · ~152.195 words
+- 229 files · ~152.667 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1200 nodes · 2543 edges · 62 communities detected
+- 1208 nodes · 2560 edges · 61 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 970 · imports: 625 · imports_from: 489 · re_exports: 283 · calls: 142 · method: 34
+- Edge kinds: contains: 978 · imports: 625 · imports_from: 489 · re_exports: 289 · calls: 145 · method: 34
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
 - Included files: 229 · Candidates: 255
-- Excluded: 0 untracked · 45340 ignored · 3 sensitive · 5 missing committed
+- Excluded: 2 untracked · 48433 ignored · 3 sensitive · 5 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `eb5db1b`
+- Built from Git commit: `d235171`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `StClient` - 22 edges
@@ -120,7 +120,7 @@ Nodes (20): ac, calls, client, fetchImpl(), lastPost, makeResponse(), plainCall,
 
 ### Community 20 - "Community 20"
 Cohesion: 0.11
-Nodes (19): deletePersonaFromSettings(), PERSONA_POSITIONS, PERSONA_SELECTABLE_POSITIONS, PersonaFields, PersonaPowerUser, setDefaultPersona(), config, list (+11 more)
+Nodes (22): applyBackendOverride(), applyProfileToConfig(), BackendOverride, byName(), ConnectionProfile, ConnectionProfiles, extractConnectionProfiles(), findConnectionManager() (+14 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.10
@@ -147,80 +147,80 @@ Cohesion: 0.19
 Nodes (18): discoverInstances(), discoverKobold(), DiscoverOptions, KoboldDiscoverOptions, localIpv4(), uniq(), usableHint(), getHint() (+10 more)
 
 ### Community 27 - "Community 27"
+Cohesion: 0.13
+Nodes (14): deletePersonaFromSettings(), PERSONA_POSITIONS, PERSONA_SELECTABLE_POSITIONS, PersonaFields, PersonaPowerUser, setDefaultPersona(), config, list (+6 more)
+
+### Community 28 - "Community 28"
 Cohesion: 0.18
 Nodes (16): calculateLogitBias(), ChatCompletionBodyOptions, ChatCompletionGenerateType, createChatCompletionBody(), getOaiCustomStoppingStrings(), getReasoningEffort(), getVerbosity(), GPT_SOURCES (+8 more)
 
-### Community 28 - "Community 28"
+### Community 29 - "Community 29"
+Cohesion: 0.14
+Nodes (15): CC_SOURCES, MAIN_APIS, MainApi, MAP, normalizeMainApi(), resolveApiSlug(), ResolvedApiSlug, arr (+7 more)
+
+### Community 30 - "Community 30"
 Cohesion: 0.16
 Nodes (16): createTextgenBody(), getTextgenModel(), getTextgenModelField(), getTextgenServer(), MODEL_FIELD_BY_TYPE, parseBannedTokens(), parseSequenceBreakers(), base (+8 more)
 
-### Community 29 - "Community 29"
+### Community 31 - "Community 31"
 Cohesion: 0.12
 Nodes (15): BuildPromptInput, claude, fields, history, identity, noteIdx, nudgeFlavor, oai (+7 more)
 
-### Community 30 - "Community 30"
+### Community 32 - "Community 32"
 Cohesion: 0.19
 Nodes (7): CharacterScreen(), rawField(), splitExamples(), ImageViewerModal(), CharacterCard, Icon(), ICONS
 
-### Community 31 - "Community 31"
+### Community 33 - "Community 33"
 Cohesion: 0.19
 Nodes (11): AvatarFilePart, B64_LOOKUP, base64ToBytes(), makeAvatarFilePart(), newPersonaAvatarId(), PersonaImageSource, b64, bytes (+3 more)
 
-### Community 32 - "Community 32"
+### Community 34 - "Community 34"
 Cohesion: 0.17
 Nodes (11): DOT, ReasoningBlock(), StreamingBubbleContent(), durations, easeIn, springs, usePressScale(), useReducedMotion() (+3 more)
 
-### Community 33 - "Community 33"
+### Community 35 - "Community 35"
 Cohesion: 0.16
 Nodes (11): AvatarCrop, deleteUserAvatar(), FormDataLike, getUserAvatars(), call, { client }, { client, calls }, crop (+3 more)
 
-### Community 34 - "Community 34"
+### Community 36 - "Community 36"
 Cohesion: 0.16
 Nodes (11): IconName, Button(), ButtonProps, CONTAINER, ICON_COLOR, LABEL_COLOR, Size, Variant (+3 more)
 
-### Community 35 - "Community 35"
+### Community 37 - "Community 37"
 Cohesion: 0.15
 Nodes (10): chat, client, down, header, kobold, message, noModel, noVersion (+2 more)
 
-### Community 36 - "Community 36"
-Cohesion: 0.15
-Nodes (12): applyBackendOverride(), base, cc, claude, google, kobold, minimalBase, out (+4 more)
+### Community 38 - "Community 38"
+Cohesion: 0.19
+Nodes (12): AN_DEFAULTS, AuthorsNoteDefaults, BackendSettingsBlock, estimateTokens(), extractAuthorsNoteDefaults(), extractEngineConfig(), num(), PersonaList (+4 more)
 
-### Community 37 - "Community 37"
+### Community 39 - "Community 39"
 Cohesion: 0.26
 Nodes (6): CookieJar, readSetCookie(), SetCookieReadable, splitSetCookieHeader(), headers, jar
 
-### Community 38 - "Community 38"
+### Community 40 - "Community 40"
 Cohesion: 0.42
 Nodes (1): StClient
 
-### Community 39 - "Community 39"
+### Community 41 - "Community 41"
 Cohesion: 0.22
 Nodes (4): TAB_ICON, TabBarProps, useBottomInset(), easeOut
 
-### Community 40 - "Community 40"
+### Community 42 - "Community 42"
 Cohesion: 0.35
 Nodes (5): haptics, PressableScale(), Card(), IconButtonProps, ListRow()
 
-### Community 41 - "Community 41"
-Cohesion: 0.24
-Nodes (9): normalizeMainApi(), arr, base, horde, map, next, parsePresetArray(), presetsByName() (+1 more)
-
-### Community 42 - "Community 42"
+### Community 43 - "Community 43"
 Cohesion: 0.29
 Nodes (8): checkForUpdate(), compareVersions(), downloadAndInstallUpdate(), GithubRelease, releaseVersion(), UpdateInfo, UpdateState, useUpdates
 
-### Community 43 - "Community 43"
+### Community 44 - "Community 44"
 Cohesion: 0.22
 Nodes (8): detectLlmsViaServer(), mergeLlmCandidates(), both, client, fetchImpl(), merged, remembered, res()
 
-### Community 44 - "Community 44"
+### Community 45 - "Community 45"
 Cohesion: 0.22
 Nodes (4): EnvObject, escapeRegex(), MacroValue, substituteMacros()
-
-### Community 45 - "Community 45"
-Cohesion: 0.24
-Nodes (9): applyProfileToConfig(), BackendOverride, byName(), ConnectionProfile, ConnectionProfiles, extractConnectionProfiles(), findConnectionManager(), SettingsResponseArrays (+1 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.31
@@ -239,75 +239,71 @@ Cohesion: 0.32
 Nodes (6): credPassKey(), credUserKey(), safeKey(), SavedServer, ServersState, useServers
 
 ### Community 50 - "Community 50"
-Cohesion: 0.25
-Nodes (7): CC_SOURCES, MAIN_APIS, MainApi, MAP, resolveApiSlug(), ResolvedApiSlug, TEXTGEN_TYPES
-
-### Community 51 - "Community 51"
 Cohesion: 0.60
 Nodes (5): ensureIds(), makeAssistantMessage(), makeUserMessage(), newMessageId(), nowSendDate()
 
-### Community 52 - "Community 52"
+### Community 51 - "Community 51"
 Cohesion: 0.40
 Nodes (4): NovelDelta, parseNovelData(), delta, frames
 
-### Community 53 - "Community 53"
+### Community 52 - "Community 52"
 Cohesion: 0.50
 Nodes (3): { palette, radii }, palette, radii
 
-### Community 54 - "Community 54"
+### Community 53 - "Community 53"
 Cohesion: 0.50
 Nodes (3): config, { getDefaultConfig }, { withNativeWind }
 
-### Community 55 - "Community 55"
+### Community 54 - "Community 54"
 Cohesion: 0.50
 Nodes (2): Lorebook, useLorebook()
 
-### Community 56 - "Community 56"
+### Community 55 - "Community 55"
 Cohesion: 0.67
 Nodes (3): ensureSetup(), hideTtsNotification(), showTtsNotification()
 
-### Community 57 - "Community 57"
+### Community 56 - "Community 56"
 Cohesion: 0.67
 Nodes (3): renderStoryString(), resolveConditionals(), StoryStringData
 
-### Community 58 - "Community 58"
+### Community 57 - "Community 57"
 Cohesion: 0.67
 Nodes (2): { defineConfig }, expoConfig
 
-### Community 59 - "Community 59"
+### Community 58 - "Community 58"
 Cohesion: 0.67
 Nodes (2): PROPS, { withGradleProperties }
 
-### Community 60 - "Community 60"
+### Community 59 - "Community 59"
 Cohesion: 1.00
 Nodes (1): config
 
-### Community 61 - "Community 61"
+### Community 60 - "Community 60"
 Cohesion: 1.00
 Nodes (1): { withAppBuildGradle }
 
 ## Knowledge Gaps
 - **373 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+368 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 38`** (1 nodes): `StClient`
+- **Thin community `Community 40`** (1 nodes): `StClient`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 55`** (2 nodes): `Lorebook`, `useLorebook()`
+- **Thin community `Community 54`** (2 nodes): `Lorebook`, `useLorebook()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 58`** (2 nodes): `{ defineConfig }`, `expoConfig`
+- **Thin community `Community 57`** (2 nodes): `{ defineConfig }`, `expoConfig`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 59`** (2 nodes): `PROPS`, `{ withGradleProperties }`
+- **Thin community `Community 58`** (2 nodes): `PROPS`, `{ withGradleProperties }`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 60`** (1 nodes): `config`
+- **Thin community `Community 59`** (1 nodes): `config`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 61`** (1 nodes): `{ withAppBuildGradle }`
+- **Thin community `Community 60`** (1 nodes): `{ withAppBuildGradle }`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `StClient` connect `Community 38` to `Community 19`, `Community 21`, `Community 33`, `Community 35`, `Community 4`, `Community 43`?**
+- **Why does `StClient` connect `Community 40` to `Community 19`, `Community 21`, `Community 35`, `Community 37`, `Community 4`, `Community 44`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Why does `StCharacter` connect `Community 1` to `Community 4`, `Community 8`, `Community 11`, `Community 29`, `Community 2`?**
+- **Why does `StCharacter` connect `Community 1` to `Community 4`, `Community 8`, `Community 11`, `Community 31`, `Community 2`?**
   _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `SmoothPacer` connect `Community 22` to `Community 4`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
