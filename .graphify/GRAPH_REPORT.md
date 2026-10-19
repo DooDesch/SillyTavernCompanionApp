@@ -1,35 +1,35 @@
 # Graph Report - .  (2026-10-19)
 
 ## Corpus Check
-- 228 files · ~152.595 words
+- 229 files · ~152.195 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1195 nodes · 2533 edges · 62 communities detected
+- 1200 nodes · 2543 edges · 62 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 966 · imports: 622 · imports_from: 486 · re_exports: 283 · calls: 142 · method: 34
+- Edge kinds: contains: 970 · imports: 625 · imports_from: 489 · re_exports: 283 · calls: 142 · method: 34
 
 
 ## Input Scope
 - Requested: auto
 - Resolved: committed (source: default-auto)
-- Included files: 228 · Candidates: 254
-- Excluded: 1 untracked · 44913 ignored · 3 sensitive · 5 missing committed
+- Included files: 229 · Candidates: 255
+- Excluded: 0 untracked · 45340 ignored · 3 sensitive · 5 missing committed
 - Recommendation: Use --scope all or graphify.yaml inputs.corpus for a knowledge-base folder.
 
 ## Graph Freshness
-- Built from Git commit: `df2e762`
+- Built from Git commit: `eb5db1b`
 - Compare this hash to `git rev-parse HEAD` before trusting freshness-sensitive graph output.
 ## God Nodes (most connected - your core abstractions)
 1. `StClient` - 22 edges
 2. `useConnection` - 21 edges
 3. `Icon()` - 21 edges
 4. `haptics` - 18 edges
-5. `Identity` - 14 edges
-6. `AppText()` - 13 edges
-7. `PowerUserSubset` - 13 edges
-8. `StCharacter` - 13 edges
+5. `PowerUserSubset` - 14 edges
+6. `Identity` - 14 edges
+7. `StCharacter` - 14 edges
+8. `AppText()` - 13 edges
 9. `safe()` - 12 edges
 10. `substituteParams()` - 12 edges
 
@@ -43,12 +43,12 @@ Cohesion: 0.05
 Nodes (52): PickerOption, PickerSheet(), CollapsibleHeader(), OrderListRow(), SegmentedRow(), TextAreaRow(), ToggleRow(), TemplatesView (+44 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (38): BuildPromptResult, buildTextCompletionPrompt(), gatherDepthInjections(), HistoryMessage, placePersonaDescription(), TokenCounter, DepthInjection, EXTENSION_ROLE (+30 more)
+Cohesion: 0.05
+Nodes (34): history, many, persona, plainPower, power, seraphina, char, history (+26 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.06
-Nodes (32): history, many, persona, plainPower, power, seraphina, allowAll, char (+24 more)
+Nodes (38): BuildPromptResult, buildTextCompletionPrompt(), gatherDepthInjections(), HistoryMessage, placePersonaDescription(), TokenCounter, DepthInjection, EXTENSION_ROLE (+30 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.10
@@ -287,7 +287,7 @@ Cohesion: 1.00
 Nodes (1): { withAppBuildGradle }
 
 ## Knowledge Gaps
-- **371 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+366 more)
+- **373 isolated node(s):** `config`, `TAB_ICON`, `TabBarProps`, `CharacterCard`, `Bucket` (+368 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 38`** (1 nodes): `StClient`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -307,15 +307,15 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `StClient` connect `Community 38` to `Community 19`, `Community 21`, `Community 33`, `Community 35`, `Community 4`, `Community 43`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Why does `StCharacter` connect `Community 2` to `Community 4`, `Community 8`, `Community 11`, `Community 29`, `Community 1`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `StCharacter` connect `Community 1` to `Community 4`, `Community 8`, `Community 11`, `Community 29`, `Community 2`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `SmoothPacer` connect `Community 22` to `Community 4`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **What connects `config`, `TAB_ICON`, `TabBarProps` to the rest of the system?**
-  _371 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _373 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.050595238095238096 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.0613107822410148 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05454545454545454 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.06153846153846154 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0613107822410148 - nodes in this community are weakly interconnected._

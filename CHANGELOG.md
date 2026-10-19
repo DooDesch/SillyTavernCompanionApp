@@ -6,6 +6,9 @@ Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
 ## [Unreleased]
 
+### Changed
+- **Expo SDK 58**: the app now runs on Expo SDK 58 with React Native 0.88 and React 19.3.
+
 ### Fixed
 - **Greeting macros**: `{{char}}`, `{{user}}` and the other macros in the first message and its
   alternate greetings are resolved, in the chat and in the prompt, like on the desktop.
