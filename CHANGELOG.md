@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [Unreleased]
+
+### Changed
+- **Expo SDK 58**: the app now runs on Expo SDK 58 with React Native 0.88 and React 19.3.
+
 ## [0.16.0] - 2026-10-19 (Beta)
 
 ### Added

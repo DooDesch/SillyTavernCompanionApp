@@ -13,17 +13,17 @@ const TAB_ICON: Record<string, IconName> = {
   settings: 'settings',
 };
 
-// Minimal structural type for the bits of react-navigation's tab-bar props we use
-// (avoids pulling @react-navigation/bottom-tabs in as a direct dependency just for the type).
+// Minimal structural type for the bits of expo-router's tab-bar props we use
+// (expo-router has no public entry point that exports BottomTabBarProps).
 type TabBarProps = {
   state: { index: number; routes: { key: string; name: string }[] };
   descriptors: Record<string, { options: { title?: string } }>;
-  navigation: {
+  emitter: {
     emit: (event: { type: 'tabPress'; target: string; canPreventDefault: true }) => {
       defaultPrevented: boolean;
     };
-    navigate: (name: string) => void;
   };
+  navigateToTab: (routeKey: string) => void;
 };
 
 /**
@@ -31,7 +31,7 @@ type TabBarProps = {
  * this setup, so the labels collided with the system nav bar. We render it ourselves and pad by a
  * reliable bottom inset.
  */
-function TabBar({ state, descriptors, navigation }: TabBarProps) {
+function TabBar({ state, descriptors, emitter, navigateToTab }: TabBarProps) {
   const bottom = useBottomInset(12);
   return (
     <View
@@ -57,8 +57,8 @@ function TabBar({ state, descriptors, navigation }: TabBarProps) {
             accessibilityLabel={label}
             onPress={() => {
               haptics.selection();
-              const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-              if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+              const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+              if (!focused && !event.defaultPrevented) navigateToTab(route.key);
             }}
             style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 2 }}
           >
@@ -77,9 +77,9 @@ export default function TabsLayout() {
   const { t } = useTranslation();
   return (
     <Tabs
-      // "Chats" (recent conversations) is the landing tab, like SillyTavern's home page.
+      // "Chats" (recent conversations) is the landing tab, like SillyTavern's home page: it is the
+      // first declared screen, and app/index.tsx redirects to it.
       // Each screen renders its own in-content header for a more designed, large-title feel.
-      initialRouteName="chats"
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
     >
