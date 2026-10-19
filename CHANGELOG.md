@@ -12,6 +12,9 @@ Android `versionCode` increases by 1 per release (0.9.0 = 2).
 - **Images in messages**: markdown images (`![alt](url)`) show as images when SillyTavern
   allows external media for the character ("Ext. Media"). When it forbids them, the image is
   hidden like on the desktop instead of showing as raw text.
+- **Character name in text completion prompts**: without instruct mode, the prompt ends with
+  `{{char}}:` again when "Always add character's name to prompt" is on (`{{user}}:` when
+  impersonating). Before, the model often wrote the user's next line.
 
 ## [0.16.0] - 2026-10-19 (Beta)
 

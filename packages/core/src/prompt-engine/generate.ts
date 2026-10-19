@@ -150,8 +150,30 @@ type TextPromptParams = Pick<
   | 'type'
 >;
 
+/**
+ * Port of modifyLastPromptLine (script.js) for non-instruct text completion. Impersonate appends
+ * `{{user}}:` (not on continue). force_name2 appends `{{char}}:`, except when continuing the
+ * first message, and on continue only when the last message is not the user's. Instruct mode
+ * gets its prompt line from formatInstructModePrompt instead, so nothing is appended there.
+ */
+function nameLineAppend(
+  params: Pick<TextPromptParams, 'power' | 'identity' | 'history' | 'isImpersonate' | 'type'>,
+  forceName2: boolean,
+): string | undefined {
+  if (params.power.instruct.enabled) return undefined;
+  const isContinue = params.type === 'continue';
+  if (params.isImpersonate === true) return isContinue ? undefined : `${params.identity.user}:`;
+  if (!forceName2) return undefined;
+  if (isContinue && params.history.length === 1) return undefined;
+  const lastMessageIsUser = params.history[params.history.length - 1]?.isUser === true;
+  return !isContinue || !lastMessageIsUser ? `${params.identity.char}:` : '';
+}
+
 /** World-Info scan + text-completion prompt assembly shared by the textgen and kobold builders. */
 async function buildTextPrompt(params: TextPromptParams): Promise<BuildPromptResult> {
+  // ST Generate: force_name2 comes from power_user.always_force_name2 ("Always add character's
+  // name to prompt") for textgen and kobold; impersonate clears it.
+  const lastLineAppend = nameLineAppend(params, params.power.always_force_name2 === true);
   const syncCount = (t: string): number => {
     const r = params.countTokens(t);
     return typeof r === 'number' ? r : Math.ceil(t.length / 3.5);
@@ -184,6 +206,7 @@ async function buildTextPrompt(params: TextPromptParams): Promise<BuildPromptRes
     ...(worldInfo ? { worldInfo } : {}),
     ...(params.authorsNote ? { authorsNote: params.authorsNote } : {}),
     ...(params.isImpersonate ? { isImpersonate: params.isImpersonate } : {}),
+    ...(lastLineAppend !== undefined ? { lastLineAppend } : {}),
     type: params.type === 'regenerate' || params.type === 'swipe' ? 'normal' : params.type,
   });
 }
