@@ -6,6 +6,8 @@ Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-19 (Beta)
+
 ### Changed
 - **Expo SDK 58**: the app now runs on Expo SDK 58 with React Native 0.88 and React 19.3.
 
