@@ -40,9 +40,9 @@ engine can be tested without a device.
 
 ## Stack
 
-Expo SDK 56, React Native 0.85 (New Architecture, Hermes), React 19, expo-router, `expo/fetch` for
-SSE, TanStack Query 5, Zustand 5, NativeWind 4, FlashList 2, Reanimated 4, i18next. Exact versions
-are in `apps/mobile/package.json`.
+Expo SDK 58, React Native 0.88 (New Architecture, Hermes), React 19, expo-router, `expo/fetch` for
+SSE, TanStack Query 5, Zustand 5, NativeWind 4, FlashList 2, Reanimated 4, Gesture Handler 3,
+i18next. Exact versions are in `apps/mobile/package.json`.
 
 Tooling: Node 20 or newer (CI runs 22), pnpm 10, JDK 21 for the Android build.
 
