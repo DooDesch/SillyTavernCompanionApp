@@ -115,8 +115,12 @@ export {
   extractPersonas,
   applyPersonaToConfig,
   isExternalMediaAllowed,
+  AN_DEFAULTS,
+  extractAuthorsNoteDefaults,
+  resolveAuthorsNote,
+  shouldInjectAuthorsNote,
 } from './settings';
-export type { EngineConfig, Persona, PersonaList } from './settings';
+export type { EngineConfig, Persona, PersonaList, AuthorsNoteDefaults, ResolvedAuthorsNote } from './settings';
 
 // Persona management (settings.json mutators - run inside the saveSettings callback)
 export {

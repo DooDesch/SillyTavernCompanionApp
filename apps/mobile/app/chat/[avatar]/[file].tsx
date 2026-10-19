@@ -31,7 +31,9 @@ import {
   getCharacter,
   historyFromMessages,
   isExternalMediaAllowed,
+  resolveAuthorsNote,
   resolveGreetingMacros,
+  shouldInjectAuthorsNote,
   saveChat,
   type DepthInjection,
   type StChatHeader,
@@ -85,6 +87,11 @@ const UNPIN_DISTANCE_PX = 24;
 const REPIN_DISTANCE_PX = 12;
 
 /** Read persisted World-Info timed-effect state from a chat header (a copy, to mutate freely). */
+/** Sets `authorsNote` on the generation options only when there is a note to inject. */
+function withAuthorsNote(note: DepthInjection | undefined): { authorsNote?: DepthInjection } {
+  return note ? { authorsNote: note } : {};
+}
+
 function readTimedState(h: StChatHeader): TimedWorldInfoState {
   const tw = (h.chat_metadata as { timedWorldInfo?: TimedWorldInfoState } | undefined)?.timedWorldInfo;
   return tw && tw.sticky && tw.cooldown
@@ -149,19 +156,25 @@ export default function ChatScreen() {
     [engine, avatarUrl],
   );
 
-  // Author's Note lives in the chat header's chat_metadata (round-trips to the desktop).
+  // Author's Note lives in the chat header's chat_metadata (round-trips to the desktop). Values the
+  // chat does not set come from the default Author's Note in the ST settings, like on the desktop.
   const meta = header?.chat_metadata as Record<string, unknown> | undefined;
+  const resolvedNote = useMemo(() => resolveAuthorsNote(meta, engine?.noteDefaults), [meta, engine?.noteDefaults]);
   const authorsNoteValue: AuthorsNoteValue = {
-    content: typeof meta?.note_prompt === 'string' ? meta.note_prompt : '',
-    depth: typeof meta?.note_depth === 'number' ? meta.note_depth : 4,
-    role: typeof meta?.note_role === 'number' ? meta.note_role : 0,
+    content: resolvedNote.content,
+    depth: resolvedNote.depth,
+    role: resolvedNote.role,
   };
-  const authorsNote: DepthInjection | undefined = useMemo(
-    () =>
-      authorsNoteValue.content.trim()
-        ? { depth: authorsNoteValue.depth, role: authorsNoteValue.role, content: authorsNoteValue.content }
-        : undefined,
-    [authorsNoteValue.content, authorsNoteValue.depth, authorsNoteValue.role],
+  const authorsNoteActive = resolvedNote.content.trim() !== '' && resolvedNote.interval > 0;
+  // The note's interval counts the user messages of the history the prompt is built from.
+  const authorsNoteFor = useCallback(
+    (history: readonly { is_user?: boolean }[]): DepthInjection | undefined => {
+      if (!authorsNoteActive) return undefined;
+      const userMessages = history.filter((m) => m.is_user).length;
+      if (!shouldInjectAuthorsNote(resolvedNote.interval, userMessages)) return undefined;
+      return { depth: resolvedNote.depth, role: resolvedNote.role, content: resolvedNote.content };
+    },
+    [authorsNoteActive, resolvedNote],
   );
 
   // Lorebook with user-muted entries removed + the timed-effect state attached. Built on demand at
@@ -364,7 +377,7 @@ export default function ChatScreen() {
           type: mode === 'new' ? 'normal' : mode,
           signal: ac.signal,
           ...(effectiveLorebook ? { lorebook: effectiveLorebook } : {}),
-          ...(authorsNote ? { authorsNote } : {}),
+          ...withAuthorsNote(authorsNoteFor(contextMsgs)),
           ...(header?.chat_metadata
             ? {
                 chatMetadata: header.chat_metadata as {
@@ -427,7 +440,7 @@ export default function ChatScreen() {
         }
       }
     },
-    [client, engine, character, persist, scrollToEnd, buildEffectiveLorebook, authorsNote, header, smoothStreaming, reducedMotion, t],
+    [client, engine, character, persist, scrollToEnd, buildEffectiveLorebook, authorsNoteFor, header, smoothStreaming, reducedMotion, t],
   );
 
   const send = useCallback(async () => {
@@ -522,7 +535,7 @@ export default function ChatScreen() {
         isImpersonate: true,
         signal: ac.signal,
         ...(effectiveLorebook ? { lorebook: effectiveLorebook } : {}),
-        ...(authorsNote ? { authorsNote } : {}),
+        ...withAuthorsNote(authorsNoteFor(messages)),
         ...(header?.chat_metadata
           ? {
               chatMetadata: header.chat_metadata as {
@@ -546,7 +559,7 @@ export default function ChatScreen() {
       abortRef.current = null;
       setStreaming(false);
     }
-  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNote, header, t]);
+  }, [streaming, client, engine, character, messages, buildEffectiveLorebook, authorsNoteFor, header, t]);
 
   // Persist a header change (e.g. Author's Note) back to the server.
   const saveHeader = useCallback(
@@ -818,7 +831,7 @@ export default function ChatScreen() {
             )}
           </View>
         </Pressable>
-        <IconButton name="note" accessibilityLabel={t('a11y.authorsNote')} active={!!authorsNote} onPress={() => setSheet('note')} />
+        <IconButton name="note" accessibilityLabel={t('a11y.authorsNote')} active={authorsNoteActive} onPress={() => setSheet('note')} />
         {!!lorebook && <IconButton name="lore" accessibilityLabel={t('a11y.lorebook')} onPress={openLore} />}
         <IconButton name="tune" accessibilityLabel={t('a11y.generationSettings')} onPress={() => setSheet('quick')} />
       </View>
