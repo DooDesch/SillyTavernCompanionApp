@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyProfileToConfig, extractConnectionProfiles } from './profiles';
+import { applyBackendOverride, applyProfileToConfig, extractConnectionProfiles } from './profiles';
 import type { EngineConfig } from './settings';
 
 const parsed = {
@@ -87,5 +87,61 @@ describe('connection profiles', () => {
     expect(out.textgen.type).toBe('koboldcpp');
     expect(out.textgen.server_urls).toEqual({ koboldcpp: 'http://x:5001' });
     expect(out.apiServerOverride).toBe('http://127.0.0.1:5001');
+  });
+
+  const minimalBase: EngineConfig = {
+    power: {
+      instruct: { enabled: true, input_sequence: '', output_sequence: '', wrap: false, macro: true, names_behavior: 'force' },
+      context: { story_string: '' },
+      sysprompt: { enabled: true, content: '' },
+    },
+    textgen: { type: 'koboldcpp', ollama_model: 'smollm:135m', server_urls: {} },
+    oai: { chat_completion_source: 'openai', openai_model: 'gpt-old' },
+    kai: {},
+    nai: {},
+    horde: {},
+    mode: 'tc',
+    identity: { user: 'D', char: 'S' },
+    maxContext: 16384,
+    maxTokens: 500,
+    mainApi: 'textgenerationwebui',
+  };
+
+  it("applies the profile's model to the Ollama model field", () => {
+    const { profiles } = extractConnectionProfiles({
+      connectionManager: {
+        profiles: [{ id: 'o', name: 'Ollama', mode: 'tc', api: 'ollama', model: 'qwen-rp:latest', 'api-url': 'http://127.0.0.1:11434/' }],
+      },
+    });
+    expect(profiles[0]?.model).toBe('qwen-rp:latest');
+    const out = applyProfileToConfig(minimalBase, profiles[0]!, {});
+    expect(out.textgen.type).toBe('ollama');
+    expect(out.textgen.ollama_model).toBe('qwen-rp:latest');
+    expect(out.apiServerOverride).toBe('http://127.0.0.1:11434/');
+  });
+
+  it("applies the profile's model to the chat-completion source field", () => {
+    const google = applyProfileToConfig(minimalBase, { id: 'g', name: 'G', mode: 'cc', api: 'google', model: 'gemini-x' }, {});
+    expect(google.oai.google_model).toBe('gemini-x');
+    const claude = applyProfileToConfig(minimalBase, { id: 'c', name: 'C', mode: 'cc', api: 'claude', model: 'claude-x' }, {});
+    expect(claude.oai.claude_model).toBe('claude-x');
+  });
+
+  it('routes a picked backend to text completion with its type, url and model', () => {
+    const cc: EngineConfig = { ...minimalBase, mainApi: 'openai', mode: 'cc' };
+    const out = applyBackendOverride(cc, { type: 'ollama', url: 'http://127.0.0.1:11434', model: 'qwen-rp:latest' });
+    expect(out.mainApi).toBe('textgenerationwebui');
+    expect(out.mode).toBe('tc');
+    expect(out.textgen.type).toBe('ollama');
+    expect(out.textgen.ollama_model).toBe('qwen-rp:latest');
+    expect(out.apiServerOverride).toBe('http://127.0.0.1:11434');
+    const kobold = applyBackendOverride(minimalBase, { type: 'koboldcpp', url: 'http://192.168.1.5:5001' });
+    expect(kobold.textgen.type).toBe('koboldcpp');
+    expect(kobold.apiServerOverride).toBe('http://192.168.1.5:5001');
+  });
+
+  it('keeps the saved model when the profile has none', () => {
+    const out = applyProfileToConfig(minimalBase, { id: 'o', name: 'O', mode: 'tc', api: 'ollama' }, {});
+    expect(out.textgen.ollama_model).toBe('smollm:135m');
   });
 });

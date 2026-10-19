@@ -5,6 +5,7 @@ import {
   getKoboldStatus,
   getNovelStatus,
   getTextCompletionStatus,
+  getTextgenModel,
   getTextgenServer,
   type BackendStatus,
   type EngineConfig,
@@ -23,6 +24,7 @@ export function useBackendStatus(engine: EngineConfig | null) {
   const isCc = engine?.mode === 'cc';
   const apiServer = engine ? engine.apiServerOverride || getTextgenServer(engine.textgen) : '';
   const apiType = engine?.textgen?.type ?? '';
+  const textgenModel = engine ? getTextgenModel(engine.textgen) ?? '' : '';
   const source = engine?.oai?.chat_completion_source ?? '';
   // KoboldAI Classic stores its backend URL in kai_settings.api_server.
   const kaiServer = engine
@@ -41,7 +43,7 @@ export function useBackendStatus(engine: EngineConfig | null) {
           ? 'novel'
           : isCc
             ? `cc:${source}`
-            : `tc:${apiType}:${apiServer}`;
+            : `tc:${apiType}:${apiServer}:${textgenModel}`;
 
   return useQuery<BackendStatus>({
     queryKey: ['backendStatus', client?.baseUrl, branchKey],
@@ -59,7 +61,7 @@ export function useBackendStatus(engine: EngineConfig | null) {
       if (mainApi === 'novel') return getNovelStatus(client);
       return isCc
         ? getChatCompletionStatus(client, source)
-        : getTextCompletionStatus(client, { apiServer, apiType });
+        : getTextCompletionStatus(client, { apiServer, apiType, model: textgenModel });
     },
     enabled: !!client && !!engine,
     staleTime: 15_000,

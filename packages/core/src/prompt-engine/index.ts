@@ -18,7 +18,7 @@ export type { InstructContext, ForceSequence } from './instruct';
 export { getStoppingStrings } from './stoppingStrings';
 export { buildTextCompletionPrompt } from './buildPrompt';
 export type { BuildPromptInput, BuildPromptResult, HistoryMessage, TokenCounter } from './buildPrompt';
-export { createTextgenBody, getTextgenModel, getTextgenServer } from './textgenBody';
+export { createTextgenBody, getTextgenModel, getTextgenModelField, getTextgenServer } from './textgenBody';
 export type { TextgenSettings, TextgenBodyOptions } from './textgenBody';
 export {
   buildTextgenGenerateRequest,
@@ -141,8 +141,8 @@ export { injectAtDepth, roleFromString, EXTENSION_ROLE } from './depthInject';
 export type { DepthInjection } from './depthInject';
 
 // Connection profiles
-export { extractConnectionProfiles, applyProfileToConfig } from './profiles';
-export type { ConnectionProfile, ConnectionProfiles } from './profiles';
+export { extractConnectionProfiles, applyProfileToConfig, applyBackendOverride } from './profiles';
+export type { BackendOverride, ConnectionProfile, ConnectionProfiles } from './profiles';
 
 // World Info / lorebooks
 export * from './worldinfo/index';

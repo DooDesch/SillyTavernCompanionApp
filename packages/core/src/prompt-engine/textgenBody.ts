@@ -108,6 +108,11 @@ const MODEL_FIELD_BY_TYPE: Record<string, string> = {
   llamacpp: 'llamacpp_model',
 };
 
+/** Settings field that holds the selected model for a backend type, undefined for koboldcpp & co. */
+export function getTextgenModelField(type: string): string | undefined {
+  return MODEL_FIELD_BY_TYPE[type];
+}
+
 /** Backend types that get their own parameter set in ST instead of the llama.cpp aliases. */
 const TYPES_WITHOUT_LLAMACPP_ALIASES = new Set(['vllm', 'infermaticai', 'aphrodite']);
 

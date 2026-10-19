@@ -1,6 +1,6 @@
 import type { EngineConfig } from './settings';
 import type { ContextSettings, InstructSettings, SyspromptSettings } from './types';
-import type { TextgenSettings } from './textgenBody';
+import { getTextgenModelField, type TextgenSettings } from './textgenBody';
 import type { OaiSettings } from './chatcompletion/types';
 import { resolveApiSlug } from './apiMap';
 import { parsePresetArray } from './presetArrays';
@@ -15,6 +15,8 @@ export interface ConnectionProfile {
   mode?: string; // 'tc' = text completion, 'cc' = chat completion
   api?: string;
   apiUrl?: string;
+  /** Model for the profile's backend; desktop applies it with `/model` after switching the api. */
+  model?: string;
   preset?: string;
   instruct?: string;
   context?: string;
@@ -52,6 +54,7 @@ export function extractConnectionProfiles(parsed: Record<string, unknown>): Conn
     mode: raw.mode,
     api: raw.api,
     apiUrl: raw['api-url'],
+    model: typeof raw.model === 'string' && raw.model ? raw.model : undefined,
     preset: raw.preset,
     instruct: raw.instruct,
     context: raw.context,
@@ -159,7 +162,45 @@ export function applyProfileToConfig(
     }
   }
 
+  // The profile's model goes into the field the backend reads it from (desktop getModelOptions:
+  // ollama_model for Ollama, google_model for makersuite, ...). Applied after the preset so a
+  // preset can never replace it.
+  if (profile.model) {
+    if (next.mode === 'cc') {
+      const source = next.oai.chat_completion_source;
+      const field = source === 'makersuite' ? 'google_model' : `${source}_model`;
+      next.oai = { ...next.oai, [field]: profile.model };
+    } else if (next.mainApi === 'textgenerationwebui') {
+      const field = getTextgenModelField(next.textgen.type);
+      if (field) next.textgen = { ...next.textgen, [field]: profile.model };
+    }
+  }
+
   if (profile.apiUrl) next.apiServerOverride = profile.apiUrl;
 
   return next;
+}
+
+/** A text-completion backend the user picked in the app (detected or a model switch). */
+export interface BackendOverride {
+  type: string;
+  url: string;
+  model?: string;
+}
+
+/**
+ * Route generation to the picked backend: text completion with its textgen type, URL and model.
+ * Templates and samplers stay as the profile set them. Purely client-side.
+ */
+export function applyBackendOverride(config: EngineConfig, override: BackendOverride): EngineConfig {
+  const textgen: TextgenSettings = { ...config.textgen, type: override.type };
+  const field = getTextgenModelField(override.type);
+  if (field && override.model) textgen[field] = override.model;
+  return {
+    ...config,
+    mainApi: 'textgenerationwebui',
+    mode: 'tc',
+    textgen,
+    apiServerOverride: override.url,
+  };
 }

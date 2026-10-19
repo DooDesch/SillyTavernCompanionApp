@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  applyBackendOverride,
   applyPersonaToConfig,
   applyProfileToConfig,
   extractConnectionProfiles,
@@ -10,13 +11,26 @@ import {
   type EngineConfig,
 } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
-import { useProfiles } from '@/stores/profilesStore';
+import { useProfiles, type StoredBackendOverride } from '@/stores/profilesStore';
 import { parseStSettings } from '@/lib/settings';
 
 /**
+ * Apply the backend picked in the app. A migrated legacy KoboldCpp URL only replaces the URL of a
+ * KoboldCpp text-completion config, like before; every other override switches the backend.
+ */
+export function withBackendOverride(config: EngineConfig, override: StoredBackendOverride | undefined): EngineConfig {
+  if (!override) return config;
+  if (override.legacy) {
+    const isKobold = config.mainApi === 'textgenerationwebui' && config.textgen.type === 'koboldcpp';
+    return isKobold ? { ...config, apiServerOverride: override.url } : config;
+  }
+  return applyBackendOverride(config, override);
+}
+
+/**
  * Loads `/api/settings/get`, parses settings, and produces the engine config for `charName` with the
- * active connection profile applied (named instruct/context/sysprompt/preset + api-url) and any
- * KoboldCpp backend override.
+ * active connection profile applied (named instruct/context/sysprompt/preset + api-url) and the
+ * backend picked in the app.
  */
 export function useEngineConfig(charName: string): {
   engine: EngineConfig | null;
@@ -25,7 +39,7 @@ export function useEngineConfig(charName: string): {
 } {
   const client = useConnection((s) => s.client);
   const activeProfileId = useProfiles((s) => s.activeProfileId);
-  const koboldOverride = useProfiles((s) => s.koboldOverride);
+  const backendOverride = useProfiles((s) => s.backendOverride);
   const activePersonaAvatar = useProfiles((s) => s.activePersonaAvatar);
 
   const { data, isLoading, error } = useQuery({
@@ -75,14 +89,10 @@ export function useEngineConfig(charName: string): {
       if (persona) config = applyPersonaToConfig(config, persona);
     }
 
-    // The app-local KoboldCpp URL override targets the textgen backend only - it must not
-    // hijack KoboldAI Classic's api_server (kai.api_server / a profile apiUrl handle that).
-    if (koboldOverride && config.mainApi === 'textgenerationwebui') {
-      config = { ...config, apiServerOverride: koboldOverride };
-    }
+    config = withBackendOverride(config, backendOverride);
 
     return config;
-  }, [data, charName, activeProfileId, koboldOverride, activePersonaAvatar]);
+  }, [data, charName, activeProfileId, backendOverride, activePersonaAvatar]);
 
   return { engine, isLoading, error };
 }

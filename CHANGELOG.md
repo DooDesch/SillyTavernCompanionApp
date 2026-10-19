@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semver.
 Android `versionCode` increases by 1 per release (0.9.0 = 2).
 
+## [Unreleased]
+
+### Added
+- **Auto-detect finds every local LLM**: the SillyTavern server checks the default ports of
+  KoboldCpp, Ollama, llama.cpp, LM Studio, TabbyAPI, Text Generation WebUI, vLLM and Aphrodite
+  on its own PC, and the phone still scans the network for KoboldCpp. The results show up as
+  a list of backend and model to pick from. Backends found before are checked first.
+- **Model switch**: tap the AI backend card to pick another model of the running backend,
+  for example another Ollama model.
+
+### Fixed
+- **Connection profiles**: the model saved in a profile is now applied. Before, the app used
+  the model that was last selected in SillyTavern.
+- **AI backend status**: shows the selected model. Before, Ollama showed the first installed
+  model, even when another one was selected.
+- **KoboldCpp URL from auto-detect**: no longer replaces the URL of other backends such as
+  Ollama.
+
 ## [0.15.1] - 2026-10-03 (Beta)
 
 ### Changed

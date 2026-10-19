@@ -4,11 +4,12 @@ import {
   extractConnectionProfiles,
   extractPersonas,
   getSettings,
+  type BackendOverride,
   type ConnectionProfile,
   type Persona,
 } from '@st/core';
 import { useConnection } from '@/stores/connectionStore';
-import { useProfiles } from '@/stores/profilesStore';
+import { useProfiles, type StoredBackendOverride } from '@/stores/profilesStore';
 import { parseStSettings } from '@/lib/settings';
 
 export interface ConnectionSettingsView {
@@ -20,8 +21,8 @@ export interface ConnectionSettingsView {
   /** power_user.default_persona (used by the desktop for new chats). */
   defaultPersonaAvatar?: string;
   setActivePersona: (avatar?: string) => void;
-  koboldOverride?: string;
-  setKoboldOverride: (url?: string) => void;
+  backendOverride?: StoredBackendOverride;
+  setBackendOverride: (override?: BackendOverride) => void;
   isLoading: boolean;
 }
 
@@ -30,10 +31,10 @@ export function useConnectionProfiles(): ConnectionSettingsView {
   const client = useConnection((s) => s.client);
   const activeProfileId = useProfiles((s) => s.activeProfileId);
   const activePersonaAvatar = useProfiles((s) => s.activePersonaAvatar);
-  const koboldOverride = useProfiles((s) => s.koboldOverride);
+  const backendOverride = useProfiles((s) => s.backendOverride);
   const setActiveProfile = useProfiles((s) => s.setActiveProfile);
   const setActivePersona = useProfiles((s) => s.setActivePersona);
-  const setKoboldOverride = useProfiles((s) => s.setKoboldOverride);
+  const setBackendOverride = useProfiles((s) => s.setBackendOverride);
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings', client?.baseUrl],
@@ -72,8 +73,8 @@ export function useConnectionProfiles(): ConnectionSettingsView {
     activePersonaAvatar: activePersonaAvatar ?? activeAvatar,
     defaultPersonaAvatar: defaultPersona,
     setActivePersona,
-    koboldOverride,
-    setKoboldOverride,
+    backendOverride,
+    setBackendOverride,
     isLoading,
   };
 }
